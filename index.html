@@ -450,10 +450,13 @@
                 list.appendChild(li);
             });
             const count = mergeFilesArray.length;
-            if (isReady) updateStatus('status', count === 0
-                ? 'Add at least 2 PDFs to merge.'
-                : count === 1 ? '1 file added — need at least one more.'
-                : `${count} files ready to merge.`, count >= 2 ? 'text-green' : '');
+            if (isReady) {
+                document.getElementById('merge-btn').disabled = count < 2;
+                updateStatus('status', count === 0
+                    ? 'Add at least 2 PDFs to merge.'
+                    : count === 1 ? '1 file added — need at least one more.'
+                    : `${count} files ready to merge.`, count >= 2 ? 'text-green' : '');
+            }
             if (mergeSortable) { mergeSortable.destroy(); mergeSortable = null; }
             if (count > 1) {
                 mergeSortable = new Sortable(list, {
@@ -567,7 +570,7 @@
                 splitTotalPages = pdf.numPages;
                 updateStatus('split-status', `${f.name} — ${splitTotalPages} page(s)`, 'text-green');
                 validateSplitRange();
-            } catch { updateStatus('split-status', `Loaded: ${f.name}`, 'text-green'); }
+            } catch (err) { updateStatus('split-status', `Could not read "${f.name}" — ${err.message || 'invalid or encrypted PDF'}`, 'text-red'); }
         };
         bindSimpleDrop('drop-zone-split', sInput);
 
@@ -643,7 +646,13 @@
             document.getElementById('reorder-btn').style.display = 'none';
             document.getElementById('reorder-password').style.display = 'none';
             updateStatus('reorder-status', 'Generating previews...', '');
-            const pdf = await pdfjsLib.getDocument(await file.arrayBuffer()).promise;
+            let pdf;
+            try {
+                pdf = await pdfjsLib.getDocument(await file.arrayBuffer()).promise;
+            } catch (err) {
+                updateStatus('reorder-status', `Could not read "${file.name}" — ${err.message || 'invalid or encrypted PDF'}`, 'text-red');
+                return;
+            }
             for (let i = 1; i <= pdf.numPages; i++) {
                 const page     = await pdf.getPage(i);
                 const viewport = page.getViewport({ scale: 0.3 });
@@ -691,7 +700,7 @@
                 rotateTotalPages = pdf.numPages;
                 updateStatus('rotate-status', `${f.name} — ${rotateTotalPages} page(s)`, 'text-green');
                 validateRotateRange();
-            } catch { updateStatus('rotate-status', `Loaded: ${f.name}`, 'text-green'); }
+            } catch (err) { updateStatus('rotate-status', `Could not read "${f.name}" — ${err.message || 'invalid or encrypted PDF'}`, 'text-red'); }
         };
         bindSimpleDrop('drop-zone-rotate', rotateInput);
         document.getElementById('rotate-pages').addEventListener('input', validateRotateRange);
@@ -746,7 +755,7 @@
                 removeTotalPages = pdf.numPages;
                 updateStatus('remove-status', `${f.name} — ${removeTotalPages} page(s)`, 'text-green');
                 validateRemoveRange();
-            } catch { updateStatus('remove-status', `Loaded: ${f.name}`, 'text-green'); }
+            } catch (err) { updateStatus('remove-status', `Could not read "${f.name}" — ${err.message || 'invalid or encrypted PDF'}`, 'text-red'); }
         };
         bindSimpleDrop('drop-zone-remove', removeInput);
         document.getElementById('remove-pages').addEventListener('input', validateRemoveRange);

@@ -214,10 +214,10 @@ def process_bulk(action, file_names, js_buffers, status_id="", password=""):
         for i, (name, buf) in enumerate(zip(names, buffers)):
             _post_progress(status_id, int(i / total * 90), f"Processing {name} ({i + 1}/{total})...")
             if action == 'COMPRESS':
-                processed_bytes = process_compress(buf, password=password)
+                processed_bytes = process_compress(buf, status_id=status_id, password=password)
                 suffix = "_squeezed.pdf"
             elif action == 'ANONYMIZE':
-                processed_bytes = process_anonymize(buf, password=password)
+                processed_bytes = process_anonymize(buf, status_id=status_id, password=password)
                 suffix = "_scrubbed.pdf"
             else:
                 processed_bytes = buf

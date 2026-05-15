@@ -232,12 +232,13 @@ button {
 }
 
 .text-input {
-    width: 90%;
+    width: 100%;
     padding: 0.75rem;
     border: 1px solid var(--border);
     border-radius: 6px;
     font-family: inherit;
     font-size: 0.95rem;
+    box-sizing: border-box;
 }
 
 .text-input:focus {
@@ -434,6 +435,10 @@ select.text-input {
     cursor: pointer;
     background-color: var(--bg);
     color: var(--text-main);
+}
+
+[data-theme="dark"] select.text-input {
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath fill='%2394a3b8' d='M6 8L1 3h10z'/%3E%3C/svg%3E");
 }
 
 .num-input {
