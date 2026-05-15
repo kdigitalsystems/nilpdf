@@ -3,6 +3,8 @@ name: CI/CD Pipeline
 on:
   push:
     branches: ["main"]
+  pull_request:
+    branches: ["main"]
   workflow_dispatch:
 
 permissions:
@@ -11,23 +13,31 @@ permissions:
   id-token: write
 
 jobs:
-  # NEW: Test Job
   test:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+
       - name: Set up Python
         uses: actions/setup-python@v5
         with:
           python-version: '3.11'
-      - name: Install dependencies
-        run: pip install pypdf cryptography
-      - name: Run Tests
-        run: python3 -m unittest discover tests
 
-  # UPDATED: Deploy Job (now depends on test passing)
+      - name: Cache pip packages
+        uses: actions/cache@v4
+        with:
+          path: ~/.cache/pip
+          key: pip-${{ hashFiles('**/requirements*.txt') }}-pypdf-cryptography-Pillow-reportlab
+
+      - name: Install dependencies
+        run: pip install pypdf cryptography Pillow reportlab
+
+      - name: Run tests with verbose output
+        run: python -m pytest tests/ -v --tb=short
+
   deploy:
     needs: test
+    if: github.ref == 'refs/heads/main' && github.event_name != 'pull_request'
     environment:
       name: github-pages
       url: ${{ steps.deployment.outputs.page_url }}
