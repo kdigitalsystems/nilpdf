@@ -2,9 +2,13 @@ importScripts("https://cdn.jsdelivr.net/pyodide/v0.25.0/full/pyodide.js");
 
 async function bootEngine() {
     self.pyodide = await loadPyodide();
+    // Pyodide-native packages: fetched from the same CDN as pyodide.js and
+    // cached by the browser after the first visit — no re-download on return visits.
+    await self.pyodide.loadPackage(["Pillow", "cryptography"]);
+    // PyPI-only packages still need micropip, but this is now a much smaller install.
     await self.pyodide.loadPackage("micropip");
     const micropip = self.pyodide.pyimport("micropip");
-    await micropip.install(["pypdf", "cryptography", "Pillow", "reportlab"]);
+    await micropip.install(["pypdf", "reportlab"]);
 
     // Expose a JS-global progress reporter so Python can call it via `from js import reportProgress`
     self.reportProgress = (id, pct, msg) => {
