@@ -1,20 +1,20 @@
 importScripts("https://cdn.jsdelivr.net/pyodide/v0.25.0/full/pyodide.js");
 
 async function bootEngine() {
+    postMessage({ type: 'BOOT_PROGRESS', msg: 'Loading Python runtime…' });
     self.pyodide = await loadPyodide();
-    // Pyodide-native packages: fetched from the same CDN as pyodide.js and
-    // cached by the browser after the first visit — no re-download on return visits.
-    await self.pyodide.loadPackage(["Pillow", "cryptography"]);
-    // PyPI-only packages still need micropip, but this is now a much smaller install.
+
+    postMessage({ type: 'BOOT_PROGRESS', msg: 'Installing packages…' });
     await self.pyodide.loadPackage("micropip");
     const micropip = self.pyodide.pyimport("micropip");
-    await micropip.install(["pypdf", "reportlab"]);
+    await micropip.install(["pypdf", "cryptography", "Pillow", "reportlab"]);
 
     // Expose a JS-global progress reporter so Python can call it via `from js import reportProgress`
     self.reportProgress = (id, pct, msg) => {
         postMessage({ type: 'PROGRESS', id: String(id), pct: Number(pct), msg: String(msg) });
     };
 
+    postMessage({ type: 'BOOT_PROGRESS', msg: 'Loading engine…' });
     const baseUrl = location.href.split('assets/js/')[0];
     const response = await fetch(baseUrl + 'core/pdf_engine.py?v=' + Date.now());
     const pythonCode = await response.text();
@@ -23,7 +23,9 @@ async function bootEngine() {
     postMessage({ type: 'SYSTEM_READY' });
 }
 
-let engineBooting = bootEngine();
+let engineBooting = bootEngine().catch(err => {
+    postMessage({ type: 'BOOT_ERROR', error: err.message || String(err) });
+});
 
 self.onmessage = async (event) => {
     await engineBooting;

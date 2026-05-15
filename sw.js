@@ -1,4 +1,4 @@
-const CACHE = 'nilpdf-v1';
+const CACHE = 'nilpdf-v2';
 const SHELL = ['/', '/index.html', '/assets/css/main.css', '/assets/js/pdf_worker.js', '/core/pdf_engine.py'];
 
 self.addEventListener('install', e => {

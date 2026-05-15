@@ -326,7 +326,20 @@
         worker.onmessage = (e) => {
             const { type, id, result, error, isZip, isText } = e.data;
 
-            if (type === 'SYSTEM_READY') {
+            if (type === 'BOOT_PROGRESS') {
+                document.querySelectorAll('.status-message').forEach(el => {
+                    if (el.textContent.startsWith('Initializing') || el.textContent.startsWith('Loading') || el.textContent.startsWith('Installing')) {
+                        el.textContent = e.data.msg;
+                    }
+                });
+
+            } else if (type === 'BOOT_ERROR') {
+                document.querySelectorAll('.status-message').forEach(el => {
+                    el.textContent = 'Engine failed to load — please refresh the page.';
+                    el.className = 'status-message text-red';
+                });
+
+            } else if (type === 'SYSTEM_READY') {
                 isReady = true;
                 document.querySelectorAll('.primary-btn').forEach(b => b.disabled = false);
                 // Only reset status divs still showing the boot message; leave user-loaded states intact
