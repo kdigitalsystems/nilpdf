@@ -67,6 +67,8 @@ self.onmessage = async (event) => {
             result_py = self.pyodide.globals.get('process_watermark')(payload.buffer, payload.text, payload.opacity, id, password);
         } else if (action === 'ADD_PAGE_NUMBERS') {
             result_py = self.pyodide.globals.get('process_add_page_numbers')(payload.buffer, payload.position, payload.startNum, id, password);
+        } else {
+            throw new Error(`Unknown action: ${action}`);
         }
 
         const result_uint8 = result_py.toJs();
@@ -75,6 +77,10 @@ self.onmessage = async (event) => {
         postMessage({ type: 'SUCCESS', id, result: result_uint8, isZip, isText }, [result_uint8.buffer]);
 
     } catch (error) {
-        postMessage({ type: 'ERROR', id, error: error.message });
+        let msg = error.message || String(error);
+        if (msg.includes('Incorrect password') || msg.includes('password')) {
+            msg = 'Incorrect or missing password.';
+        }
+        postMessage({ type: 'ERROR', id, error: msg });
     }
 };

@@ -35,8 +35,9 @@ self.addEventListener('fetch', e => {
         return;
     }
 
-    // Cache-first for app shell files
-    if (SHELL.some(path => e.request.url.endsWith(path) || e.request.url.endsWith(path + '?v=' + Date.now().toString().slice(0,8)))) {
+    // Cache-first for app shell files (match by pathname, ignoring any query params)
+    const reqPath = new URL(e.request.url).pathname;
+    if (SHELL.some(path => reqPath === path || reqPath.endsWith(path))) {
         e.respondWith(caches.match(e.request).then(r => r || fetch(e.request).then(res => {
             const clone = res.clone();
             caches.open(CACHE).then(c => c.put(e.request, clone));

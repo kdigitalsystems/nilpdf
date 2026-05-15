@@ -380,6 +380,17 @@
                 URL.revokeObjectURL(url);
                 incrementCounter();
 
+                // Clear file lists after successful operations so users start fresh
+                if (id === 'status') {
+                    mergeFilesArray = []; renderMergeList();
+                }
+                if (id === 'reorder-status') {
+                    document.getElementById('thumbnail-grid').innerHTML = '';
+                    document.getElementById('reorder-btn').style.display = 'none';
+                    document.getElementById('reorder-password').style.display = 'none';
+                    document.getElementById('reorder-upload').value = '';
+                }
+
                 if (id === 'compress-status' && pendingCompressInfo && !pendingCompressInfo.isBulk) {
                     const orig = pendingCompressInfo.origSize;
                     const now  = result.byteLength;
@@ -923,6 +934,7 @@
                     const a   = document.createElement('a');
                     a.href = url; a.download = `${topngBase}_page_1.${ext}`; a.click();
                     URL.revokeObjectURL(url);
+                    incrementCounter();
                     updateStatus('topng-status', 'Done! Image downloaded.', 'text-green');
                 } else {
                     updateStatus('topng-status', 'Packing into ZIP...', '');
@@ -933,6 +945,7 @@
                     const a   = document.createElement('a');
                     a.href = url; a.download = `${topngBase}_images.zip`; a.click();
                     URL.revokeObjectURL(url);
+                    incrementCounter();
                     updateStatus('topng-status', `Done! ${numPages} images in ZIP.`, 'text-green');
                 }
             } catch (err) {
@@ -1021,6 +1034,7 @@
                     : 'images_combined.pdf';
                 a.href = url; a.download = topdfName; a.click();
                 URL.revokeObjectURL(url);
+                incrementCounter();
                 updateStatus('topdf-status', `Done! PDF with ${added} page(s) downloaded.`, 'text-green');
             } catch (err) {
                 updateStatus('topdf-status', 'Error: ' + err.message, 'text-red');
