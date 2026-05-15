@@ -30,7 +30,7 @@ jobs:
           key: pip-${{ hashFiles('**/requirements*.txt') }}-pypdf-cryptography-Pillow-reportlab
 
       - name: Install dependencies
-        run: pip install pypdf cryptography Pillow reportlab
+        run: pip install pypdf cryptography Pillow reportlab pytest
 
       - name: Run tests with verbose output
         run: python -m pytest tests/ -v --tb=short
