@@ -39,3 +39,35 @@ def process_reorder(js_buf, new_order):
     out_stream = io.BytesIO()
     writer.write(out_stream)
     return out_stream.getvalue()
+
+
+def process_anonymize(js_buf):
+    reader = PdfReader(io.BytesIO(_ensure_py(js_buf)))
+    if reader.is_encrypted:
+        reader.decrypt("")
+
+    writer = PdfWriter()
+    for page in reader.pages:
+        writer.add_page(page)
+
+    # 1. THE STANDARD SCRUB
+    # We overwrite with empty strings to force the keys to exist but be blank.
+    writer.add_metadata({
+        "/Author": "",
+        "/Creator": "",
+        "/Producer": "LocalPDF (Private)",
+        "/Subject": "",
+        "/Title": "",
+        "/Keywords": "",
+        "/CreationDate": "D:19700101000000Z", # Unix Epoch (neutral date)
+        "/ModDate": "D:19700101000000Z"
+    })
+
+    # 2. THE NUCLEAR SCRUB (XMP Data)
+    # Modern PDFs store an XML stream that many viewers prioritize.
+    # We explicitly wipe the XMP metadata to ensure total anonymity.
+    writer._xmp_metadata = None
+
+    out_stream = io.BytesIO()
+    writer.write(out_stream)
+    return out_stream.getvalue()

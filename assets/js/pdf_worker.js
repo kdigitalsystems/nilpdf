@@ -28,7 +28,10 @@ self.onmessage = async (event) => {
             result_py = self.pyodide.globals.get('process_split')(payload.buffer, payload.indices);
         } else if (action === 'REORDER') {
             result_py = self.pyodide.globals.get('process_reorder')(payload.buffer, payload.order);
-        }
+        } else if (action === 'ANONYMIZE') {
+ 	    const func = self.pyodide.globals.get('process_anonymize');
+	    result_py = func(payload.buffer);
+	}
 
         // Convert Python Proxy to standard JS Uint8Array
         const result_uint8 = result_py.toJs();

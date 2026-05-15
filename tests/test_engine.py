@@ -31,5 +31,17 @@ class TestPDFEngine(unittest.TestCase):
         result = process_reorder(pdf, [2, 1, 0])
         self.assertTrue(len(result) > 100)
 
+    def test_anonymize(self):
+        pdf = create_dummy_pdf(1)
+        result = process_anonymize(pdf)
+        
+        # Verify the result by reading it back
+        reader = PdfReader(io.BytesIO(result))
+        meta = reader.metadata
+        # Check if the Producer matches our custom string
+        self.assertEqual(meta.get("/Producer"), "LocalPDF (Private Library)")
+        # Check if CreationDate is scrubbed
+        self.assertEqual(meta.get("/CreationDate"), "")
+
 if __name__ == '__main__':
     unittest.main()
