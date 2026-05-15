@@ -1,5 +1,7 @@
-const CACHE = 'nilpdf-v2';
-const SHELL = ['/', '/index.html', '/assets/css/main.css', '/assets/js/pdf_worker.js', '/core/pdf_engine.py'];
+const CACHE = 'nilpdf-v3';
+// pdf_worker.js is intentionally excluded — it must always be fetched fresh
+// so stale cached workers (e.g. with broken boot sequences) never get stuck.
+const SHELL = ['/', '/index.html', '/assets/css/main.css'];
 
 self.addEventListener('install', e => {
     e.waitUntil(caches.open(CACHE).then(c => c.addAll(SHELL).catch(() => {})));

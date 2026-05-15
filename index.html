@@ -210,7 +210,7 @@
                     <option value="jpeg">JPG (smaller file size)</option>
                 </select>
             </div>
-            <button id="topng-btn" class="primary-btn" disabled>Convert to Images</button>
+            <button id="topng-btn" class="primary-btn">Convert to Images</button>
             <div id="topng-status" class="status-message">Ready.</div>
         </div>
 
@@ -316,7 +316,7 @@
         };
 
         /** 2. WORKER BRIDGE **/
-        const worker = new Worker('./assets/js/pdf_worker.js');
+        const worker = new Worker('./assets/js/pdf_worker.js?v=3');
         let isReady = false;
         let pendingCompressInfo = null;
         let pendingDownload = null;
