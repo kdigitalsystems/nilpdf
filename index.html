@@ -281,6 +281,7 @@
         let pendingCompressInfo = null;
         let pendingDownload = null;
         function stem(filename) { return filename.replace(/\.[^/.]+$/, ''); }
+        function escHtml(s) { return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
 
         worker.onmessage = (e) => {
             const { type, id, result, error, isZip, isText } = e.data;
@@ -445,7 +446,7 @@
                 li.dataset.fileId = item.id;
                 li.innerHTML =
                     `<span class="drag-handle" title="Drag to reorder">⠿</span>` +
-                    `<span class="file-name">📄 ${item.file.name}</span>` +
+                    `<span class="file-name">📄 ${escHtml(item.file.name)}</span>` +
                     `<button class="remove-file-btn" onclick="removeMergeFile(${item.id})" title="Remove">×</button>`;
                 list.appendChild(li);
             });
@@ -637,10 +638,11 @@
          *  REORDER
          * ════════════════════════════════════════════════════════════════ */
         const rInput = document.getElementById('reorder-upload');
-        let sortable;
+        let sortable, reorderVersion = 0;
         rInput.onchange = async () => {
             const file = rInput.files[0];
             if (!file) return;
+            const myVersion = ++reorderVersion;
             const grid = document.getElementById('thumbnail-grid');
             grid.innerHTML = '';
             document.getElementById('reorder-btn').style.display = 'none';
@@ -654,6 +656,7 @@
                 return;
             }
             for (let i = 1; i <= pdf.numPages; i++) {
+                if (reorderVersion !== myVersion) return;
                 const page     = await pdf.getPage(i);
                 const viewport = page.getViewport({ scale: 0.3 });
                 const wrapper  = document.createElement('div');
@@ -789,6 +792,10 @@
             const check = validateFileSizes([removeInput.files[0]]);
             if (!check.ok) { updateStatus('remove-status', check.msg, 'text-red'); return; }
             const indices  = parsePageRange(range);
+            if (!indices.length) { updateStatus('remove-status', 'Enter valid page numbers.', 'text-red'); return; }
+            if (removeTotalPages > 0 && indices.length >= removeTotalPages) {
+                updateStatus('remove-status', 'Cannot remove all pages — at least one must remain.', 'text-red'); return;
+            }
             const password = document.getElementById('remove-password').value;
             updateStatus('remove-status', 'Removing pages...', '');
             pendingDownload = stem(removeInput.files[0].name) + '_pages_removed.pdf';
@@ -892,11 +899,12 @@
                 li.className = 'file-list-item'; li.dataset.fileId = item.id;
                 li.innerHTML =
                     `<span class="drag-handle" title="Drag to reorder">⠿</span>` +
-                    `<span class="file-name">🖼 ${item.file.name}</span>` +
+                    `<span class="file-name">🖼 ${escHtml(item.file.name)}</span>` +
                     `<button class="remove-file-btn" onclick="removeTopdfFile(${item.id})" title="Remove">×</button>`;
                 list.appendChild(li);
             });
             const count = topdfFilesArray.length;
+            document.getElementById('topdf-btn').disabled = count === 0;
             updateStatus('topdf-status', count === 0
                 ? 'Add JPG or PNG images to convert.'
                 : `${count} image(s) ready — drag to reorder.`,
@@ -1038,8 +1046,14 @@
                     row.className = 'inspect-row';
                     const isEmpty = (value === '—');
                     const valCls  = cls ? cls : (isEmpty ? 'empty' : '');
-                    row.innerHTML = `<span class="inspect-key">${key}</span>`
-                                  + `<span class="inspect-val ${valCls}">${value}</span>`;
+                    const keySpan = document.createElement('span');
+                    keySpan.className = 'inspect-key';
+                    keySpan.textContent = key;
+                    const valSpan = document.createElement('span');
+                    valSpan.className = `inspect-val ${valCls}`;
+                    valSpan.textContent = value;
+                    row.appendChild(keySpan);
+                    row.appendChild(valSpan);
                     wrap.appendChild(row);
                 });
                 container.appendChild(wrap);
