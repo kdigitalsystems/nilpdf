@@ -94,6 +94,13 @@ def _compress_images(writer, quality=75):
             continue
 
 
+# ── Producer stamp (V8) ────────────────────────────────────────────────────
+
+def _stamp_producer(writer):
+    """Append NilPDF producer credit to output PDF metadata (except Anonymize)."""
+    writer.add_metadata({'/Producer': 'NilPDF (nilpdf.com)'})
+
+
 # ── Existing tools ─────────────────────────────────────────────────────────
 
 def process_compress(js_buf, status_id="", password=""):
@@ -111,6 +118,7 @@ def process_compress(js_buf, status_id="", password=""):
 
     _post_progress(status_id, 75, "Re-compressing images...")
     _compress_images(writer)
+    _stamp_producer(writer)
 
     out_stream = io.BytesIO()
     writer.write(out_stream)
@@ -144,6 +152,7 @@ def process_merge(js_buffers, status_id="", password=""):
         reader = _open_reader(buf, password)
         merger.append(reader)
         _post_progress(status_id, int((i + 1) / total * 90), f"Merged file {i + 1} of {total}...")
+    _stamp_producer(merger)
     out_stream = io.BytesIO()
     merger.write(out_stream)
     return out_stream.getvalue()
@@ -161,6 +170,7 @@ def process_split(js_buf, page_indices, status_id="", password=""):
 
     for idx in indices:
         writer.add_page(reader.pages[idx])
+    _stamp_producer(writer)
     out_stream = io.BytesIO()
     writer.write(out_stream)
     return out_stream.getvalue()
@@ -185,6 +195,7 @@ def process_split_ranges(js_buf, ranges_list, status_id="", password=""):
             part_writer = PdfWriter()
             for idx in indices:
                 part_writer.add_page(reader.pages[idx])
+            _stamp_producer(part_writer)
             part_stream = io.BytesIO()
             part_writer.write(part_stream)
             zf.writestr(f"split_part_{i + 1}.pdf", part_stream.getvalue())
@@ -199,6 +210,7 @@ def process_reorder(js_buf, new_order, status_id="", password=""):
     for idx in _ensure_py(new_order):
         if 0 <= idx < len(reader.pages):
             writer.add_page(reader.pages[idx])
+    _stamp_producer(writer)
     out_stream = io.BytesIO()
     writer.write(out_stream)
     return out_stream.getvalue()
@@ -214,10 +226,10 @@ def process_bulk(action, file_names, js_buffers, status_id="", password=""):
         for i, (name, buf) in enumerate(zip(names, buffers)):
             _post_progress(status_id, int(i / total * 90), f"Processing {name} ({i + 1}/{total})...")
             if action == 'COMPRESS':
-                processed_bytes = process_compress(buf, password=password)
+                processed_bytes = process_compress(buf, status_id=status_id, password=password)
                 suffix = "_squeezed.pdf"
             elif action == 'ANONYMIZE':
-                processed_bytes = process_anonymize(buf, password=password)
+                processed_bytes = process_anonymize(buf, status_id=status_id, password=password)
                 suffix = "_scrubbed.pdf"
             else:
                 processed_bytes = buf
@@ -245,6 +257,7 @@ def process_rotate(js_buf, degrees, page_indices, status_id="", password=""):
         writer.add_page(page)
         _post_progress(status_id, int((i + 1) / total * 90), f"Rotating page {i + 1} of {total}...")
 
+    _stamp_producer(writer)
     out = io.BytesIO()
     writer.write(out)
     return out.getvalue()
@@ -268,6 +281,7 @@ def process_remove_pages(js_buf, page_indices, status_id="", password=""):
     if len(writer.pages) == 0:
         raise ValueError("Cannot remove all pages — at least one page must remain.")
 
+    _stamp_producer(writer)
     out = io.BytesIO()
     writer.write(out)
     return out.getvalue()
@@ -327,6 +341,7 @@ def process_watermark(js_buf, text, opacity, status_id="", password=""):
             page.merge_page(overlay_page)  # older pypdf without `over` param
         _post_progress(status_id, int((i + 1) / total * 90), f"Watermarking page {i + 1} of {total}...")
 
+    _stamp_producer(writer)
     out = io.BytesIO()
     writer.write(out)
     return out.getvalue()
@@ -379,6 +394,7 @@ def process_add_page_numbers(js_buf, position, start_num, status_id="", password
             page.merge_page(overlay_page)
         _post_progress(status_id, int((i + 1) / total * 90), f"Numbering page {i + 1} of {total}...")
 
+    _stamp_producer(writer)
     out = io.BytesIO()
     writer.write(out)
     return out.getvalue()

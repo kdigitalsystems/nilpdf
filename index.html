@@ -3,11 +3,31 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>NilPDF - Secure & Private PDF Toolkit</title>
+    <title>NilPDF — Free PDF Tools. Zero Uploads. 100% Private.</title>
 
-    <script src="https://cdn.jsdelivr.net/gh/gzuidhof/coi-serviceworker@latest/coi-serviceworker.min.js"></script>
+    <!-- PWA service worker (also sets COOP/COEP for Pyodide SharedArrayBuffer) -->
+    <script>
+        if ('serviceWorker' in navigator) {
+            navigator.serviceWorker.register('./sw.js').then(() => {
+                if (!crossOriginIsolated) location.reload();
+            }).catch(() => {});
+        }
+    </script>
 
-    <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>📄</text></svg>">
+    <!-- SEO & Social -->
+    <meta name="description" content="NilPDF — 12 free PDF tools that run entirely in your browser. Merge, split, compress, rotate, watermark and more. Zero uploads. Zero tracking. 100% private.">
+    <meta property="og:title" content="NilPDF — Free PDF Tools. Zero Uploads.">
+    <meta property="og:description" content="Merge, split, compress, rotate, watermark and more. Your files never leave your device.">
+    <meta property="og:type" content="website">
+    <meta property="og:url" content="https://nilpdf.com/">
+    <meta property="og:image" content="https://nilpdf.com/assets/icon.svg">
+    <meta name="twitter:card" content="summary">
+    <meta name="twitter:title" content="NilPDF — Free PDF Tools. Zero Uploads.">
+    <meta name="twitter:description" content="12 PDF tools in your browser. Zero uploads. Zero tracking. 100% private.">
+    <link rel="canonical" href="https://nilpdf.com/">
+    <link rel="manifest" href="./manifest.json">
+
+    <link rel="icon" href="./assets/icon.svg" type="image/svg+xml">
     <link rel="stylesheet" href="./assets/css/main.css">
 
     <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
@@ -21,8 +41,10 @@
     <main class="container">
         <header class="app-header">
             <button class="theme-toggle" id="theme-toggle" title="Toggle Theme">🌓</button>
+            <button class="share-btn" id="share-btn" title="Share this tool">🔗</button>
             <h2>NilPDF</h2>
             <p>100% Private • No Uploads</p>
+            <p id="counter-display" class="counter-display"></p>
         </header>
 
         <nav class="tabs">
@@ -168,6 +190,10 @@
             <input type="password" id="totext-password" class="text-input password-input" placeholder="🔒 Password (if encrypted)">
             <button id="totext-btn" class="primary-btn" disabled>Extract Text</button>
             <div id="totext-status" class="status-message">Ready.</div>
+            <div id="totext-preview-area" style="display:none;">
+                <textarea id="totext-preview" class="totext-preview" readonly placeholder="Extracted text appears here…"></textarea>
+                <button id="totext-copy-btn" class="secondary-btn" style="width:100%;margin-top:0.5rem;">Copy to Clipboard</button>
+            </div>
         </div>
 
         <!-- PDF TO IMAGES -->
@@ -263,6 +289,20 @@
         </footer>
     </main>
 
+    <!-- V7: Keyboard shortcuts modal (outside .container so it covers full viewport) -->
+    <div id="shortcuts-modal" class="shortcuts-modal" style="display:none;" onclick="this.style.display='none'">
+        <div class="shortcuts-box" onclick="event.stopPropagation()">
+            <h3>Keyboard Shortcuts</h3>
+            <table class="shortcuts-table">
+                <tr><td><kbd>1</kbd>–<kbd>9</kbd>, <kbd>0</kbd></td><td>Switch tools (Merge → Inspect)</td></tr>
+                <tr><td><kbd>Enter</kbd></td><td>Run active tool</td></tr>
+                <tr><td><kbd>?</kbd></td><td>Show / hide this dialog</td></tr>
+                <tr><td><kbd>Esc</kbd></td><td>Close dialog</td></tr>
+            </table>
+            <button class="secondary-btn" onclick="document.getElementById('shortcuts-modal').style.display='none'">Close</button>
+        </div>
+    </div>
+
     <script>
         /** 1. THEME — auto-detect system preference **/
         const themeBtn  = document.getElementById('theme-toggle');
@@ -281,6 +321,7 @@
         let pendingCompressInfo = null;
         let pendingDownload = null;
         function stem(filename) { return filename.replace(/\.[^/.]+$/, ''); }
+        function escHtml(s) { return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
 
         worker.onmessage = (e) => {
             const { type, id, result, error, isZip, isText } = e.data;
@@ -314,8 +355,17 @@
                 a.href = url;
                 a.download = pendingDownload || `NilPDF_Export_${Date.now()}.${ext}`;
                 pendingDownload = null;
+
+                // V2: populate totext inline preview
+                if (id === 'totext-status' && isText) {
+                    const text = new TextDecoder().decode(result);
+                    document.getElementById('totext-preview').value = text;
+                    document.getElementById('totext-preview-area').style.display = 'block';
+                }
+
                 a.click();
                 URL.revokeObjectURL(url);
+                incrementCounter();
 
                 if (id === 'compress-status' && pendingCompressInfo && !pendingCompressInfo.isBulk) {
                     const orig = pendingCompressInfo.origSize;
@@ -355,6 +405,7 @@
             });
             event.target.classList.add('active');
             document.getElementById(`tool-${tool}`).classList.replace('hidden-tool', 'active-tool');
+            history.replaceState(null, '', '#' + tool);
         }
 
         /** 4. FILE SIZE VALIDATION **/
@@ -445,15 +496,18 @@
                 li.dataset.fileId = item.id;
                 li.innerHTML =
                     `<span class="drag-handle" title="Drag to reorder">⠿</span>` +
-                    `<span class="file-name">📄 ${item.file.name}</span>` +
+                    `<span class="file-name">📄 ${escHtml(item.file.name)}</span>` +
                     `<button class="remove-file-btn" onclick="removeMergeFile(${item.id})" title="Remove">×</button>`;
                 list.appendChild(li);
             });
             const count = mergeFilesArray.length;
-            if (isReady) updateStatus('status', count === 0
-                ? 'Add at least 2 PDFs to merge.'
-                : count === 1 ? '1 file added — need at least one more.'
-                : `${count} files ready to merge.`, count >= 2 ? 'text-green' : '');
+            if (isReady) {
+                document.getElementById('merge-btn').disabled = count < 2;
+                updateStatus('status', count === 0
+                    ? 'Add at least 2 PDFs to merge.'
+                    : count === 1 ? '1 file added — need at least one more.'
+                    : `${count} files ready to merge.`, count >= 2 ? 'text-green' : '');
+            }
             if (mergeSortable) { mergeSortable.destroy(); mergeSortable = null; }
             if (count > 1) {
                 mergeSortable = new Sortable(list, {
@@ -567,7 +621,7 @@
                 splitTotalPages = pdf.numPages;
                 updateStatus('split-status', `${f.name} — ${splitTotalPages} page(s)`, 'text-green');
                 validateSplitRange();
-            } catch { updateStatus('split-status', `Loaded: ${f.name}`, 'text-green'); }
+            } catch (err) { updateStatus('split-status', `Could not read "${f.name}" — ${err.message || 'invalid or encrypted PDF'}`, 'text-red'); }
         };
         bindSimpleDrop('drop-zone-split', sInput);
 
@@ -634,17 +688,25 @@
          *  REORDER
          * ════════════════════════════════════════════════════════════════ */
         const rInput = document.getElementById('reorder-upload');
-        let sortable;
+        let sortable, reorderVersion = 0;
         rInput.onchange = async () => {
             const file = rInput.files[0];
             if (!file) return;
+            const myVersion = ++reorderVersion;
             const grid = document.getElementById('thumbnail-grid');
             grid.innerHTML = '';
             document.getElementById('reorder-btn').style.display = 'none';
             document.getElementById('reorder-password').style.display = 'none';
             updateStatus('reorder-status', 'Generating previews...', '');
-            const pdf = await pdfjsLib.getDocument(await file.arrayBuffer()).promise;
+            let pdf;
+            try {
+                pdf = await pdfjsLib.getDocument(await file.arrayBuffer()).promise;
+            } catch (err) {
+                updateStatus('reorder-status', `Could not read "${file.name}" — ${err.message || 'invalid or encrypted PDF'}`, 'text-red');
+                return;
+            }
             for (let i = 1; i <= pdf.numPages; i++) {
+                if (reorderVersion !== myVersion) return;
                 const page     = await pdf.getPage(i);
                 const viewport = page.getViewport({ scale: 0.3 });
                 const wrapper  = document.createElement('div');
@@ -691,7 +753,7 @@
                 rotateTotalPages = pdf.numPages;
                 updateStatus('rotate-status', `${f.name} — ${rotateTotalPages} page(s)`, 'text-green');
                 validateRotateRange();
-            } catch { updateStatus('rotate-status', `Loaded: ${f.name}`, 'text-green'); }
+            } catch (err) { updateStatus('rotate-status', `Could not read "${f.name}" — ${err.message || 'invalid or encrypted PDF'}`, 'text-red'); }
         };
         bindSimpleDrop('drop-zone-rotate', rotateInput);
         document.getElementById('rotate-pages').addEventListener('input', validateRotateRange);
@@ -746,7 +808,7 @@
                 removeTotalPages = pdf.numPages;
                 updateStatus('remove-status', `${f.name} — ${removeTotalPages} page(s)`, 'text-green');
                 validateRemoveRange();
-            } catch { updateStatus('remove-status', `Loaded: ${f.name}`, 'text-green'); }
+            } catch (err) { updateStatus('remove-status', `Could not read "${f.name}" — ${err.message || 'invalid or encrypted PDF'}`, 'text-red'); }
         };
         bindSimpleDrop('drop-zone-remove', removeInput);
         document.getElementById('remove-pages').addEventListener('input', validateRemoveRange);
@@ -780,6 +842,10 @@
             const check = validateFileSizes([removeInput.files[0]]);
             if (!check.ok) { updateStatus('remove-status', check.msg, 'text-red'); return; }
             const indices  = parsePageRange(range);
+            if (!indices.length) { updateStatus('remove-status', 'Enter valid page numbers.', 'text-red'); return; }
+            if (removeTotalPages > 0 && indices.length >= removeTotalPages) {
+                updateStatus('remove-status', 'Cannot remove all pages — at least one must remain.', 'text-red'); return;
+            }
             const password = document.getElementById('remove-password').value;
             updateStatus('remove-status', 'Removing pages...', '');
             pendingDownload = stem(removeInput.files[0].name) + '_pages_removed.pdf';
@@ -883,11 +949,12 @@
                 li.className = 'file-list-item'; li.dataset.fileId = item.id;
                 li.innerHTML =
                     `<span class="drag-handle" title="Drag to reorder">⠿</span>` +
-                    `<span class="file-name">🖼 ${item.file.name}</span>` +
+                    `<span class="file-name">🖼 ${escHtml(item.file.name)}</span>` +
                     `<button class="remove-file-btn" onclick="removeTopdfFile(${item.id})" title="Remove">×</button>`;
                 list.appendChild(li);
             });
             const count = topdfFilesArray.length;
+            document.getElementById('topdf-btn').disabled = count === 0;
             updateStatus('topdf-status', count === 0
                 ? 'Add JPG or PNG images to convert.'
                 : `${count} image(s) ready — drag to reorder.`,
@@ -1029,8 +1096,14 @@
                     row.className = 'inspect-row';
                     const isEmpty = (value === '—');
                     const valCls  = cls ? cls : (isEmpty ? 'empty' : '');
-                    row.innerHTML = `<span class="inspect-key">${key}</span>`
-                                  + `<span class="inspect-val ${valCls}">${value}</span>`;
+                    const keySpan = document.createElement('span');
+                    keySpan.className = 'inspect-key';
+                    keySpan.textContent = key;
+                    const valSpan = document.createElement('span');
+                    valSpan.className = `inspect-val ${valCls}`;
+                    valSpan.textContent = value;
+                    row.appendChild(keySpan);
+                    row.appendChild(valSpan);
                     wrap.appendChild(row);
                 });
                 container.appendChild(wrap);
@@ -1087,6 +1160,91 @@
                 updateStatus('inspect-status', msg, 'text-red');
             }
         };
+
+        /** ════════════════════════════════════════════════════════════════
+         *  V5 — TOAST + PROCESSED-FILES COUNTER
+         * ════════════════════════════════════════════════════════════════ */
+        function showToast(msg) {
+            const t = document.createElement('div');
+            t.className = 'toast';
+            t.textContent = msg;
+            document.body.appendChild(t);
+            requestAnimationFrame(() => t.classList.add('toast-visible'));
+            setTimeout(() => { t.classList.remove('toast-visible'); setTimeout(() => t.remove(), 400); }, 2800);
+        }
+
+        function incrementCounter() {
+            const n = (parseInt(localStorage.getItem('nilpdf_count') || '0')) + 1;
+            localStorage.setItem('nilpdf_count', n);
+            const el = document.getElementById('counter-display');
+            if (el) el.textContent = `${n} file${n === 1 ? '' : 's'} processed privately`;
+            const milestones = [10, 50, 100, 500];
+            if (milestones.includes(n)) showToast(`🎉 ${n} files processed — all privately!`);
+        }
+
+        (function loadCounter() {
+            const n = parseInt(localStorage.getItem('nilpdf_count') || '0');
+            if (n > 0) {
+                const el = document.getElementById('counter-display');
+                if (el) el.textContent = `${n} file${n === 1 ? '' : 's'} processed privately`;
+            }
+        })();
+
+        /** ════════════════════════════════════════════════════════════════
+         *  V6 — SHARE BUTTON
+         * ════════════════════════════════════════════════════════════════ */
+        document.getElementById('share-btn').onclick = () => {
+            const url = location.href;
+            if (navigator.share) {
+                navigator.share({ title: 'NilPDF', url }).catch(() => {});
+            } else {
+                navigator.clipboard.writeText(url).then(() => showToast('Link copied!')).catch(() => {});
+            }
+        };
+
+        /** ════════════════════════════════════════════════════════════════
+         *  V2 — TOTEXT COPY-TO-CLIPBOARD
+         * ════════════════════════════════════════════════════════════════ */
+        document.getElementById('totext-copy-btn').onclick = () => {
+            const text = document.getElementById('totext-preview').value;
+            navigator.clipboard.writeText(text).then(() => showToast('Text copied!')).catch(() => {});
+        };
+
+        /** ════════════════════════════════════════════════════════════════
+         *  V7 — KEYBOARD SHORTCUTS
+         * ════════════════════════════════════════════════════════════════ */
+        document.addEventListener('keydown', e => {
+            if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA' || e.target.tagName === 'SELECT') return;
+            const modal = document.getElementById('shortcuts-modal');
+            if (e.key === '?' || e.key === '/') {
+                modal.style.display = modal.style.display === 'flex' ? 'none' : 'flex';
+                return;
+            }
+            if (e.key === 'Escape') { modal.style.display = 'none'; return; }
+            if (e.key === 'Enter') {
+                const activeBtn = document.querySelector('.active-tool .primary-btn:not(:disabled)');
+                if (activeBtn) activeBtn.click();
+                return;
+            }
+            const num = parseInt(e.key);
+            if (!isNaN(num)) {
+                const idx = num === 0 ? 9 : num - 1;
+                const btn = document.querySelectorAll('.tab-btn')[idx];
+                if (btn) btn.click();
+            }
+        });
+
+        /** ════════════════════════════════════════════════════════════════
+         *  V1 — HASH ROUTING (init)
+         * ════════════════════════════════════════════════════════════════ */
+        (function initHash() {
+            const TOOL_NAMES = ['merge','compress','anonymize','split','reorder','rotate','remove','totext','topng','topdf','watermark','pagenums','inspect'];
+            const hash = location.hash.replace('#', '');
+            if (TOOL_NAMES.includes(hash)) {
+                const btn = document.querySelector(`.tab-btn[onclick*="'${hash}'"]`);
+                if (btn) btn.click();
+            }
+        })();
 
     </script>
 </body>

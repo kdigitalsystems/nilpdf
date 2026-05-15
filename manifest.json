@@ -1,0 +1,17 @@
+{
+    "name": "NilPDF — Free PDF Tools",
+    "short_name": "NilPDF",
+    "description": "12 PDF tools. Zero uploads. 100% private. Runs entirely in your browser.",
+    "start_url": "./",
+    "display": "standalone",
+    "background_color": "#f8fafc",
+    "theme_color": "#3b82f6",
+    "icons": [
+        {
+            "src": "./assets/icon.svg",
+            "sizes": "any",
+            "type": "image/svg+xml",
+            "purpose": "maskable any"
+        }
+    ]
+}
