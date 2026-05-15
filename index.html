@@ -316,6 +316,16 @@
         };
 
         /** 2. WORKER BRIDGE **/
+        // Pyodide requires cross-origin isolation (COOP/COEP headers) for SharedArrayBuffer.
+        // The service worker sets these headers. If they aren't active yet the worker will hang.
+        if (!crossOriginIsolated) {
+            document.querySelectorAll('.status-message').forEach(el => {
+                el.textContent = 'Finishing setup — reloading…';
+                el.className = 'status-message is-loading';
+            });
+            // SW needs one navigation cycle to become active; reload to pick up COOP/COEP headers.
+            setTimeout(() => location.reload(), 800);
+        }
         const worker = new Worker('./assets/js/pdf_worker.js?v=3');
         let isReady = false;
         let pendingCompressInfo = null;
@@ -336,9 +346,18 @@
 
             } else if (type === 'BOOT_ERROR') {
                 document.querySelectorAll('.status-message').forEach(el => {
-                    el.textContent = 'Engine failed to load — please refresh the page.';
+                    el.textContent = e.data.error || 'Engine failed to load.';
                     el.className = 'status-message text-red';
                 });
+                // Show a single retry button in the merge panel (first visible tool)
+                const retryWrap = document.createElement('div');
+                retryWrap.style.cssText = 'margin-top:0.75rem;text-align:center';
+                const retryBtn = document.createElement('button');
+                retryBtn.className = 'secondary-btn';
+                retryBtn.textContent = 'Retry';
+                retryBtn.onclick = () => location.reload();
+                retryWrap.appendChild(retryBtn);
+                document.getElementById('tool-merge').appendChild(retryWrap);
 
             } else if (type === 'SYSTEM_READY') {
                 isReady = true;
