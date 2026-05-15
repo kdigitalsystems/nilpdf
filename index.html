@@ -73,7 +73,7 @@
             <ul id="file-list" class="file-list"></ul>
             <input type="password" id="merge-password" class="text-input password-input" placeholder="🔒 Password (if encrypted)">
             <button id="merge-btn" class="primary-btn" disabled>Merge Files</button>
-            <div id="status" class="status-message">Initializing Engine...</div>
+            <div id="status" class="status-message is-loading">Initializing Engine...</div>
         </div>
 
         <!-- COMPRESS -->
@@ -210,7 +210,7 @@
                     <option value="jpeg">JPG (smaller file size)</option>
                 </select>
             </div>
-            <button id="topng-btn" class="primary-btn" disabled>Convert to Images</button>
+            <button id="topng-btn" class="primary-btn">Convert to Images</button>
             <div id="topng-status" class="status-message">Ready.</div>
         </div>
 
@@ -316,7 +316,7 @@
         };
 
         /** 2. WORKER BRIDGE **/
-        const worker = new Worker('./assets/js/pdf_worker.js');
+        const worker = new Worker('./assets/js/pdf_worker.js?v=3');
         let isReady = false;
         let pendingCompressInfo = null;
         let pendingDownload = null;
@@ -330,6 +330,7 @@
                 document.querySelectorAll('.status-message').forEach(el => {
                     if (el.textContent.startsWith('Initializing') || el.textContent.startsWith('Loading') || el.textContent.startsWith('Installing')) {
                         el.textContent = e.data.msg;
+                        el.classList.add('is-loading');
                     }
                 });
 
@@ -380,6 +381,17 @@
                 URL.revokeObjectURL(url);
                 incrementCounter();
 
+                // Clear file lists after successful operations so users start fresh
+                if (id === 'status') {
+                    mergeFilesArray = []; renderMergeList();
+                }
+                if (id === 'reorder-status') {
+                    document.getElementById('thumbnail-grid').innerHTML = '';
+                    document.getElementById('reorder-btn').style.display = 'none';
+                    document.getElementById('reorder-password').style.display = 'none';
+                    document.getElementById('reorder-upload').value = '';
+                }
+
                 if (id === 'compress-status' && pendingCompressInfo && !pendingCompressInfo.isBulk) {
                     const orig = pendingCompressInfo.origSize;
                     const now  = result.byteLength;
@@ -407,7 +419,11 @@
         }
         function updateStatus(id, msg, cls) {
             const el = document.getElementById(id);
-            if (el) { el.textContent = msg; el.className = `status-message ${cls}`; }
+            if (!el) return;
+            el.textContent = msg;
+            el.className = `status-message ${cls}`;
+            // Show spinner for any in-progress message (ends with ... or …)
+            el.classList.toggle('is-loading', !cls && (msg.endsWith('...') || msg.endsWith('…')));
         }
 
         /** 3. NAVIGATION **/
@@ -923,6 +939,7 @@
                     const a   = document.createElement('a');
                     a.href = url; a.download = `${topngBase}_page_1.${ext}`; a.click();
                     URL.revokeObjectURL(url);
+                    incrementCounter();
                     updateStatus('topng-status', 'Done! Image downloaded.', 'text-green');
                 } else {
                     updateStatus('topng-status', 'Packing into ZIP...', '');
@@ -933,6 +950,7 @@
                     const a   = document.createElement('a');
                     a.href = url; a.download = `${topngBase}_images.zip`; a.click();
                     URL.revokeObjectURL(url);
+                    incrementCounter();
                     updateStatus('topng-status', `Done! ${numPages} images in ZIP.`, 'text-green');
                 }
             } catch (err) {
@@ -1021,6 +1039,7 @@
                     : 'images_combined.pdf';
                 a.href = url; a.download = topdfName; a.click();
                 URL.revokeObjectURL(url);
+                incrementCounter();
                 updateStatus('topdf-status', `Done! PDF with ${added} page(s) downloaded.`, 'text-green');
             } catch (err) {
                 updateStatus('topdf-status', 'Error: ' + err.message, 'text-red');

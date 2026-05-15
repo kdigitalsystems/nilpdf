@@ -174,24 +174,20 @@ button {
 .text-green { color: #059669; }
 .text-red { color: #dc2626; }
 
-/* Tab Navigation — horizontally scrollable for many tools */
+/* Tab Navigation — wraps to multiple rows so all tools are visible */
 .tabs {
     display: flex;
+    flex-wrap: wrap;
     gap: 0.35rem;
     margin-bottom: 1.5rem;
     background: #f1f5f9;
     padding: 0.3rem;
     border-radius: 8px;
-    overflow-x: auto;
-    -ms-overflow-style: none;
-    scrollbar-width: none;
 }
-.tabs::-webkit-scrollbar { display: none; }
 
 [data-theme="dark"] .tabs { background: var(--tab-bg); }
 
 .tab-btn {
-    flex-shrink: 0;
     background: transparent;
     color: var(--text-muted);
     border: none;
@@ -619,4 +615,23 @@ kbd {
     font-size: 0.8rem;
     font-family: monospace;
     color: var(--text-main);
+}
+
+/* ── Loading spinner on in-progress status messages ── */
+@keyframes spin {
+    to { transform: rotate(360deg); }
+}
+
+.status-message.is-loading::before {
+    content: '';
+    display: inline-block;
+    width: 11px;
+    height: 11px;
+    border: 2px solid var(--border);
+    border-top-color: var(--accent);
+    border-radius: 50%;
+    animation: spin 0.7s linear infinite;
+    margin-right: 0.45rem;
+    vertical-align: middle;
+    flex-shrink: 0;
 }
