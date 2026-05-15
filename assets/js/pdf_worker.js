@@ -22,25 +22,30 @@ self.onmessage = async (event) => {
     
     try {
         let result_py;
-        if (action === 'MERGE') {
+	let isZip = false; // Track the output format
+
+	if (action === 'MERGE') {
             result_py = self.pyodide.globals.get('process_merge')(payload.buffers);
         } else if (action === 'SPLIT') {
             result_py = self.pyodide.globals.get('process_split')(payload.buffer, payload.indices);
         } else if (action === 'REORDER') {
             result_py = self.pyodide.globals.get('process_reorder')(payload.buffer, payload.order);
         } else if (action === 'ANONYMIZE') {
- 	    const func = self.pyodide.globals.get('process_anonymize');
-	    result_py = func(payload.buffer);
-	} else if (action === 'COMPRESS') {
- 	    const func = self.pyodide.globals.get('process_compress');
-	    result_py = func(payload.buffer);
-	}
+            result_py = self.pyodide.globals.get('process_anonymize')(payload.buffer);
+        } else if (action === 'COMPRESS') {
+            result_py = self.pyodide.globals.get('process_compress')(payload.buffer);
+        } else if (action === 'BULK_PROCESS') {
+            // NEW: Route bulk operations
+            const func = self.pyodide.globals.get('process_bulk');
+            result_py = func(payload.sub_action, payload.names, payload.buffers);
+            isZip = true; 
+        }
 
-        // Convert Python Proxy to standard JS Uint8Array
         const result_uint8 = result_py.toJs();
-        result_py.destroy(); // Free memory
+        result_py.destroy(); 
 
-        postMessage({ type: 'SUCCESS', id, result: result_uint8 }, [result_uint8.buffer]);
+        // Pass the isZip flag back to the main thread
+        postMessage({ type: 'SUCCESS', id, result: result_uint8, isZip }, [result_uint8.buffer]);
         
     } catch (error) {
         postMessage({ type: 'ERROR', id, error: error.message });

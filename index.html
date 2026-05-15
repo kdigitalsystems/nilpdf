@@ -44,20 +44,22 @@
 
         <div id="tool-compress" class="tool-section hidden-tool">
             <div id="drop-zone-compress" class="file-drop">
-                <p>Drop PDF to reduce file size</p>
+                <p>Drop PDFs to reduce file size</p>
                 <button onclick="document.getElementById('compress-upload').click()" class="secondary-btn">Browse</button>
-                <input type="file" id="compress-upload" accept="application/pdf" hidden>
+                <input type="file" id="compress-upload" accept="application/pdf" multiple hidden>
             </div>
+            <ul id="compress-list" class="file-list"></ul>
             <button id="compress-btn" class="primary-btn">Optimize Size</button>
             <div id="compress-status" class="status-message">Ready.</div>
         </div>
 
         <div id="tool-anonymize" class="tool-section hidden-tool">
             <div id="drop-zone-anonymize" class="file-drop">
-                <p>Drop PDF to strip metadata</p>
+                <p>Drop PDFs to strip metadata</p>
                 <button onclick="document.getElementById('anonymize-upload').click()" class="secondary-btn">Browse</button>
-                <input type="file" id="anonymize-upload" accept="application/pdf" hidden>
+                <input type="file" id="anonymize-upload" accept="application/pdf" multiple hidden>
             </div>
+            <ul id="anonymize-list" class="file-list"></ul>
             <button id="anonymize-btn" class="primary-btn">Strip Identifiers</button>
             <div id="anonymize-status" class="status-message">Ready.</div>
         </div>
@@ -100,20 +102,27 @@
             localStorage.setItem('theme', theme);
         };
 
-        /** 2. WORKER BRIDGE **/
+        /** 2. WORKER BRIDGE & SMART DOWNLOADS **/
         const worker = new Worker('./assets/js/pdf_worker.js');
         let isReady = false;
 
         worker.onmessage = (e) => {
-            const { type, id, result, error } = e.data;
+            const { type, id, result, error, isZip } = e.data;
+            
             if (type === 'SYSTEM_READY') {
                 isReady = true;
                 setGlobalStatus("Engine Online", "text-green");
             } else if (type === 'SUCCESS') {
-                const blob = new Blob([result], { type: "application/pdf" });
+                // Determine if we are downloading a PDF or a Bulk ZIP Archive
+                const mime = isZip ? "application/zip" : "application/pdf";
+                const ext = isZip ? "zip" : "pdf";
+                
+                const blob = new Blob([result], { type: mime });
                 const url = URL.createObjectURL(blob);
                 const a = document.createElement("a");
-                a.href = url; a.download = `LocalPDF_${Date.now()}.pdf`; a.click();
+                a.href = url; 
+                a.download = `LocalPDF_Export_${Date.now()}.${ext}`; 
+                a.click();
                 URL.revokeObjectURL(url);
                 updateStatus(id, "Process Complete!", "text-green");
             } else if (type === 'ERROR') {
@@ -143,26 +152,28 @@
             document.getElementById(`tool-${tool}`).classList.replace('hidden-tool', 'active-tool');
         }
 
-        /** 4. FILE INPUTS & FEEDBACK **/
+        /** 4. FILE INPUTS & BULK FEEDBACK **/
         const mInput = document.getElementById('pdf-upload');
         const sInput = document.getElementById('split-upload');
         const aInput = document.getElementById('anonymize-upload');
         const cInput = document.getElementById('compress-upload');
         const rInput = document.getElementById('reorder-upload');
 
-        mInput.onchange = () => {
-            const list = document.getElementById('file-list');
+        function updateFileList(inputEl, listId, statusId) {
+            const list = document.getElementById(listId);
             list.innerHTML = '';
-            Array.from(mInput.files).forEach(f => {
+            Array.from(inputEl.files).forEach(f => {
                 const li = document.createElement('li');
-                li.textContent = `📄 ${f.name}`; list.appendChild(li);
+                li.textContent = `📄 ${f.name}`; 
+                list.appendChild(li);
             });
-            updateStatus("status", `${mInput.files.length} files selected.`, "text-green");
-        };
+            updateStatus(statusId, `${inputEl.files.length} files selected.`, "text-green");
+        }
 
+        mInput.onchange = () => updateFileList(mInput, 'file-list', 'status');
+        cInput.onchange = () => updateFileList(cInput, 'compress-list', 'compress-status');
+        aInput.onchange = () => updateFileList(aInput, 'anonymize-list', 'anonymize-status');
         sInput.onchange = () => updateStatus("split-status", `Target: ${sInput.files[0].name}`, "text-green");
-        aInput.onchange = () => updateStatus("anonymize-status", `Ready to scrub: ${aInput.files[0].name}`, "text-green");
-        cInput.onchange = () => updateStatus("compress-status", `Ready to squeeze: ${cInput.files[0].name}`, "text-green");
 
         /** 5. DRAG & DROP **/
         function bindDrop(zoneId, inputId) {
@@ -184,7 +195,7 @@
         bindDrop('drop-zone-anonymize', 'anonymize-upload');
         bindDrop('drop-zone-compress', 'compress-upload');
 
-        /** 6. ACTION HANDLERS **/
+        /** 6. ACTION HANDLERS (SMART ROUTING) **/
         async function toUint8(file) { return new Uint8Array(await file.arrayBuffer()); }
 
         document.getElementById('merge-btn').onclick = async () => {
@@ -210,15 +221,33 @@
         };
 
         document.getElementById('anonymize-btn').onclick = async () => {
-            if (!isReady || aInput.files.length !== 1) return;
-            updateStatus("anonymize-status", "Scrubbing fingerprints...", "");
-            worker.postMessage({ id: 'anonymize-status', action: 'ANONYMIZE', payload: { buffer: await toUint8(aInput.files[0]) } });
+            const files = aInput.files;
+            if (!isReady || files.length === 0) return;
+            
+            updateStatus("anonymize-status", `Scrubbing ${files.length} file(s)...`, "");
+            
+            if (files.length === 1) {
+                worker.postMessage({ id: 'anonymize-status', action: 'ANONYMIZE', payload: { buffer: await toUint8(files[0]) } });
+            } else {
+                const names = []; const buffers = [];
+                for (let f of files) { names.push(f.name); buffers.push(await toUint8(f)); }
+                worker.postMessage({ id: 'anonymize-status', action: 'BULK_PROCESS', payload: { sub_action: 'ANONYMIZE', names, buffers } });
+            }
         };
 
         document.getElementById('compress-btn').onclick = async () => {
-            if (!isReady || cInput.files.length !== 1) return;
-            updateStatus("compress-status", "Squeezing data streams...", "");
-            worker.postMessage({ id: 'compress-status', action: 'COMPRESS', payload: { buffer: await toUint8(cInput.files[0]) } });
+            const files = cInput.files;
+            if (!isReady || files.length === 0) return;
+            
+            updateStatus("compress-status", `Squeezing ${files.length} file(s)...`, "");
+            
+            if (files.length === 1) {
+                worker.postMessage({ id: 'compress-status', action: 'COMPRESS', payload: { buffer: await toUint8(files[0]) } });
+            } else {
+                const names = []; const buffers = [];
+                for (let f of files) { names.push(f.name); buffers.push(await toUint8(f)); }
+                worker.postMessage({ id: 'compress-status', action: 'BULK_PROCESS', payload: { sub_action: 'COMPRESS', names, buffers } });
+            }
         };
 
         /** 7. VISUAL REORDERING **/

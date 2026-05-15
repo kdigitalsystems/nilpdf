@@ -1,4 +1,5 @@
 import io
+import zipfile # Standard library, no pip install needed
 from pypdf import PdfWriter, PdfReader
 
 def _ensure_py(data):
@@ -73,3 +74,32 @@ def process_reorder(js_buf, new_order):
     out_stream = io.BytesIO()
     writer.write(out_stream)
     return out_stream.getvalue()
+
+def process_bulk(action, file_names, js_buffers):
+    # Convert JS arrays to Python lists
+    names = _ensure_py(file_names)
+    buffers = _ensure_py(js_buffers)
+
+    out_zip_stream = io.BytesIO()
+
+    # Create a ZIP file in memory
+    with zipfile.ZipFile(out_zip_stream, 'w', zipfile.ZIP_DEFLATED) as zf:
+        for name, buf in zip(names, buffers):
+            # Route to the correct processing function
+            if action == 'COMPRESS':
+                processed_bytes = process_compress(buf)
+                suffix = "_squeezed.pdf"
+            elif action == 'ANONYMIZE':
+                processed_bytes = process_anonymize(buf)
+                suffix = "_scrubbed.pdf"
+            else:
+                processed_bytes = buf # Fallback
+
+            # Format the new filename (e.g., "tax_return_scrubbed.pdf")
+            base_name = name.rsplit('.', 1)[0] if '.' in name else name
+            new_name = f"{base_name}{suffix}"
+
+            # Write the processed PDF into the ZIP archive
+            zf.writestr(new_name, processed_bytes)
+
+    return out_zip_stream.getvalue()
