@@ -23,37 +23,39 @@
         </header>
 
         <nav class="tabs">
-            <button class="tab-btn active" id="tab-merge" onclick="switchTab('merge')">Merge</button>
-            <button class="tab-btn" id="tab-split" onclick="switchTab('split')">Split</button>
-            <button class="tab-btn" id="tab-reorder" onclick="switchTab('reorder')">Reorder</button>
+            <button class="tab-btn active" id="tab-merge" onclick="switchTab(event, 'merge')">Merge</button>
+            <button class="tab-btn" id="tab-split" onclick="switchTab(event, 'split')">Split</button>
+            <button class="tab-btn" id="tab-reorder" onclick="switchTab(event, 'reorder')">Reorder</button>
         </nav>
         
         <div id="tool-merge" class="tool-section active-tool">
             <div id="drop-zone-merge" class="file-drop">
                 <p>Drag & drop PDFs to merge</p>
-                <button onclick="document.getElementById('pdf-upload').click()" class="secondary-btn">Browse</button>
+                <button onclick="document.getElementById('pdf-upload').click()" class="secondary-btn">Browse Files</button>
                 <input type="file" id="pdf-upload" accept="application/pdf" multiple hidden>
             </div>
             <ul id="file-list" class="file-list"></ul>
             <button id="merge-btn" class="primary-btn">Merge Files</button>
-            <div id="status" class="status-message">Loading engine...</div>
+            <div id="status" class="status-message">Initializing...</div>
         </div>
 
         <div id="tool-split" class="tool-section hidden-tool">
-             <div class="file-drop">
+             <div id="drop-zone-split" class="file-drop">
                 <p>Select one PDF to extract pages</p>
-                <button onclick="document.getElementById('split-upload').click()" class="secondary-btn">Browse</button>
+                <button onclick="document.getElementById('split-upload').click()" class="secondary-btn">Browse File</button>
                 <input type="file" id="split-upload" accept="application/pdf" hidden>
             </div>
             <div class="input-group">
-                <input type="text" id="page-range" placeholder="e.g. 1, 3-5" class="text-input">
+                <label>Page Range (e.g., 1, 3-5):</label>
+                <input type="text" id="page-range" placeholder="1-3, 5" class="text-input">
             </div>
             <button id="split-btn" class="primary-btn">Extract Pages</button>
             <div id="split-status" class="status-message">Ready.</div>
         </div>
 
         <div id="tool-reorder" class="tool-section hidden-tool">
-            <div class="file-drop">
+            <div id="drop-zone-reorder" class="file-drop">
+                <p>Arrange pages visually</p>
                 <button onclick="document.getElementById('reorder-upload').click()" class="secondary-btn">Load PDF</button>
                 <input type="file" id="reorder-upload" accept="application/pdf" hidden>
             </div>
@@ -65,7 +67,7 @@
     </main>
 
     <script>
-        /** WORKER SETUP **/
+        /** 1. WORKER CONFIGURATION **/
         const worker = new Worker('./assets/js/pdf_worker.js');
         let isReady = false;
 
@@ -73,49 +75,99 @@
             const { type, id, result, error } = e.data;
             if (type === 'SYSTEM_READY') {
                 isReady = true;
-                document.querySelectorAll('.status-message').forEach(el => {
-                    el.innerText = "System Ready. 100% Local.";
-                    el.className = "status-message text-green";
-                });
+                updateStatusText("System Ready. 100% Private.");
             } else if (type === 'SUCCESS') {
                 const blob = new Blob([result], { type: "application/pdf" });
                 const url = URL.createObjectURL(blob);
                 const a = document.createElement("a");
-                a.href = url; a.download = `LocalPDF_${Date.now()}.pdf`; a.click();
-                document.getElementById(id).innerText = "Success!";
+                a.href = url;
+                a.download = `LocalPDF_${Date.now()}.pdf`;
+                a.click();
+                URL.revokeObjectURL(url);
+                updateStatus(id, "Export Successful!", "text-green");
             } else if (type === 'ERROR') {
-                document.getElementById(id).innerText = "Error: " + error;
-                document.getElementById(id).className = "status-message text-red";
+                updateStatus(id, "Error: " + error, "text-red");
             }
         };
 
-        /** UI LOGIC **/
-        function switchTab(tool) {
+        function updateStatusText(msg) {
+            document.querySelectorAll('.status-message').forEach(el => {
+                el.innerText = msg;
+                el.className = "status-message text-green";
+            });
+        }
+
+        function updateStatus(id, msg, cls) {
+            const el = document.getElementById(id);
+            if (el) { el.innerText = msg; el.className = `status-message ${cls}`; }
+        }
+
+        /** 2. UI NAVIGATION **/
+        function switchTab(event, tool) {
             document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
             document.querySelectorAll('.tool-section').forEach(s => {
-                s.classList.remove('active-tool'); s.classList.add('hidden-tool');
+                s.classList.remove('active-tool');
+                s.classList.add('hidden-tool');
             });
-            document.getElementById(`tab-${tool}`).classList.add('active');
+            event.target.classList.add('active');
             document.getElementById(`tool-${tool}`).classList.replace('hidden-tool', 'active-tool');
         }
 
+        /** 3. FILE LOADING & VISUAL FEEDBACK **/
+        const mergeInput = document.getElementById('pdf-upload');
+        const mergeList = document.getElementById('file-list');
+        const splitInput = document.getElementById('split-upload');
+        const reorderInput = document.getElementById('reorder-upload');
+
+        mergeInput.addEventListener('change', () => {
+            mergeList.innerHTML = '';
+            Array.from(mergeInput.files).forEach(f => {
+                const li = document.createElement('li');
+                li.textContent = `📄 ${f.name}`;
+                mergeList.appendChild(li);
+            });
+            updateStatus("status", `${mergeInput.files.length} files loaded.`, "text-green");
+        });
+
+        splitInput.addEventListener('change', () => {
+            if (splitInput.files.length > 0) {
+                updateStatus("split-status", `Target: ${splitInput.files[0].name}`, "text-green");
+            }
+        });
+
+        /** 4. DRAG & DROP LOGIC **/
+        function setupDropZone(zoneId, inputId) {
+            const zone = document.getElementById(zoneId);
+            const input = document.getElementById(inputId);
+            ['dragover', 'dragleave', 'drop'].forEach(evt => {
+                zone.addEventListener(evt, e => { e.preventDefault(); e.stopPropagation(); });
+            });
+            zone.addEventListener('dragover', () => zone.classList.add('drag-active'));
+            zone.addEventListener('dragleave', () => zone.classList.remove('drag-active'));
+            zone.addEventListener('drop', e => {
+                zone.classList.remove('drag-active');
+                input.files = e.dataTransfer.files;
+                input.dispatchEvent(new Event('change'));
+            });
+        }
+        setupDropZone('drop-zone-merge', 'pdf-upload');
+	setupDropZone('drop-zone-split', 'split-upload');
+
+        /** 5. PROCESSING LOGIC **/
         async function toUint8(file) { return new Uint8Array(await file.arrayBuffer()); }
 
-        // Merge Event
         document.getElementById('merge-btn').onclick = async () => {
-            const files = document.getElementById('pdf-upload').files;
-            if (!isReady || files.length < 2) return;
+            if (!isReady || mergeInput.files.length < 2) return;
+            updateStatus("status", "Processing...", "");
             const buffers = [];
-            for (let f of files) buffers.push(await toUint8(f));
+            for (let f of mergeInput.files) buffers.push(await toUint8(f));
             worker.postMessage({ id: 'status', action: 'MERGE', payload: { buffers } });
         };
 
-        // Split Event
         document.getElementById('split-btn').onclick = async () => {
-            const files = document.getElementById('split-upload').files;
             const range = document.getElementById('page-range').value;
-            if (!isReady || files.length !== 1 || !range) return;
-            
+            if (!isReady || splitInput.files.length !== 1 || !range) return;
+            updateStatus("split-status", "Extracting...", "");
             const indices = [];
             range.replace(/\s/g, '').split(',').forEach(p => {
                 if (p.includes('-')) {
@@ -123,35 +175,47 @@
                     for (let i = parseInt(s); i <= parseInt(e); i++) indices.push(i - 1);
                 } else { indices.push(parseInt(p) - 1); }
             });
-            worker.postMessage({ id: 'split-status', action: 'SPLIT', payload: { buffer: await toUint8(files[0]), indices } });
+            worker.postMessage({ id: 'split-status', action: 'SPLIT', payload: { buffer: await toUint8(splitInput.files[0]), indices } });
         };
 
-        // Reorder Rendering
+        /** 6. VISUAL REORDERING **/
         let sortable;
-        document.getElementById('reorder-upload').onchange = async (e) => {
-            const file = e.target.files[0];
+        reorderInput.onchange = async () => {
+            const file = reorderInput.files[0];
+            if (!file) return;
             const grid = document.getElementById('thumbnail-grid');
             grid.innerHTML = '';
+            updateStatus("reorder-status", "Rendering thumbnails...", "");
+
             const pdf = await pdfjsLib.getDocument(await file.arrayBuffer()).promise;
             for (let i = 1; i <= pdf.numPages; i++) {
                 const page = await pdf.getPage(i);
                 const viewport = page.getViewport({ scale: 0.3 });
                 const wrapper = document.createElement('div');
-                wrapper.className = 'thumbnail-item'; wrapper.dataset.index = i - 1;
+                wrapper.className = 'thumbnail-item';
+                wrapper.dataset.index = i - 1;
+
                 const canvas = document.createElement('canvas');
                 canvas.width = viewport.width; canvas.height = viewport.height;
                 wrapper.appendChild(canvas);
+                
+                const badge = document.createElement('span');
+                badge.className = 'page-badge'; badge.innerText = i;
+                wrapper.appendChild(badge);
+                
                 grid.appendChild(wrapper);
                 await page.render({ canvasContext: canvas.getContext('2d'), viewport }).promise;
             }
             document.getElementById('reorder-btn').style.display = 'block';
+            updateStatus("reorder-status", "Drag to rearrange.", "text-green");
+            if (sortable) sortable.destroy();
             sortable = new Sortable(grid, { animation: 150 });
         };
 
         document.getElementById('reorder-btn').onclick = async () => {
             const order = Array.from(document.getElementById('thumbnail-grid').children).map(el => parseInt(el.dataset.index));
-            const file = document.getElementById('reorder-upload').files[0];
-            worker.postMessage({ id: 'reorder-status', action: 'REORDER', payload: { buffer: await toUint8(file), order } });
+            updateStatus("reorder-status", "Saving new order...", "");
+            worker.postMessage({ id: 'reorder-status', action: 'REORDER', payload: { buffer: await toUint8(reorderInput.files[0]), order } });
         };
     </script>
 </body>
