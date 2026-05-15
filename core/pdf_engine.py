@@ -123,7 +123,7 @@ def process_anonymize(js_buf, status_id="", password=""):
     for page in reader.pages:
         writer.add_page(page)
     writer.add_metadata({
-        "/Author": "", "/Creator": "", "/Producer": "LocalPDF (Private)",
+        "/Author": "", "/Creator": "", "/Producer": "NilPDF (Private)",
         "/Subject": "", "/Title": "", "/Keywords": "",
         "/CreationDate": "D:19700101000000Z", "/ModDate": "D:19700101000000Z"
     })

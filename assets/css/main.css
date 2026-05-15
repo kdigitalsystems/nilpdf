@@ -9,6 +9,7 @@
     --text-muted: #64748b;
     --border: #e2e8f0;
     --tab-bg: #f1f5f9;
+    --drag-active-bg: #eff6ff;
 }
 
 [data-theme="dark"] {
@@ -22,6 +23,7 @@
     --text-muted: #94a3b8;
     --border: #334155;
     --tab-bg: #0f172a;
+    --drag-active-bg: #1e3a5f;
 }
 
 body {
@@ -93,7 +95,7 @@ p { margin: 0; color: var(--text-muted); font-size: 0.9rem; }
 
 .file-drop.drag-active {
     border-color: var(--accent);
-    background-color: #eff6ff;
+    background-color: var(--drag-active-bg);
 }
 
 .upload-icon {
@@ -437,6 +439,69 @@ select.text-input {
 .num-input {
     width: 6rem;
 }
+
+/* ── Footer ── */
+.app-footer {
+    text-align: center;
+    margin-top: 1.5rem;
+    padding-top: 1rem;
+    border-top: 1px solid var(--border);
+    font-size: 0.78rem;
+    color: var(--text-muted);
+}
+
+.app-footer strong {
+    color: var(--text-main);
+}
+
+/* ── Inspect tool ── */
+.inspect-results {
+    margin: 1rem 0;
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    overflow: hidden;
+    font-size: 0.83rem;
+}
+
+.inspect-results:empty { display: none; }
+
+.inspect-section-title {
+    background: var(--bg);
+    padding: 0.35rem 0.75rem;
+    font-size: 0.72rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    color: var(--text-muted);
+    border-bottom: 1px solid var(--border);
+}
+
+.inspect-row {
+    display: flex;
+    padding: 0.4rem 0.75rem;
+    border-bottom: 1px solid var(--border);
+    gap: 0.5rem;
+    align-items: baseline;
+}
+
+.inspect-row:last-child { border-bottom: none; }
+
+.inspect-key {
+    font-weight: 600;
+    color: var(--text-muted);
+    min-width: 90px;
+    flex-shrink: 0;
+    font-size: 0.8rem;
+}
+
+.inspect-val {
+    color: var(--text-main);
+    word-break: break-word;
+}
+
+.inspect-val.empty { color: var(--text-muted); font-style: italic; }
+.inspect-val.highlight { color: var(--accent); font-weight: 700; }
+.inspect-val.warn { color: #d97706; font-weight: 600; }
 
 /* ── Opacity range slider (Watermark tool) ── */
 .range-slider {
