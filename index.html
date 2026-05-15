@@ -4,96 +4,173 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-width=1.0">
     <title>LocalPDF - Secure PDF Toolkit</title>
-    
     <link rel="stylesheet" href="./assets/css/main.css">
+    
+    <!-- PyScript -->
     <link rel="stylesheet" href="https://pyscript.net/releases/2024.1.1/core.css">
     <script type="module" src="https://pyscript.net/releases/2024.1.1/core.js"></script>
+
+    <!-- Mozilla PDF.js (For rendering visual thumbnails) -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
+    <script>pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';</script>
+
+    <!-- SortableJS (For smooth drag-and-drop reordering) -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/Sortable/1.15.0/Sortable.min.js"></script>
 </head>
 <body>
 
     <main class="container">
         <header class="app-header">
-            <svg class="icon" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path></svg>
-            <h2>LocalPDF Merger</h2>
-            <p>Zero-upload processing. Your files never leave your RAM.</p>
+            <h2>LocalPDF</h2>
+            <p>100% Client-Side Processing</p>
         </header>
+
+        <!-- Tool Navigation -->
+        <nav class="tabs">
+            <button class="tab-btn active" onclick="switchTab('merge')">Merge</button>
+            <button class="tab-btn" onclick="switchTab('split')">Split</button>
+            <button class="tab-btn" onclick="switchTab('reorder')">Reorder Pages</button>
+        </nav>
         
-        <!-- Drag & Drop Zone -->
-        <div id="drop-zone" class="file-drop">
-            <svg class="upload-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12"></path></svg>
-            <p>Drag & drop PDF files here</p>
-            <span class="text-sm">or</span>
-            <button id="browse-btn" class="secondary-btn">Browse Files</button>
-            <input type="file" id="pdf-upload" accept="application/pdf" multiple hidden>
+        <!-- MERGE TOOL (Existing) -->
+        <div id="tool-merge" class="tool-section active-tool">
+            <!-- (Keep your existing merge HTML here) -->
+            <div id="drop-zone-merge" class="file-drop">
+                <p>Drag & drop PDFs to merge</p>
+                <button onclick="document.getElementById('pdf-upload').click()" class="secondary-btn">Browse</button>
+                <input type="file" id="pdf-upload" accept="application/pdf" multiple hidden>
+            </div>
+            <ul id="file-list" class="file-list"></ul>
+            <button id="merge-btn" class="primary-btn" py-click="handle_merge_click">Merge Files</button>
+            <div id="status" class="status-message">Ready.</div>
         </div>
 
-        <!-- File List Preview -->
-        <ul id="file-list" class="file-list"></ul>
+        <!-- SPLIT TOOL (Existing) -->
+        <div id="tool-split" class="tool-section hidden-tool">
+            <!-- (Keep your existing split HTML here) -->
+             <div id="drop-zone-split" class="file-drop">
+                <p>Select one PDF to extract pages</p>
+                <button onclick="document.getElementById('split-upload').click()" class="secondary-btn">Browse</button>
+                <input type="file" id="split-upload" accept="application/pdf" hidden>
+            </div>
+            <div class="input-group">
+                <input type="text" id="page-range" placeholder="e.g. 1, 3-5" class="text-input">
+            </div>
+            <button id="split-btn" class="primary-btn" py-click="handle_split_click">Extract Pages</button>
+            <div id="split-status" class="status-message">Ready.</div>
+        </div>
 
-        <!-- Action Area -->
-        <button id="merge-btn" class="primary-btn" disabled py-click="handle_merge_click">
-            Select files to begin
-        </button>
-        <div id="status" class="status-message">Booting local Python engine...</div>
+        <!-- REORDER TOOL (New) -->
+        <div id="tool-reorder" class="tool-section hidden-tool">
+            <div id="drop-zone-reorder" class="file-drop">
+                <p>Select a PDF to rearrange pages visually</p>
+                <button onclick="document.getElementById('reorder-upload').click()" class="secondary-btn">Load PDF</button>
+                <input type="file" id="reorder-upload" accept="application/pdf" hidden>
+            </div>
+            
+            <!-- Grid where canvases will be injected -->
+            <div id="thumbnail-grid" class="thumbnail-grid"></div>
+            
+            <!-- Hidden input to pass the array back to Python -->
+            <input type="hidden" id="new-page-order">
+
+            <button id="reorder-btn" class="primary-btn" py-click="handle_reorder_click" style="display:none;">Save New Order</button>
+            <div id="reorder-status" class="status-message">Ready.</div>
+        </div>
     </main>
 
     <py-config src="./pyscript.toml"></py-config>
 
-    <!-- UI Logic (JavaScript handles DOM aesthetics, Python handles the data) -->
+    <!-- JavaScript Controller -->
     <script>
-        const dropZone = document.getElementById('drop-zone');
-        const fileInput = document.getElementById('pdf-upload');
-        const browseBtn = document.getElementById('browse-btn');
-        const fileList = document.getElementById('file-list');
-        const mergeBtn = document.getElementById('merge-btn');
+        function switchTab(tool) {
+            document.querySelectorAll('.tab-btn').forEach(btn => btn.classList.remove('active'));
+            document.querySelectorAll('.tool-section').forEach(sec => {
+                sec.classList.remove('active-tool');
+                sec.classList.add('hidden-tool');
+            });
+            event.target.classList.add('active');
+            document.getElementById(`tool-${tool}`).classList.remove('hidden-tool');
+            document.getElementById(`tool-${tool}`).classList.add('active-tool');
+        }
 
-        // Click to browse
-        browseBtn.addEventListener('click', () => fileInput.click());
+        // Visual Reorderer Logic
+        const reorderUpload = document.getElementById('reorder-upload');
+        const thumbnailGrid = document.getElementById('thumbnail-grid');
+        const reorderBtn = document.getElementById('reorder-btn');
+        const newOrderInput = document.getElementById('new-page-order');
+        let sortableInstance = null;
 
-        // Drag and drop visuals
-        dropZone.addEventListener('dragover', (e) => {
-            e.preventDefault();
-            dropZone.classList.add('drag-active');
-        });
-        
-        dropZone.addEventListener('dragleave', () => dropZone.classList.remove('drag-active'));
-        
-        dropZone.addEventListener('drop', (e) => {
-            e.preventDefault();
-            dropZone.classList.remove('drag-active');
-            fileInput.files = e.dataTransfer.files;
-            updateFileList();
-        });
+        reorderUpload.addEventListener('change', async (e) => {
+            const file = e.target.files[0];
+            if (!file) return;
 
-        fileInput.addEventListener('change', updateFileList);
+            document.getElementById('reorder-status').innerText = "Rendering pages...";
+            thumbnailGrid.innerHTML = ''; // Clear old grid
+            reorderBtn.style.display = "block";
 
-        function updateFileList() {
-            fileList.innerHTML = '';
-            if (fileInput.files.length > 0) {
-                Array.from(fileInput.files).forEach(file => {
-                    const li = document.createElement('li');
-                    li.textContent = file.name;
-                    fileList.appendChild(li);
-                });
-                mergeBtn.textContent = `Merge ${fileInput.files.length} Files`;
-            } else {
-                mergeBtn.textContent = 'Select files to begin';
+            const arrayBuffer = await file.arrayBuffer();
+            const pdf = await pdfjsLib.getDocument(arrayBuffer).promise;
+            
+            // Loop through all pages and render thumbnails
+            for (let i = 1; i <= pdf.numPages; i++) {
+                const page = await pdf.getPage(i);
+                const viewport = page.getViewport({ scale: 0.5 }); // Scale down for performance
+                
+                // Create container
+                const wrapper = document.createElement('div');
+                wrapper.className = 'thumbnail-item';
+                wrapper.dataset.index = i - 1; // 0-indexed for Python
+
+                // Create Canvas
+                const canvas = document.createElement('canvas');
+                const context = canvas.getContext('2d');
+                canvas.width = viewport.width;
+                canvas.height = viewport.height;
+
+                // Create Badge
+                const badge = document.createElement('span');
+                badge.className = 'page-badge';
+                badge.innerText = i;
+
+                wrapper.appendChild(canvas);
+                wrapper.appendChild(badge);
+                thumbnailGrid.appendChild(wrapper);
+
+                // Render page to canvas
+                await page.render({ canvasContext: context, viewport: viewport }).promise;
             }
+
+            document.getElementById('reorder-status').innerText = "Drag and drop to rearrange.";
+
+            // Initialize Drag and Drop
+            if (sortableInstance) sortableInstance.destroy();
+            sortableInstance = new Sortable(thumbnailGrid, {
+                animation: 150,
+                ghostClass: 'sortable-ghost',
+                onEnd: updateOrderArray
+            });
+            
+            updateOrderArray(); // Set initial order
+        });
+
+        // Whenever the user drops a thumbnail, update the hidden input string
+        function updateOrderArray() {
+            const items = thumbnailGrid.querySelectorAll('.thumbnail-item');
+            const orderArray = Array.from(items).map(item => item.dataset.index);
+            newOrderInput.value = orderArray.join(','); // e.g. "0,2,1,3"
         }
     </script>
 
     <!-- Python Execution Bridge -->
     <script type="py">
-        from pyscript import document
         from core.pdf_merger import merge_pdfs
+        from core.pdf_splitter import split_pdf
+        from core.pdf_reorder import reorder_pdf
 
-        status_div = document.getElementById("status")
-        status_div.innerText = "System Ready. 100% Local."
-        status_div.className = "status-message text-green"
-        document.getElementById("merge-btn").disabled = False
-
-        async def handle_merge_click(event):
-            await merge_pdfs()
+        async def handle_merge_click(event): await merge_pdfs()
+        async def handle_split_click(event): await split_pdf()
+        async def handle_reorder_click(event): await reorder_pdf()
     </script>
 </body>
 </html>

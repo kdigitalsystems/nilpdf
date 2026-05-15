@@ -3,8 +3,12 @@ description = "Serverless PDF Toolkit"
 
 packages = [
     "pypdf",
-    "cryptography" # Added to handle AES encrypted PDFs
+    "cryptography"
 ]
 
 [[fetch]]
-files = ["./core/pdf_merger.py"]
+files = [
+    "./core/pdf_merger.py",
+    "./core/pdf_splitter.py",
+    "./core/pdf_reorder.py"
+]
