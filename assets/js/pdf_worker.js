@@ -31,6 +31,9 @@ self.onmessage = async (event) => {
         } else if (action === 'ANONYMIZE') {
  	    const func = self.pyodide.globals.get('process_anonymize');
 	    result_py = func(payload.buffer);
+	} else if (action === 'COMPRESS') {
+ 	    const func = self.pyodide.globals.get('process_compress');
+	    result_py = func(payload.buffer);
 	}
 
         // Convert Python Proxy to standard JS Uint8Array

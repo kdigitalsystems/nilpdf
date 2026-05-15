@@ -18,36 +18,58 @@
 
     <main class="container">
         <header class="app-header">
+            <button class="theme-toggle" id="theme-toggle" title="Toggle Theme">🌓</button>
             <h2>LocalPDF</h2>
-            <p>100% Client-Side Processing</p>
+            <p>100% Private • No Uploads</p>
         </header>
 
         <nav class="tabs">
-            <button class="tab-btn active" id="tab-merge" onclick="switchTab(event, 'merge')">Merge</button>
-            <button class="tab-btn" id="tab-split" onclick="switchTab(event, 'split')">Split</button>
-            <button class="tab-btn" id="tab-reorder" onclick="switchTab(event, 'reorder')">Reorder</button>
-	    <button class="tab-btn" id="tab-anonymize" onclick="switchTab(event, 'anonymize')">Anonymize</button>
+            <button class="tab-btn active" onclick="switchTab(event, 'merge')">Merge</button>
+            <button class="tab-btn" onclick="switchTab(event, 'compress')">Squeeze</button>
+            <button class="tab-btn" onclick="switchTab(event, 'anonymize')">Scrub</button>
+            <button class="tab-btn" onclick="switchTab(event, 'split')">Split</button>
+            <button class="tab-btn" onclick="switchTab(event, 'reorder')">Order</button>
         </nav>
         
         <div id="tool-merge" class="tool-section active-tool">
             <div id="drop-zone-merge" class="file-drop">
-                <p>Drag & drop PDFs to merge</p>
-                <button onclick="document.getElementById('pdf-upload').click()" class="secondary-btn">Browse Files</button>
+                <p>Drag PDFs here to merge</p>
+                <button onclick="document.getElementById('pdf-upload').click()" class="secondary-btn">Browse</button>
                 <input type="file" id="pdf-upload" accept="application/pdf" multiple hidden>
             </div>
             <ul id="file-list" class="file-list"></ul>
             <button id="merge-btn" class="primary-btn">Merge Files</button>
-            <div id="status" class="status-message">Initializing...</div>
+            <div id="status" class="status-message">Initializing Engine...</div>
+        </div>
+
+        <div id="tool-compress" class="tool-section hidden-tool">
+            <div id="drop-zone-compress" class="file-drop">
+                <p>Drop PDF to reduce file size</p>
+                <button onclick="document.getElementById('compress-upload').click()" class="secondary-btn">Browse</button>
+                <input type="file" id="compress-upload" accept="application/pdf" hidden>
+            </div>
+            <button id="compress-btn" class="primary-btn">Optimize Size</button>
+            <div id="compress-status" class="status-message">Ready.</div>
+        </div>
+
+        <div id="tool-anonymize" class="tool-section hidden-tool">
+            <div id="drop-zone-anonymize" class="file-drop">
+                <p>Drop PDF to strip metadata</p>
+                <button onclick="document.getElementById('anonymize-upload').click()" class="secondary-btn">Browse</button>
+                <input type="file" id="anonymize-upload" accept="application/pdf" hidden>
+            </div>
+            <button id="anonymize-btn" class="primary-btn">Strip Identifiers</button>
+            <div id="anonymize-status" class="status-message">Ready.</div>
         </div>
 
         <div id="tool-split" class="tool-section hidden-tool">
              <div id="drop-zone-split" class="file-drop">
-                <p>Select one PDF to extract pages</p>
-                <button onclick="document.getElementById('split-upload').click()" class="secondary-btn">Browse File</button>
+                <p>Select PDF to extract pages</p>
+                <button onclick="document.getElementById('split-upload').click()" class="secondary-btn">Browse</button>
                 <input type="file" id="split-upload" accept="application/pdf" hidden>
             </div>
             <div class="input-group">
-                <label>Page Range (e.g., 1, 3-5):</label>
+                <label>Pages (e.g. 1, 3-5):</label>
                 <input type="text" id="page-range" placeholder="1-3, 5" class="text-input">
             </div>
             <button id="split-btn" class="primary-btn">Extract Pages</button>
@@ -56,30 +78,29 @@
 
         <div id="tool-reorder" class="tool-section hidden-tool">
             <div id="drop-zone-reorder" class="file-drop">
-                <p>Arrange pages visually</p>
-                <button onclick="document.getElementById('reorder-upload').click()" class="secondary-btn">Load PDF</button>
+                <button onclick="document.getElementById('reorder-upload').click()" class="secondary-btn">Load for Reordering</button>
                 <input type="file" id="reorder-upload" accept="application/pdf" hidden>
             </div>
             <div id="thumbnail-grid" class="thumbnail-grid"></div>
             <input type="hidden" id="new-page-order">
-            <button id="reorder-btn" class="primary-btn" style="display:none;">Save New Order</button>
+            <button id="reorder-btn" class="primary-btn" style="display:none;">Save Reordered PDF</button>
             <div id="reorder-status" class="status-message">Ready.</div>
         </div>
-
-	<div id="tool-anonymize" class="tool-section hidden-tool">
-	    <div id="drop-zone-anonymize" class="file-drop">
-        	<p>Drop a PDF to strip all hidden metadata</p>
-	        <button onclick="document.getElementById('anonymize-upload').click()" class="secondary-btn">Browse File</button>
-        	<input type="file" id="anonymize-upload" accept="application/pdf" hidden>
-	    </div>
-    	    <button id="anonymize-btn" class="primary-btn">Scrub & Save</button>
-    	    <div id="anonymize-status" class="status-message">Ready.</div>
-	</div>
-
     </main>
 
     <script>
-        /** 1. WORKER CONFIGURATION **/
+        /** 1. THEME TOGGLE **/
+        const themeBtn = document.getElementById('theme-toggle');
+        const savedTheme = localStorage.getItem('theme') || 'light';
+        document.documentElement.setAttribute('data-theme', savedTheme);
+
+        themeBtn.onclick = () => {
+            const theme = document.documentElement.getAttribute('data-theme') === 'dark' ? 'light' : 'dark';
+            document.documentElement.setAttribute('data-theme', theme);
+            localStorage.setItem('theme', theme);
+        };
+
+        /** 2. WORKER BRIDGE **/
         const worker = new Worker('./assets/js/pdf_worker.js');
         let isReady = false;
 
@@ -87,25 +108,23 @@
             const { type, id, result, error } = e.data;
             if (type === 'SYSTEM_READY') {
                 isReady = true;
-                updateStatusText("System Ready. 100% Private.");
+                setGlobalStatus("Engine Online", "text-green");
             } else if (type === 'SUCCESS') {
                 const blob = new Blob([result], { type: "application/pdf" });
                 const url = URL.createObjectURL(blob);
                 const a = document.createElement("a");
-                a.href = url;
-                a.download = `LocalPDF_${Date.now()}.pdf`;
-                a.click();
+                a.href = url; a.download = `LocalPDF_${Date.now()}.pdf`; a.click();
                 URL.revokeObjectURL(url);
-                updateStatus(id, "Export Successful!", "text-green");
+                updateStatus(id, "Process Complete!", "text-green");
             } else if (type === 'ERROR') {
                 updateStatus(id, "Error: " + error, "text-red");
             }
         };
 
-        function updateStatusText(msg) {
+        function setGlobalStatus(msg, cls) {
             document.querySelectorAll('.status-message').forEach(el => {
                 el.innerText = msg;
-                el.className = "status-message text-green";
+                el.className = `status-message ${cls}`;
             });
         }
 
@@ -114,41 +133,39 @@
             if (el) { el.innerText = msg; el.className = `status-message ${cls}`; }
         }
 
-        /** 2. UI NAVIGATION **/
+        /** 3. NAVIGATION **/
         function switchTab(event, tool) {
             document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
             document.querySelectorAll('.tool-section').forEach(s => {
-                s.classList.remove('active-tool');
-                s.classList.add('hidden-tool');
+                s.classList.remove('active-tool'); s.classList.add('hidden-tool');
             });
             event.target.classList.add('active');
             document.getElementById(`tool-${tool}`).classList.replace('hidden-tool', 'active-tool');
         }
 
-        /** 3. FILE LOADING & VISUAL FEEDBACK **/
-        const mergeInput = document.getElementById('pdf-upload');
-        const mergeList = document.getElementById('file-list');
-        const splitInput = document.getElementById('split-upload');
-        const reorderInput = document.getElementById('reorder-upload');
+        /** 4. FILE INPUTS & FEEDBACK **/
+        const mInput = document.getElementById('pdf-upload');
+        const sInput = document.getElementById('split-upload');
+        const aInput = document.getElementById('anonymize-upload');
+        const cInput = document.getElementById('compress-upload');
+        const rInput = document.getElementById('reorder-upload');
 
-        mergeInput.addEventListener('change', () => {
-            mergeList.innerHTML = '';
-            Array.from(mergeInput.files).forEach(f => {
+        mInput.onchange = () => {
+            const list = document.getElementById('file-list');
+            list.innerHTML = '';
+            Array.from(mInput.files).forEach(f => {
                 const li = document.createElement('li');
-                li.textContent = `📄 ${f.name}`;
-                mergeList.appendChild(li);
+                li.textContent = `📄 ${f.name}`; list.appendChild(li);
             });
-            updateStatus("status", `${mergeInput.files.length} files loaded.`, "text-green");
-        });
+            updateStatus("status", `${mInput.files.length} files selected.`, "text-green");
+        };
 
-        splitInput.addEventListener('change', () => {
-            if (splitInput.files.length > 0) {
-                updateStatus("split-status", `Target: ${splitInput.files[0].name}`, "text-green");
-            }
-        });
+        sInput.onchange = () => updateStatus("split-status", `Target: ${sInput.files[0].name}`, "text-green");
+        aInput.onchange = () => updateStatus("anonymize-status", `Ready to scrub: ${aInput.files[0].name}`, "text-green");
+        cInput.onchange = () => updateStatus("compress-status", `Ready to squeeze: ${cInput.files[0].name}`, "text-green");
 
-        /** 4. DRAG & DROP LOGIC **/
-        function setupDropZone(zoneId, inputId) {
+        /** 5. DRAG & DROP **/
+        function bindDrop(zoneId, inputId) {
             const zone = document.getElementById(zoneId);
             const input = document.getElementById(inputId);
             ['dragover', 'dragleave', 'drop'].forEach(evt => {
@@ -162,24 +179,26 @@
                 input.dispatchEvent(new Event('change'));
             });
         }
-        setupDropZone('drop-zone-merge', 'pdf-upload');
-	setupDropZone('drop-zone-split', 'split-upload');
+        bindDrop('drop-zone-merge', 'pdf-upload');
+        bindDrop('drop-zone-split', 'split-upload');
+        bindDrop('drop-zone-anonymize', 'anonymize-upload');
+        bindDrop('drop-zone-compress', 'compress-upload');
 
-        /** 5. PROCESSING LOGIC **/
+        /** 6. ACTION HANDLERS **/
         async function toUint8(file) { return new Uint8Array(await file.arrayBuffer()); }
 
         document.getElementById('merge-btn').onclick = async () => {
-            if (!isReady || mergeInput.files.length < 2) return;
-            updateStatus("status", "Processing...", "");
+            if (!isReady || mInput.files.length < 2) return;
+            updateStatus("status", "Merging binary streams...", "");
             const buffers = [];
-            for (let f of mergeInput.files) buffers.push(await toUint8(f));
+            for (let f of mInput.files) buffers.push(await toUint8(f));
             worker.postMessage({ id: 'status', action: 'MERGE', payload: { buffers } });
         };
 
         document.getElementById('split-btn').onclick = async () => {
             const range = document.getElementById('page-range').value;
-            if (!isReady || splitInput.files.length !== 1 || !range) return;
-            updateStatus("split-status", "Extracting...", "");
+            if (!isReady || sInput.files.length !== 1 || !range) return;
+            updateStatus("split-status", "Splitting pages...", "");
             const indices = [];
             range.replace(/\s/g, '').split(',').forEach(p => {
                 if (p.includes('-')) {
@@ -187,39 +206,47 @@
                     for (let i = parseInt(s); i <= parseInt(e); i++) indices.push(i - 1);
                 } else { indices.push(parseInt(p) - 1); }
             });
-            worker.postMessage({ id: 'split-status', action: 'SPLIT', payload: { buffer: await toUint8(splitInput.files[0]), indices } });
+            worker.postMessage({ id: 'split-status', action: 'SPLIT', payload: { buffer: await toUint8(sInput.files[0]), indices } });
         };
 
-        /** 6. VISUAL REORDERING **/
+        document.getElementById('anonymize-btn').onclick = async () => {
+            if (!isReady || aInput.files.length !== 1) return;
+            updateStatus("anonymize-status", "Scrubbing fingerprints...", "");
+            worker.postMessage({ id: 'anonymize-status', action: 'ANONYMIZE', payload: { buffer: await toUint8(aInput.files[0]) } });
+        };
+
+        document.getElementById('compress-btn').onclick = async () => {
+            if (!isReady || cInput.files.length !== 1) return;
+            updateStatus("compress-status", "Squeezing data streams...", "");
+            worker.postMessage({ id: 'compress-status', action: 'COMPRESS', payload: { buffer: await toUint8(cInput.files[0]) } });
+        };
+
+        /** 7. VISUAL REORDERING **/
         let sortable;
-        reorderInput.onchange = async () => {
-            const file = reorderInput.files[0];
+        rInput.onchange = async () => {
+            const file = rInput.files[0];
             if (!file) return;
             const grid = document.getElementById('thumbnail-grid');
             grid.innerHTML = '';
-            updateStatus("reorder-status", "Rendering thumbnails...", "");
+            updateStatus("reorder-status", "Generating previews...", "");
 
             const pdf = await pdfjsLib.getDocument(await file.arrayBuffer()).promise;
             for (let i = 1; i <= pdf.numPages; i++) {
                 const page = await pdf.getPage(i);
                 const viewport = page.getViewport({ scale: 0.3 });
                 const wrapper = document.createElement('div');
-                wrapper.className = 'thumbnail-item';
-                wrapper.dataset.index = i - 1;
-
+                wrapper.className = 'thumbnail-item'; wrapper.dataset.index = i - 1;
                 const canvas = document.createElement('canvas');
                 canvas.width = viewport.width; canvas.height = viewport.height;
                 wrapper.appendChild(canvas);
-                
                 const badge = document.createElement('span');
                 badge.className = 'page-badge'; badge.innerText = i;
                 wrapper.appendChild(badge);
-                
                 grid.appendChild(wrapper);
                 await page.render({ canvasContext: canvas.getContext('2d'), viewport }).promise;
             }
             document.getElementById('reorder-btn').style.display = 'block';
-            updateStatus("reorder-status", "Drag to rearrange.", "text-green");
+            updateStatus("reorder-status", "Drag to rearrange", "text-green");
             if (sortable) sortable.destroy();
             sortable = new Sortable(grid, { animation: 150 });
         };
@@ -227,27 +254,8 @@
         document.getElementById('reorder-btn').onclick = async () => {
             const order = Array.from(document.getElementById('thumbnail-grid').children).map(el => parseInt(el.dataset.index));
             updateStatus("reorder-status", "Saving new order...", "");
-            worker.postMessage({ id: 'reorder-status', action: 'REORDER', payload: { buffer: await toUint8(reorderInput.files[0]), order } });
+            worker.postMessage({ id: 'reorder-status', action: 'REORDER', payload: { buffer: await toUint8(rInput.files[0]), order } });
         };
-
-
-	const anonymizeInput = document.getElementById('anonymize-upload');
-	setupDropZone('drop-zone-anonymize', 'anonymize-upload');
-
-	anonymizeInput.addEventListener('change', () => {
-	    if (anonymizeInput.files.length > 0) {
-	        updateStatus("anonymize-status", `Ready to scrub: ${anonymizeInput.files[0].name}`, "text-green");
-	    }
-	});
-
-	document.getElementById('anonymize-btn').onclick = async () => {
-	    if (!isReady || anonymizeInput.files.length !== 1) return;
-	    // UI Feedback for the consumer
-	    updateStatus("anonymize-status", "Stripping standard info & XMP streams...", "text-green");
-	    const buffer = await toUint8(anonymizeInput.files[0]);
-	    worker.postMessage({ id: 'anonymize-status', action: 'ANONYMIZE', payload: { buffer } });
-	};
-
     </script>
 </body>
 </html>
