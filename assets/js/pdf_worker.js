@@ -1,13 +1,26 @@
 importScripts("https://cdn.jsdelivr.net/pyodide/v0.25.0/full/pyodide.js");
 
+function withTimeout(promise, ms, label) {
+    return Promise.race([
+        promise,
+        new Promise((_, reject) =>
+            setTimeout(() => reject(new Error(`Timed out after ${ms / 1000}s: ${label}`)), ms)
+        )
+    ]);
+}
+
 async function bootEngine() {
     postMessage({ type: 'BOOT_PROGRESS', msg: 'Loading Python runtime…' });
-    self.pyodide = await loadPyodide();
+    self.pyodide = await withTimeout(loadPyodide(), 60000, 'loadPyodide');
 
-    postMessage({ type: 'BOOT_PROGRESS', msg: 'Installing packages…' });
-    await self.pyodide.loadPackage("micropip");
+    postMessage({ type: 'BOOT_PROGRESS', msg: 'Installing packages (first visit may take ~30s)…' });
+    await withTimeout(self.pyodide.loadPackage("micropip"), 30000, 'loadPackage micropip');
     const micropip = self.pyodide.pyimport("micropip");
-    await micropip.install(["pypdf", "cryptography", "Pillow", "reportlab"]);
+    await withTimeout(
+        micropip.install(["pypdf", "cryptography", "Pillow", "reportlab"]),
+        120000,
+        'micropip.install'
+    );
 
     // Expose a JS-global progress reporter so Python can call it via `from js import reportProgress`
     self.reportProgress = (id, pct, msg) => {
