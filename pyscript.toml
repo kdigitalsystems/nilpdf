@@ -1,0 +1,9 @@
+name = "localpdf"
+description = "Serverless PDF Toolkit"
+
+packages = [
+    "pypdf"
+]
+
+[[fetch]]
+files = ["./core/pdf_merger.py"]
