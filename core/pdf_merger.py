@@ -1,57 +1,68 @@
 import js
 from pyscript import document
 import io
-from pypdf import PdfWriter
+from pypdf import PdfWriter, PdfReader
 from pyodide.ffi import to_js
 
 async def merge_pdfs():
     status_div = document.getElementById("status")
-    status_div.innerText = "Processing locally..."
-    status_div.className = ""
+    file_input = document.getElementById('pdf-upload')
+    
+    if file_input.files.length < 2:
+        status_div.innerText = "Error: Please select at least two PDFs to merge."
+        status_div.className = "status-message text-red"
+        return
+
+    status_div.innerText = f"Fusing {file_input.files.length} files in memory..."
+    status_div.className = "status-message"
     
     try:
-        # 1. Grab the DOM elements
-        file1_input = document.getElementById('pdf1')
-        file2_input = document.getElementById('pdf2')
-        
-        if file1_input.files.length == 0 or file2_input.files.length == 0:
-            status_div.innerText = "Please select both PDFs."
-            status_div.className = "text-red"
-            return
-
-        # 2. Read files natively into JS ArrayBuffers, then cast to Python bytes
-        buf1 = await file1_input.files.item(0).arrayBuffer()
-        buf2 = await file2_input.files.item(0).arrayBuffer()
-        
-        bytes1 = buf1.to_bytes()
-        bytes2 = buf2.to_bytes()
-
-        # 3. Execute Standard Python logic (pypdf)
         merger = PdfWriter()
-        merger.append(io.BytesIO(bytes1))
-        merger.append(io.BytesIO(bytes2))
         
-        # 4. Save to a virtual memory buffer
+        for i in range(file_input.files.length):
+            file = file_input.files.item(i)
+            buf = await file.arrayBuffer()
+            file_bytes = buf.to_bytes()
+            
+            # Use PdfReader to inspect the file before merging
+            reader = PdfReader(io.BytesIO(file_bytes))
+            
+            # Handle Encryption
+            if reader.is_encrypted:
+                # Attempt to decrypt with a blank password (common for restriction-only encryption)
+                reader.decrypt("")
+                
+                # If it is STILL encrypted, it requires a real password
+                if reader.is_encrypted:
+                    raise ValueError(f"'{file.name}' is password protected. Please unlock it first.")
+            
+            # Append the inspected (and potentially decrypted) reader
+            merger.append(reader)
+            
+        # Write to virtual RAM buffer
         out_stream = io.BytesIO()
         merger.write(out_stream)
         out_data = out_stream.getvalue()
 
-        # 5. Send back to JavaScript for download
+        # Export back to JS context
         js_array = js.Uint8Array.new(to_js(out_data))
         blob = js.Blob.new([js_array], type="application/pdf")
         url = js.URL.createObjectURL(blob)
         
         link = document.createElement("a")
         link.href = url
-        link.download = "Merged_Private.pdf"
+        link.download = "LocalPDF_Fused.pdf"
         link.click()
         
-        # Clean up memory
         js.URL.revokeObjectURL(url)
         
-        status_div.innerText = "Success! File downloaded."
-        status_div.className = "text-green"
+        status_div.innerText = "Operation Successful. File exported securely."
+        status_div.className = "status-message text-green"
 
+    except ValueError as ve:
+        # Catch our custom password error gracefully
+        status_div.innerText = str(ve)
+        status_div.className = "status-message text-red"
     except Exception as e:
-        status_div.innerText = f"Error: {str(e)}"
-        status_div.className = "text-red"
+        status_div.innerText = f"Processing Exception: {str(e)}"
+        status_div.className = "status-message text-red"

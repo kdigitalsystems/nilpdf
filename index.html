@@ -3,49 +3,95 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-width=1.0">
-    <title>LocalPDF - Private PDF Merger</title>
+    <title>LocalPDF - Secure PDF Toolkit</title>
     
-    <!-- Link to our external stylesheet -->
     <link rel="stylesheet" href="./assets/css/main.css">
-    
-    <!-- Load PyScript Engine -->
     <link rel="stylesheet" href="https://pyscript.net/releases/2024.1.1/core.css">
     <script type="module" src="https://pyscript.net/releases/2024.1.1/core.js"></script>
 </head>
 <body>
 
-    <div class="container">
-        <h2>Merge PDFs Locally</h2>
-        <p>100% private. Files never leave your computer.</p>
+    <main class="container">
+        <header class="app-header">
+            <svg class="icon" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path></svg>
+            <h2>LocalPDF Merger</h2>
+            <p>Zero-upload processing. Your files never leave your RAM.</p>
+        </header>
         
-        <div class="file-drop">
-            <label>PDF 1: </label>
-            <input type="file" id="pdf1" accept="application/pdf">
-        </div>
-        
-        <div class="file-drop">
-            <label>PDF 2: </label>
-            <input type="file" id="pdf2" accept="application/pdf">
+        <!-- Drag & Drop Zone -->
+        <div id="drop-zone" class="file-drop">
+            <svg class="upload-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12"></path></svg>
+            <p>Drag & drop PDF files here</p>
+            <span class="text-sm">or</span>
+            <button id="browse-btn" class="secondary-btn">Browse Files</button>
+            <input type="file" id="pdf-upload" accept="application/pdf" multiple hidden>
         </div>
 
-        <button id="merge-btn" py-click="handle_merge_click">Merge & Download</button>
-        <div id="status">Loading Python Engine...</div>
-    </div>
+        <!-- File List Preview -->
+        <ul id="file-list" class="file-list"></ul>
 
-    <!-- Load the TOML configuration -->
+        <!-- Action Area -->
+        <button id="merge-btn" class="primary-btn" disabled py-click="handle_merge_click">
+            Select files to begin
+        </button>
+        <div id="status" class="status-message">Booting local Python engine...</div>
+    </main>
+
     <py-config src="./pyscript.toml"></py-config>
 
-    <!-- Connect the UI to the Python Backend -->
+    <!-- UI Logic (JavaScript handles DOM aesthetics, Python handles the data) -->
+    <script>
+        const dropZone = document.getElementById('drop-zone');
+        const fileInput = document.getElementById('pdf-upload');
+        const browseBtn = document.getElementById('browse-btn');
+        const fileList = document.getElementById('file-list');
+        const mergeBtn = document.getElementById('merge-btn');
+
+        // Click to browse
+        browseBtn.addEventListener('click', () => fileInput.click());
+
+        // Drag and drop visuals
+        dropZone.addEventListener('dragover', (e) => {
+            e.preventDefault();
+            dropZone.classList.add('drag-active');
+        });
+        
+        dropZone.addEventListener('dragleave', () => dropZone.classList.remove('drag-active'));
+        
+        dropZone.addEventListener('drop', (e) => {
+            e.preventDefault();
+            dropZone.classList.remove('drag-active');
+            fileInput.files = e.dataTransfer.files;
+            updateFileList();
+        });
+
+        fileInput.addEventListener('change', updateFileList);
+
+        function updateFileList() {
+            fileList.innerHTML = '';
+            if (fileInput.files.length > 0) {
+                Array.from(fileInput.files).forEach(file => {
+                    const li = document.createElement('li');
+                    li.textContent = file.name;
+                    fileList.appendChild(li);
+                });
+                mergeBtn.textContent = `Merge ${fileInput.files.length} Files`;
+            } else {
+                mergeBtn.textContent = 'Select files to begin';
+            }
+        }
+    </script>
+
+    <!-- Python Execution Bridge -->
     <script type="py">
         from pyscript import document
         from core.pdf_merger import merge_pdfs
 
-        # Inform user that the WASM engine is ready
         status_div = document.getElementById("status")
-        status_div.innerText = "Ready to merge!"
-        status_div.className = "text-green"
+        status_div.innerText = "System Ready. 100% Local."
+        status_div.className = "status-message text-green"
+        document.getElementById("merge-btn").disabled = False
 
-        # The function triggered by the button click
         async def handle_merge_click(event):
             await merge_pdfs()
     </script>

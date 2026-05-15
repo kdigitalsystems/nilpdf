@@ -2,7 +2,8 @@ name = "localpdf"
 description = "Serverless PDF Toolkit"
 
 packages = [
-    "pypdf"
+    "pypdf",
+    "cryptography" # Added to handle AES encrypted PDFs
 ]
 
 [[fetch]]
