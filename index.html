@@ -1,20 +1,19 @@
 <!DOCTYPE html>
 <html lang="en">
-
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>LocalPDF - Secure & Private PDF Toolkit</title>
     
-    <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>📄</text></svg>">
+    <script src="https://cdn.jsdelivr.net/gh/gzuidhof/coi-serviceworker@latest/coi-serviceworker.min.js"></script>
 
+    <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>📄</text></svg>">
     <link rel="stylesheet" href="./assets/css/main.css">
     
     <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
     <script>pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';</script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/Sortable/1.15.0/Sortable.min.js"></script>
 </head>
-
 <body>
 
     <main class="container">
@@ -23,30 +22,25 @@
             <p>100% Client-Side Processing</p>
         </header>
 
-        <!-- Tool Navigation -->
         <nav class="tabs">
-            <button class="tab-btn active" onclick="switchTab('merge')">Merge</button>
-            <button class="tab-btn" onclick="switchTab('split')">Split</button>
-            <button class="tab-btn" onclick="switchTab('reorder')">Reorder Pages</button>
+            <button class="tab-btn active" id="tab-merge" onclick="switchTab('merge')">Merge</button>
+            <button class="tab-btn" id="tab-split" onclick="switchTab('split')">Split</button>
+            <button class="tab-btn" id="tab-reorder" onclick="switchTab('reorder')">Reorder</button>
         </nav>
         
-        <!-- MERGE TOOL (Existing) -->
         <div id="tool-merge" class="tool-section active-tool">
-            <!-- (Keep your existing merge HTML here) -->
             <div id="drop-zone-merge" class="file-drop">
                 <p>Drag & drop PDFs to merge</p>
                 <button onclick="document.getElementById('pdf-upload').click()" class="secondary-btn">Browse</button>
                 <input type="file" id="pdf-upload" accept="application/pdf" multiple hidden>
             </div>
             <ul id="file-list" class="file-list"></ul>
-            <button id="merge-btn" class="primary-btn" py-click="handle_merge_click">Merge Files</button>
-            <div id="status" class="status-message">Ready.</div>
+            <button id="merge-btn" class="primary-btn">Merge Files</button>
+            <div id="status" class="status-message">Loading engine...</div>
         </div>
 
-        <!-- SPLIT TOOL (Existing) -->
         <div id="tool-split" class="tool-section hidden-tool">
-            <!-- (Keep your existing split HTML here) -->
-             <div id="drop-zone-split" class="file-drop">
+             <div class="file-drop">
                 <p>Select one PDF to extract pages</p>
                 <button onclick="document.getElementById('split-upload').click()" class="secondary-btn">Browse</button>
                 <input type="file" id="split-upload" accept="application/pdf" hidden>
@@ -54,121 +48,111 @@
             <div class="input-group">
                 <input type="text" id="page-range" placeholder="e.g. 1, 3-5" class="text-input">
             </div>
-            <button id="split-btn" class="primary-btn" py-click="handle_split_click">Extract Pages</button>
+            <button id="split-btn" class="primary-btn">Extract Pages</button>
             <div id="split-status" class="status-message">Ready.</div>
         </div>
 
-        <!-- REORDER TOOL (New) -->
         <div id="tool-reorder" class="tool-section hidden-tool">
-            <div id="drop-zone-reorder" class="file-drop">
-                <p>Select a PDF to rearrange pages visually</p>
+            <div class="file-drop">
                 <button onclick="document.getElementById('reorder-upload').click()" class="secondary-btn">Load PDF</button>
                 <input type="file" id="reorder-upload" accept="application/pdf" hidden>
             </div>
-            
-            <!-- Grid where canvases will be injected -->
             <div id="thumbnail-grid" class="thumbnail-grid"></div>
-            
-            <!-- Hidden input to pass the array back to Python -->
             <input type="hidden" id="new-page-order">
-
-            <button id="reorder-btn" class="primary-btn" py-click="handle_reorder_click" style="display:none;">Save New Order</button>
+            <button id="reorder-btn" class="primary-btn" style="display:none;">Save New Order</button>
             <div id="reorder-status" class="status-message">Ready.</div>
         </div>
     </main>
 
-    <py-config src="./pyscript.toml"></py-config>
-
-    <!-- JavaScript Controller -->
     <script>
+        /** WORKER SETUP **/
+        const worker = new Worker('./assets/js/pdf_worker.js');
+        let isReady = false;
+
+        worker.onmessage = (e) => {
+            const { type, id, result, error } = e.data;
+            if (type === 'SYSTEM_READY') {
+                isReady = true;
+                document.querySelectorAll('.status-message').forEach(el => {
+                    el.innerText = "System Ready. 100% Local.";
+                    el.className = "status-message text-green";
+                });
+            } else if (type === 'SUCCESS') {
+                const blob = new Blob([result], { type: "application/pdf" });
+                const url = URL.createObjectURL(blob);
+                const a = document.createElement("a");
+                a.href = url; a.download = `LocalPDF_${Date.now()}.pdf`; a.click();
+                document.getElementById(id).innerText = "Success!";
+            } else if (type === 'ERROR') {
+                document.getElementById(id).innerText = "Error: " + error;
+                document.getElementById(id).className = "status-message text-red";
+            }
+        };
+
+        /** UI LOGIC **/
         function switchTab(tool) {
-            document.querySelectorAll('.tab-btn').forEach(btn => btn.classList.remove('active'));
-            document.querySelectorAll('.tool-section').forEach(sec => {
-                sec.classList.remove('active-tool');
-                sec.classList.add('hidden-tool');
+            document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+            document.querySelectorAll('.tool-section').forEach(s => {
+                s.classList.remove('active-tool'); s.classList.add('hidden-tool');
             });
-            event.target.classList.add('active');
-            document.getElementById(`tool-${tool}`).classList.remove('hidden-tool');
-            document.getElementById(`tool-${tool}`).classList.add('active-tool');
+            document.getElementById(`tab-${tool}`).classList.add('active');
+            document.getElementById(`tool-${tool}`).classList.replace('hidden-tool', 'active-tool');
         }
 
-        // Visual Reorderer Logic
-        const reorderUpload = document.getElementById('reorder-upload');
-        const thumbnailGrid = document.getElementById('thumbnail-grid');
-        const reorderBtn = document.getElementById('reorder-btn');
-        const newOrderInput = document.getElementById('new-page-order');
-        let sortableInstance = null;
+        async function toUint8(file) { return new Uint8Array(await file.arrayBuffer()); }
 
-        reorderUpload.addEventListener('change', async (e) => {
-            const file = e.target.files[0];
-            if (!file) return;
+        // Merge Event
+        document.getElementById('merge-btn').onclick = async () => {
+            const files = document.getElementById('pdf-upload').files;
+            if (!isReady || files.length < 2) return;
+            const buffers = [];
+            for (let f of files) buffers.push(await toUint8(f));
+            worker.postMessage({ id: 'status', action: 'MERGE', payload: { buffers } });
+        };
 
-            document.getElementById('reorder-status').innerText = "Rendering pages...";
-            thumbnailGrid.innerHTML = ''; // Clear old grid
-            reorderBtn.style.display = "block";
-
-            const arrayBuffer = await file.arrayBuffer();
-            const pdf = await pdfjsLib.getDocument(arrayBuffer).promise;
+        // Split Event
+        document.getElementById('split-btn').onclick = async () => {
+            const files = document.getElementById('split-upload').files;
+            const range = document.getElementById('page-range').value;
+            if (!isReady || files.length !== 1 || !range) return;
             
-            // Loop through all pages and render thumbnails
+            const indices = [];
+            range.replace(/\s/g, '').split(',').forEach(p => {
+                if (p.includes('-')) {
+                    const [s, e] = p.split('-');
+                    for (let i = parseInt(s); i <= parseInt(e); i++) indices.push(i - 1);
+                } else { indices.push(parseInt(p) - 1); }
+            });
+            worker.postMessage({ id: 'split-status', action: 'SPLIT', payload: { buffer: await toUint8(files[0]), indices } });
+        };
+
+        // Reorder Rendering
+        let sortable;
+        document.getElementById('reorder-upload').onchange = async (e) => {
+            const file = e.target.files[0];
+            const grid = document.getElementById('thumbnail-grid');
+            grid.innerHTML = '';
+            const pdf = await pdfjsLib.getDocument(await file.arrayBuffer()).promise;
             for (let i = 1; i <= pdf.numPages; i++) {
                 const page = await pdf.getPage(i);
-                const viewport = page.getViewport({ scale: 0.5 }); // Scale down for performance
-                
-                // Create container
+                const viewport = page.getViewport({ scale: 0.3 });
                 const wrapper = document.createElement('div');
-                wrapper.className = 'thumbnail-item';
-                wrapper.dataset.index = i - 1; // 0-indexed for Python
-
-                // Create Canvas
+                wrapper.className = 'thumbnail-item'; wrapper.dataset.index = i - 1;
                 const canvas = document.createElement('canvas');
-                const context = canvas.getContext('2d');
-                canvas.width = viewport.width;
-                canvas.height = viewport.height;
-
-                // Create Badge
-                const badge = document.createElement('span');
-                badge.className = 'page-badge';
-                badge.innerText = i;
-
+                canvas.width = viewport.width; canvas.height = viewport.height;
                 wrapper.appendChild(canvas);
-                wrapper.appendChild(badge);
-                thumbnailGrid.appendChild(wrapper);
-
-                // Render page to canvas
-                await page.render({ canvasContext: context, viewport: viewport }).promise;
+                grid.appendChild(wrapper);
+                await page.render({ canvasContext: canvas.getContext('2d'), viewport }).promise;
             }
+            document.getElementById('reorder-btn').style.display = 'block';
+            sortable = new Sortable(grid, { animation: 150 });
+        };
 
-            document.getElementById('reorder-status').innerText = "Drag and drop to rearrange.";
-
-            // Initialize Drag and Drop
-            if (sortableInstance) sortableInstance.destroy();
-            sortableInstance = new Sortable(thumbnailGrid, {
-                animation: 150,
-                ghostClass: 'sortable-ghost',
-                onEnd: updateOrderArray
-            });
-            
-            updateOrderArray(); // Set initial order
-        });
-
-        // Whenever the user drops a thumbnail, update the hidden input string
-        function updateOrderArray() {
-            const items = thumbnailGrid.querySelectorAll('.thumbnail-item');
-            const orderArray = Array.from(items).map(item => item.dataset.index);
-            newOrderInput.value = orderArray.join(','); // e.g. "0,2,1,3"
-        }
-    </script>
-
-    <!-- Python Execution Bridge -->
-    <script type="py">
-        from core.pdf_merger import merge_pdfs
-        from core.pdf_splitter import split_pdf
-        from core.pdf_reorder import reorder_pdf
-
-        async def handle_merge_click(event): await merge_pdfs()
-        async def handle_split_click(event): await split_pdf()
-        async def handle_reorder_click(event): await reorder_pdf()
+        document.getElementById('reorder-btn').onclick = async () => {
+            const order = Array.from(document.getElementById('thumbnail-grid').children).map(el => parseInt(el.dataset.index));
+            const file = document.getElementById('reorder-upload').files[0];
+            worker.postMessage({ id: 'reorder-status', action: 'REORDER', payload: { buffer: await toUint8(file), order } });
+        };
     </script>
 </body>
 </html>
