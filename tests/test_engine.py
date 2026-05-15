@@ -49,7 +49,7 @@ class TestPDFEngine(unittest.TestCase):
         result = process_anonymize(pdf)
         reader = PdfReader(io.BytesIO(result))
         meta = reader.metadata
-        self.assertEqual(meta.get("/Producer"), "LocalPDF (Private)")
+        self.assertEqual(meta.get("/Producer"), "NilPDF (Private)")
         self.assertEqual(meta.get("/Author"), "")
         self.assertEqual(meta.get("/CreationDate"), "D:19700101000000Z")
 
