@@ -3,11 +3,31 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>NilPDF - Secure & Private PDF Toolkit</title>
+    <title>NilPDF — Free PDF Tools. Zero Uploads. 100% Private.</title>
 
-    <script src="https://cdn.jsdelivr.net/gh/gzuidhof/coi-serviceworker@latest/coi-serviceworker.min.js"></script>
+    <!-- PWA service worker (also sets COOP/COEP for Pyodide SharedArrayBuffer) -->
+    <script>
+        if ('serviceWorker' in navigator) {
+            navigator.serviceWorker.register('./sw.js').then(() => {
+                if (!crossOriginIsolated) location.reload();
+            }).catch(() => {});
+        }
+    </script>
 
-    <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>📄</text></svg>">
+    <!-- SEO & Social -->
+    <meta name="description" content="NilPDF — 12 free PDF tools that run entirely in your browser. Merge, split, compress, rotate, watermark and more. Zero uploads. Zero tracking. 100% private.">
+    <meta property="og:title" content="NilPDF — Free PDF Tools. Zero Uploads.">
+    <meta property="og:description" content="Merge, split, compress, rotate, watermark and more. Your files never leave your device.">
+    <meta property="og:type" content="website">
+    <meta property="og:url" content="https://nilpdf.com/">
+    <meta property="og:image" content="https://nilpdf.com/assets/icon.svg">
+    <meta name="twitter:card" content="summary">
+    <meta name="twitter:title" content="NilPDF — Free PDF Tools. Zero Uploads.">
+    <meta name="twitter:description" content="12 PDF tools in your browser. Zero uploads. Zero tracking. 100% private.">
+    <link rel="canonical" href="https://nilpdf.com/">
+    <link rel="manifest" href="./manifest.json">
+
+    <link rel="icon" href="./assets/icon.svg" type="image/svg+xml">
     <link rel="stylesheet" href="./assets/css/main.css">
 
     <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
@@ -21,8 +41,10 @@
     <main class="container">
         <header class="app-header">
             <button class="theme-toggle" id="theme-toggle" title="Toggle Theme">🌓</button>
+            <button class="share-btn" id="share-btn" title="Share this tool">🔗</button>
             <h2>NilPDF</h2>
             <p>100% Private • No Uploads</p>
+            <p id="counter-display" class="counter-display"></p>
         </header>
 
         <nav class="tabs">
@@ -168,6 +190,10 @@
             <input type="password" id="totext-password" class="text-input password-input" placeholder="🔒 Password (if encrypted)">
             <button id="totext-btn" class="primary-btn" disabled>Extract Text</button>
             <div id="totext-status" class="status-message">Ready.</div>
+            <div id="totext-preview-area" style="display:none;">
+                <textarea id="totext-preview" class="totext-preview" readonly placeholder="Extracted text appears here…"></textarea>
+                <button id="totext-copy-btn" class="secondary-btn" style="width:100%;margin-top:0.5rem;">Copy to Clipboard</button>
+            </div>
         </div>
 
         <!-- PDF TO IMAGES -->
@@ -263,6 +289,20 @@
         </footer>
     </main>
 
+    <!-- V7: Keyboard shortcuts modal (outside .container so it covers full viewport) -->
+    <div id="shortcuts-modal" class="shortcuts-modal" style="display:none;" onclick="this.style.display='none'">
+        <div class="shortcuts-box" onclick="event.stopPropagation()">
+            <h3>Keyboard Shortcuts</h3>
+            <table class="shortcuts-table">
+                <tr><td><kbd>1</kbd>–<kbd>9</kbd>, <kbd>0</kbd></td><td>Switch tools (Merge → Inspect)</td></tr>
+                <tr><td><kbd>Enter</kbd></td><td>Run active tool</td></tr>
+                <tr><td><kbd>?</kbd></td><td>Show / hide this dialog</td></tr>
+                <tr><td><kbd>Esc</kbd></td><td>Close dialog</td></tr>
+            </table>
+            <button class="secondary-btn" onclick="document.getElementById('shortcuts-modal').style.display='none'">Close</button>
+        </div>
+    </div>
+
     <script>
         /** 1. THEME — auto-detect system preference **/
         const themeBtn  = document.getElementById('theme-toggle');
@@ -315,8 +355,17 @@
                 a.href = url;
                 a.download = pendingDownload || `NilPDF_Export_${Date.now()}.${ext}`;
                 pendingDownload = null;
+
+                // V2: populate totext inline preview
+                if (id === 'totext-status' && isText) {
+                    const text = new TextDecoder().decode(result);
+                    document.getElementById('totext-preview').value = text;
+                    document.getElementById('totext-preview-area').style.display = 'block';
+                }
+
                 a.click();
                 URL.revokeObjectURL(url);
+                incrementCounter();
 
                 if (id === 'compress-status' && pendingCompressInfo && !pendingCompressInfo.isBulk) {
                     const orig = pendingCompressInfo.origSize;
@@ -356,6 +405,7 @@
             });
             event.target.classList.add('active');
             document.getElementById(`tool-${tool}`).classList.replace('hidden-tool', 'active-tool');
+            history.replaceState(null, '', '#' + tool);
         }
 
         /** 4. FILE SIZE VALIDATION **/
@@ -1110,6 +1160,91 @@
                 updateStatus('inspect-status', msg, 'text-red');
             }
         };
+
+        /** ════════════════════════════════════════════════════════════════
+         *  V5 — TOAST + PROCESSED-FILES COUNTER
+         * ════════════════════════════════════════════════════════════════ */
+        function showToast(msg) {
+            const t = document.createElement('div');
+            t.className = 'toast';
+            t.textContent = msg;
+            document.body.appendChild(t);
+            requestAnimationFrame(() => t.classList.add('toast-visible'));
+            setTimeout(() => { t.classList.remove('toast-visible'); setTimeout(() => t.remove(), 400); }, 2800);
+        }
+
+        function incrementCounter() {
+            const n = (parseInt(localStorage.getItem('nilpdf_count') || '0')) + 1;
+            localStorage.setItem('nilpdf_count', n);
+            const el = document.getElementById('counter-display');
+            if (el) el.textContent = `${n} file${n === 1 ? '' : 's'} processed privately`;
+            const milestones = [10, 50, 100, 500];
+            if (milestones.includes(n)) showToast(`🎉 ${n} files processed — all privately!`);
+        }
+
+        (function loadCounter() {
+            const n = parseInt(localStorage.getItem('nilpdf_count') || '0');
+            if (n > 0) {
+                const el = document.getElementById('counter-display');
+                if (el) el.textContent = `${n} file${n === 1 ? '' : 's'} processed privately`;
+            }
+        })();
+
+        /** ════════════════════════════════════════════════════════════════
+         *  V6 — SHARE BUTTON
+         * ════════════════════════════════════════════════════════════════ */
+        document.getElementById('share-btn').onclick = () => {
+            const url = location.href;
+            if (navigator.share) {
+                navigator.share({ title: 'NilPDF', url }).catch(() => {});
+            } else {
+                navigator.clipboard.writeText(url).then(() => showToast('Link copied!')).catch(() => {});
+            }
+        };
+
+        /** ════════════════════════════════════════════════════════════════
+         *  V2 — TOTEXT COPY-TO-CLIPBOARD
+         * ════════════════════════════════════════════════════════════════ */
+        document.getElementById('totext-copy-btn').onclick = () => {
+            const text = document.getElementById('totext-preview').value;
+            navigator.clipboard.writeText(text).then(() => showToast('Text copied!')).catch(() => {});
+        };
+
+        /** ════════════════════════════════════════════════════════════════
+         *  V7 — KEYBOARD SHORTCUTS
+         * ════════════════════════════════════════════════════════════════ */
+        document.addEventListener('keydown', e => {
+            if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA' || e.target.tagName === 'SELECT') return;
+            const modal = document.getElementById('shortcuts-modal');
+            if (e.key === '?' || e.key === '/') {
+                modal.style.display = modal.style.display === 'flex' ? 'none' : 'flex';
+                return;
+            }
+            if (e.key === 'Escape') { modal.style.display = 'none'; return; }
+            if (e.key === 'Enter') {
+                const activeBtn = document.querySelector('.active-tool .primary-btn:not(:disabled)');
+                if (activeBtn) activeBtn.click();
+                return;
+            }
+            const num = parseInt(e.key);
+            if (!isNaN(num)) {
+                const idx = num === 0 ? 9 : num - 1;
+                const btn = document.querySelectorAll('.tab-btn')[idx];
+                if (btn) btn.click();
+            }
+        });
+
+        /** ════════════════════════════════════════════════════════════════
+         *  V1 — HASH ROUTING (init)
+         * ════════════════════════════════════════════════════════════════ */
+        (function initHash() {
+            const TOOL_NAMES = ['merge','compress','anonymize','split','reorder','rotate','remove','totext','topng','topdf','watermark','pagenums','inspect'];
+            const hash = location.hash.replace('#', '');
+            if (TOOL_NAMES.includes(hash)) {
+                const btn = document.querySelector(`.tab-btn[onclick*="'${hash}'"]`);
+                if (btn) btn.click();
+            }
+        })();
 
     </script>
 </body>
