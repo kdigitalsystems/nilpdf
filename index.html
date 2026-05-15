@@ -73,7 +73,7 @@
             <ul id="file-list" class="file-list"></ul>
             <input type="password" id="merge-password" class="text-input password-input" placeholder="🔒 Password (if encrypted)">
             <button id="merge-btn" class="primary-btn" disabled>Merge Files</button>
-            <div id="status" class="status-message">Initializing Engine...</div>
+            <div id="status" class="status-message is-loading">Initializing Engine...</div>
         </div>
 
         <!-- COMPRESS -->
@@ -330,6 +330,7 @@
                 document.querySelectorAll('.status-message').forEach(el => {
                     if (el.textContent.startsWith('Initializing') || el.textContent.startsWith('Loading') || el.textContent.startsWith('Installing')) {
                         el.textContent = e.data.msg;
+                        el.classList.add('is-loading');
                     }
                 });
 
@@ -418,7 +419,11 @@
         }
         function updateStatus(id, msg, cls) {
             const el = document.getElementById(id);
-            if (el) { el.textContent = msg; el.className = `status-message ${cls}`; }
+            if (!el) return;
+            el.textContent = msg;
+            el.className = `status-message ${cls}`;
+            // Show spinner for any in-progress message (ends with ... or …)
+            el.classList.toggle('is-loading', !cls && (msg.endsWith('...') || msg.endsWith('…')));
         }
 
         /** 3. NAVIGATION **/
