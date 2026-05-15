@@ -1,8 +1,8 @@
-name: Deploy static content to Pages
+name: CI/CD Pipeline
 
 on:
   push:
-    branches: ["main"] # Make sure this matches your branch name
+    branches: ["main"]
   workflow_dispatch:
 
 permissions:
@@ -10,15 +10,27 @@ permissions:
   pages: write
   id-token: write
 
-concurrency:
-  group: "pages"
-  cancel-in-progress: true
-
 jobs:
+  # NEW: Test Job
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Install dependencies
+        run: pip install pypdf cryptography
+      - name: Run Tests
+        run: python3 -m unittest discover tests
+
+  # UPDATED: Deploy Job (now depends on test passing)
   deploy:
+    needs: test
     environment:
       name: github-pages
-      url: ${{ steps: deployment.outputs.page_url }}
+      url: ${{ steps.deployment.outputs.page_url }}
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
@@ -28,7 +40,7 @@ jobs:
       - name: Upload artifact
         uses: actions/upload-pages-artifact@v3
         with:
-          path: '.' # Upload the entire root directory
+          path: '.'
       - name: Deploy to GitHub Pages
         id: deployment
         uses: actions/deploy-pages@v4
