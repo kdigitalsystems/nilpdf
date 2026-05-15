@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>LocalPDF - Secure & Private PDF Toolkit</title>
+    <title>NilPDF - Secure & Private PDF Toolkit</title>
 
     <script src="https://cdn.jsdelivr.net/gh/gzuidhof/coi-serviceworker@latest/coi-serviceworker.min.js"></script>
 
@@ -21,7 +21,7 @@
     <main class="container">
         <header class="app-header">
             <button class="theme-toggle" id="theme-toggle" title="Toggle Theme">🌓</button>
-            <h2>LocalPDF</h2>
+            <h2>NilPDF</h2>
             <p>100% Private • No Uploads</p>
         </header>
 
@@ -38,6 +38,7 @@
             <button class="tab-btn" onclick="switchTab(event, 'topdf')">From Images</button>
             <button class="tab-btn" onclick="switchTab(event, 'watermark')">Watermark</button>
             <button class="tab-btn" onclick="switchTab(event, 'pagenums')">Page #s</button>
+            <button class="tab-btn" onclick="switchTab(event, 'inspect')">Inspect</button>
         </nav>
 
         <!-- MERGE -->
@@ -239,13 +240,29 @@
             </div>
             <div class="input-group">
                 <label>Start number:</label>
-                <input type="number" id="pagenums-start" value="1" min="0" class="text-input num-input">
+                <input type="number" id="pagenums-start" value="1" min="1" class="text-input num-input">
             </div>
             <input type="password" id="pagenums-password" class="text-input password-input" placeholder="🔒 Password (if encrypted)">
             <button id="pagenums-btn" class="primary-btn" disabled>Add Page Numbers</button>
             <div id="pagenums-status" class="status-message">Ready.</div>
         </div>
+        <!-- INSPECT -->
+        <div id="tool-inspect" class="tool-section hidden-tool">
+            <div id="drop-zone-inspect" class="file-drop">
+                <p>Drop PDF to inspect metadata &amp; document info</p>
+                <button onclick="document.getElementById('inspect-upload').click()" class="secondary-btn">Browse</button>
+                <input type="file" id="inspect-upload" accept="application/pdf" hidden>
+            </div>
+            <input type="password" id="inspect-password" class="text-input password-input" placeholder="🔒 Password (if encrypted)">
+            <button id="inspect-btn" class="primary-btn">Inspect PDF</button>
+            <div id="inspect-results" class="inspect-results"></div>
+            <div id="inspect-status" class="status-message">Ready.</div>
+        </div>
     </main>
+
+    <footer class="app-footer">
+        <p>A property of <strong>K Digital Systems LLC</strong></p>
+    </footer>
 
     <script>
         /** 1. THEME — auto-detect system preference **/
@@ -263,6 +280,8 @@
         const worker = new Worker('./assets/js/pdf_worker.js');
         let isReady = false;
         let pendingCompressInfo = null;
+        let pendingDownload = null;
+        function stem(filename) { return filename.replace(/\.[^/.]+$/, ''); }
 
         worker.onmessage = (e) => {
             const { type, id, result, error, isZip, isText } = e.data;
@@ -270,8 +289,13 @@
             if (type === 'SYSTEM_READY') {
                 isReady = true;
                 document.querySelectorAll('.primary-btn').forEach(b => b.disabled = false);
-                // topdf-btn is JS-only and always enabled
-                setAllStatus("Ready.", "");
+                // Only reset status divs still showing the boot message; leave user-loaded states intact
+                document.querySelectorAll('.status-message').forEach(el => {
+                    if (el.textContent === 'Initializing Engine...') {
+                        el.textContent = 'Ready.';
+                        el.className = 'status-message';
+                    }
+                });
                 updateStatus("status", mergeFilesArray.length >= 2
                     ? `${mergeFilesArray.length} files ready.`
                     : "Add at least 2 PDFs to merge.", "");
@@ -289,7 +313,8 @@
                 const url  = URL.createObjectURL(blob);
                 const a    = document.createElement('a');
                 a.href = url;
-                a.download = `LocalPDF_Export_${Date.now()}.${ext}`;
+                a.download = pendingDownload || `NilPDF_Export_${Date.now()}.${ext}`;
+                pendingDownload = null;
                 a.click();
                 URL.revokeObjectURL(url);
 
@@ -363,8 +388,11 @@
             const indices = [];
             part = part.trim();
             if (part.includes('-')) {
-                const [s, e] = part.split('-').map(n => parseInt(n.trim()));
-                if (!isNaN(s) && !isNaN(e)) for (let i = s; i <= e; i++) indices.push(i - 1);
+                let [s, e] = part.split('-').map(n => parseInt(n.trim()));
+                if (!isNaN(s) && !isNaN(e)) {
+                    if (s > e) [s, e] = [e, s];
+                    for (let i = s; i <= e; i++) indices.push(i - 1);
+                }
             } else {
                 const n = parseInt(part);
                 if (!isNaN(n)) indices.push(n - 1);
@@ -452,6 +480,7 @@
             updateStatus('status', `Merging ${mergeFilesArray.length} files...`, '');
             const buffers = [];
             for (const item of mergeFilesArray) buffers.push(await toUint8(item.file));
+            pendingDownload = 'merged.pdf';
             worker.postMessage({ id: 'status', action: 'MERGE', payload: { buffers, password } });
         };
 
@@ -485,9 +514,11 @@
             updateStatus('compress-status', `Squeezing ${files.length} file(s)...`, '');
             if (files.length === 1) {
                 pendingCompressInfo = { origSize: files[0].size, isBulk: false };
+                pendingDownload = stem(files[0].name) + '_compressed.pdf';
                 worker.postMessage({ id: 'compress-status', action: 'COMPRESS', payload: { buffer: await toUint8(files[0]), password } });
             } else {
                 pendingCompressInfo = { isBulk: true };
+                pendingDownload = 'compressed_batch.zip';
                 const names = [], buffers = [];
                 for (const f of files) { names.push(f.name); buffers.push(await toUint8(f)); }
                 worker.postMessage({ id: 'compress-status', action: 'BULK_PROCESS', payload: { sub_action: 'COMPRESS', names, buffers, password } });
@@ -510,8 +541,10 @@
             const password = document.getElementById('anonymize-password').value;
             updateStatus('anonymize-status', `Scrubbing ${files.length} file(s)...`, '');
             if (files.length === 1) {
+                pendingDownload = stem(files[0].name) + '_scrubbed.pdf';
                 worker.postMessage({ id: 'anonymize-status', action: 'ANONYMIZE', payload: { buffer: await toUint8(files[0]), password } });
             } else {
+                pendingDownload = 'scrubbed_batch.zip';
                 const names = [], buffers = [];
                 for (const f of files) { names.push(f.name); buffers.push(await toUint8(f)); }
                 worker.postMessage({ id: 'anonymize-status', action: 'BULK_PROCESS', payload: { sub_action: 'ANONYMIZE', names, buffers, password } });
@@ -587,11 +620,13 @@
                 const groups = range.replace(/\s/g, '').split(',').map(p => parseRangePart(p)).filter(g => g.length);
                 if (!groups.length) { updateStatus('split-status', 'Enter valid page ranges.', 'text-red'); return; }
                 updateStatus('split-status', `Splitting into ${groups.length} file(s)...`, '');
+                pendingDownload = stem(sInput.files[0].name) + '_split.zip';
                 worker.postMessage({ id: 'split-status', action: 'SPLIT_MULTI', payload: { buffer, ranges: groups, password } });
             } else {
                 const indices = parsePageRange(range);
                 if (!indices.length) { updateStatus('split-status', 'Enter valid page numbers.', 'text-red'); return; }
                 updateStatus('split-status', 'Extracting pages...', '');
+                pendingDownload = stem(sInput.files[0].name) + '_split.pdf';
                 worker.postMessage({ id: 'split-status', action: 'SPLIT', payload: { buffer, indices, password } });
             }
         };
@@ -630,11 +665,14 @@
             if (sortable) sortable.destroy();
             sortable = new Sortable(grid, { animation: 150 });
         };
+        bindSimpleDrop('drop-zone-reorder', rInput);
+
         document.getElementById('reorder-btn').onclick = async () => {
             if (!checkReady('reorder-status')) return;
             const order    = Array.from(document.getElementById('thumbnail-grid').children).map(el => parseInt(el.dataset.index));
             const password = document.getElementById('reorder-password').value;
             updateStatus('reorder-status', 'Saving new order...', '');
+            pendingDownload = stem(rInput.files[0].name) + '_reordered.pdf';
             worker.postMessage({ id: 'reorder-status', action: 'REORDER', payload: { buffer: await toUint8(rInput.files[0]), order, password } });
         };
 
@@ -689,6 +727,7 @@
             const indices  = pagesStr ? parsePageRange(pagesStr) : [];
             const password = document.getElementById('rotate-password').value;
             updateStatus('rotate-status', 'Rotating pages...', '');
+            pendingDownload = stem(rotateInput.files[0].name) + '_rotated.pdf';
             worker.postMessage({ id: 'rotate-status', action: 'ROTATE', payload: { buffer: await toUint8(rotateInput.files[0]), degrees, indices, password } });
         };
 
@@ -744,6 +783,7 @@
             const indices  = parsePageRange(range);
             const password = document.getElementById('remove-password').value;
             updateStatus('remove-status', 'Removing pages...', '');
+            pendingDownload = stem(removeInput.files[0].name) + '_pages_removed.pdf';
             worker.postMessage({ id: 'remove-status', action: 'REMOVE_PAGES', payload: { buffer: await toUint8(removeInput.files[0]), indices, password } });
         };
 
@@ -763,6 +803,7 @@
             if (!check.ok) { updateStatus('totext-status', check.msg, 'text-red'); return; }
             const password = document.getElementById('totext-password').value;
             updateStatus('totext-status', 'Extracting text...', '');
+            pendingDownload = stem(totextInput.files[0].name) + '.txt';
             worker.postMessage({ id: 'totext-status', action: 'EXTRACT_TEXT', payload: { buffer: await toUint8(totextInput.files[0]), password } });
         };
 
@@ -798,10 +839,11 @@
                     const blob = await new Promise(res => canvas.toBlob(res, mimeType, 0.92));
                     blobs.push({ blob, name: `page_${String(i).padStart(3, '0')}.${ext}` });
                 }
+                const topngBase = stem(topngInput.files[0].name);
                 if (numPages === 1) {
                     const url = URL.createObjectURL(blobs[0].blob);
                     const a   = document.createElement('a');
-                    a.href = url; a.download = `LocalPDF_Image_${Date.now()}.${ext}`; a.click();
+                    a.href = url; a.download = `${topngBase}_page_1.${ext}`; a.click();
                     URL.revokeObjectURL(url);
                     updateStatus('topng-status', 'Done! Image downloaded.', 'text-green');
                 } else {
@@ -811,7 +853,7 @@
                     const zipBlob = await zip.generateAsync({ type: 'blob' });
                     const url = URL.createObjectURL(zipBlob);
                     const a   = document.createElement('a');
-                    a.href = url; a.download = `LocalPDF_Images_${Date.now()}.zip`; a.click();
+                    a.href = url; a.download = `${topngBase}_images.zip`; a.click();
                     URL.revokeObjectURL(url);
                     updateStatus('topng-status', `Done! ${numPages} images in ZIP.`, 'text-green');
                 }
@@ -895,7 +937,10 @@
                 const blob = new Blob([pdfBytes], { type: 'application/pdf' });
                 const url  = URL.createObjectURL(blob);
                 const a    = document.createElement('a');
-                a.href = url; a.download = `LocalPDF_Export_${Date.now()}.pdf`; a.click();
+                const topdfName = topdfFilesArray.length === 1
+                    ? stem(topdfFilesArray[0].file.name) + '_converted.pdf'
+                    : 'images_combined.pdf';
+                a.href = url; a.download = topdfName; a.click();
                 URL.revokeObjectURL(url);
                 updateStatus('topdf-status', `Done! PDF with ${added} page(s) downloaded.`, 'text-green');
             } catch (err) {
@@ -925,6 +970,7 @@
             const opacity  = parseInt(document.getElementById('watermark-opacity').value) / 100;
             const password = document.getElementById('watermark-password').value;
             updateStatus('watermark-status', 'Applying watermark...', '');
+            pendingDownload = stem(watermarkInput.files[0].name) + '_watermarked.pdf';
             worker.postMessage({ id: 'watermark-status', action: 'WATERMARK', payload: { buffer: await toUint8(watermarkInput.files[0]), text, opacity, password } });
         };
 
@@ -943,10 +989,104 @@
             const check = validateFileSizes([pagenumInput.files[0]]);
             if (!check.ok) { updateStatus('pagenums-status', check.msg, 'text-red'); return; }
             const position = document.getElementById('pagenums-position').value;
-            const startNum = parseInt(document.getElementById('pagenums-start').value) || 1;
+            const startNum = Math.max(1, parseInt(document.getElementById('pagenums-start').value) || 1);
             const password = document.getElementById('pagenums-password').value;
             updateStatus('pagenums-status', 'Adding page numbers...', '');
+            pendingDownload = stem(pagenumInput.files[0].name) + '_numbered.pdf';
             worker.postMessage({ id: 'pagenums-status', action: 'ADD_PAGE_NUMBERS', payload: { buffer: await toUint8(pagenumInput.files[0]), position, startNum, password } });
+        };
+
+        /** ════════════════════════════════════════════════════════════════
+         *  INSPECT  (pure JS — pdf.js, no Python)
+         * ════════════════════════════════════════════════════════════════ */
+        const inspectInput = document.getElementById('inspect-upload');
+        inspectInput.onchange = () => {
+            if (inspectInput.files[0]) updateStatus('inspect-status', `Loaded: ${inspectInput.files[0].name}`, 'text-green');
+        };
+        bindSimpleDrop('drop-zone-inspect', inspectInput);
+
+        function parsePdfDate(d) {
+            if (!d) return null;
+            const m = d.match(/D:(\d{4})(\d{2})(\d{2})(\d{2})?(\d{2})?/);
+            if (!m) return d;
+            return `${m[1]}-${m[2]}-${m[3]}${m[4] ? ' ' + m[4] + ':' + (m[5] || '00') : ''}`;
+        }
+
+        function buildInspectResults(file, pdf, info) {
+            const container = document.getElementById('inspect-results');
+            container.innerHTML = '';
+
+            const val   = (v, fallback = '—') => (v != null && v !== '') ? String(v) : fallback;
+            const fmtSz = n => n < 1048576 ? (n / 1024).toFixed(1) + ' KB' : (n / 1048576).toFixed(2) + ' MB';
+
+            function section(title, rows) {
+                const wrap = document.createElement('div');
+                const hdr  = document.createElement('div');
+                hdr.className   = 'inspect-section-title';
+                hdr.textContent = title;
+                wrap.appendChild(hdr);
+                rows.forEach(([key, value, cls]) => {
+                    const row  = document.createElement('div');
+                    row.className = 'inspect-row';
+                    const isEmpty = (value === '—');
+                    const valCls  = cls ? cls : (isEmpty ? 'empty' : '');
+                    row.innerHTML = `<span class="inspect-key">${key}</span>`
+                                  + `<span class="inspect-val ${valCls}">${value}</span>`;
+                    wrap.appendChild(row);
+                });
+                container.appendChild(wrap);
+            }
+
+            section('File', [
+                ['Name',        file.name],
+                ['Size',        fmtSz(file.size)],
+                ['Pages',       String(pdf.numPages), 'highlight'],
+                ['PDF Version', val(info.PDFFormatVersion)],
+                ['Linearized',  info.IsLinearized ? 'Yes' : 'No'],
+            ]);
+
+            section('Metadata', [
+                ['Title',    val(info.Title)],
+                ['Author',   val(info.Author)],
+                ['Subject',  val(info.Subject)],
+                ['Keywords', val(info.Keywords)],
+                ['Creator',  val(info.Creator)],
+                ['Producer', val(info.Producer)],
+                ['Created',  val(parsePdfDate(info.CreationDate))],
+                ['Modified', val(parsePdfDate(info.ModDate))],
+            ]);
+
+            const encrypted = !!info.IsEncrypted;
+            const hasForms  = info.IsAcroFormPresent ? 'Yes (AcroForm)'
+                            : info.IsXFAPresent      ? 'Yes (XFA)'
+                            : 'No';
+            section('Security & Forms', [
+                ['Encrypted', encrypted ? 'Yes' : 'No', encrypted ? 'warn' : ''],
+                ['Has Forms', hasForms],
+            ]);
+        }
+
+        document.getElementById('inspect-btn').onclick = async () => {
+            if (!inspectInput.files[0]) { updateStatus('inspect-status', 'Select a PDF first.', 'text-red'); return; }
+            const check = validateFileSizes([inspectInput.files[0]]);
+            if (!check.ok) { updateStatus('inspect-status', check.msg, 'text-red'); return; }
+
+            document.getElementById('inspect-results').innerHTML = '';
+            updateStatus('inspect-status', 'Reading metadata...', '');
+            const password = document.getElementById('inspect-password').value;
+
+            try {
+                const buf  = await inspectInput.files[0].arrayBuffer();
+                const pdf  = await pdfjsLib.getDocument({ data: buf, password: password || undefined }).promise;
+                const meta = await pdf.getMetadata();
+                buildInspectResults(inspectInput.files[0], pdf, meta.info || {});
+                updateStatus('inspect-status', `Done — ${pdf.numPages} page(s) inspected.`, 'text-green');
+            } catch (err) {
+                const msg = err.name === 'PasswordException'
+                    ? 'Incorrect or missing password.'
+                    : 'Error: ' + err.message;
+                updateStatus('inspect-status', msg, 'text-red');
+            }
         };
 
     </script>
