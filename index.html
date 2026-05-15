@@ -13,6 +13,8 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
     <script>pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';</script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/Sortable/1.15.0/Sortable.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf-lib/1.17.1/pdf-lib.min.js"></script>
 </head>
 <body>
 
@@ -29,6 +31,13 @@
             <button class="tab-btn" onclick="switchTab(event, 'anonymize')">Scrub</button>
             <button class="tab-btn" onclick="switchTab(event, 'split')">Split</button>
             <button class="tab-btn" onclick="switchTab(event, 'reorder')">Order</button>
+            <button class="tab-btn" onclick="switchTab(event, 'rotate')">Rotate</button>
+            <button class="tab-btn" onclick="switchTab(event, 'remove')">Remove</button>
+            <button class="tab-btn" onclick="switchTab(event, 'totext')">To Text</button>
+            <button class="tab-btn" onclick="switchTab(event, 'topng')">To Images</button>
+            <button class="tab-btn" onclick="switchTab(event, 'topdf')">From Images</button>
+            <button class="tab-btn" onclick="switchTab(event, 'watermark')">Watermark</button>
+            <button class="tab-btn" onclick="switchTab(event, 'pagenums')">Page #s</button>
         </nav>
 
         <!-- MERGE -->
@@ -101,68 +110,202 @@
                 <input type="file" id="reorder-upload" accept="application/pdf" hidden>
             </div>
             <div id="thumbnail-grid" class="thumbnail-grid"></div>
-            <input type="hidden" id="new-page-order">
-            <input type="password" id="reorder-password" class="text-input password-input" placeholder="🔒 Password (if encrypted)" style="display:none;" id="reorder-password-field">
+            <input type="password" id="reorder-password" class="text-input password-input" placeholder="🔒 Password (if encrypted)" style="display:none;">
             <button id="reorder-btn" class="primary-btn" style="display:none;">Save Reordered PDF</button>
             <div id="reorder-status" class="status-message">Ready.</div>
+        </div>
+
+        <!-- ROTATE -->
+        <div id="tool-rotate" class="tool-section hidden-tool">
+            <div id="drop-zone-rotate" class="file-drop">
+                <p>Select PDF to rotate pages</p>
+                <button onclick="document.getElementById('rotate-upload').click()" class="secondary-btn">Browse</button>
+                <input type="file" id="rotate-upload" accept="application/pdf" hidden>
+            </div>
+            <div class="input-group">
+                <label>Pages to rotate (blank = rotate all):</label>
+                <input type="text" id="rotate-pages" placeholder="e.g. 1, 3-5 or leave blank" class="text-input">
+                <span id="rotate-preview" class="range-preview"></span>
+            </div>
+            <div class="input-group">
+                <label>Rotation angle:</label>
+                <select id="rotate-degrees" class="text-input">
+                    <option value="90">90° Clockwise</option>
+                    <option value="270">90° Counter-Clockwise</option>
+                    <option value="180">180°</option>
+                </select>
+            </div>
+            <input type="password" id="rotate-password" class="text-input password-input" placeholder="🔒 Password (if encrypted)">
+            <button id="rotate-btn" class="primary-btn" disabled>Rotate Pages</button>
+            <div id="rotate-status" class="status-message">Ready.</div>
+        </div>
+
+        <!-- REMOVE PAGES -->
+        <div id="tool-remove" class="tool-section hidden-tool">
+            <div id="drop-zone-remove" class="file-drop">
+                <p>Select PDF to remove pages from</p>
+                <button onclick="document.getElementById('remove-upload').click()" class="secondary-btn">Browse</button>
+                <input type="file" id="remove-upload" accept="application/pdf" hidden>
+            </div>
+            <div class="input-group">
+                <label>Pages to remove (e.g. 1, 3-5):</label>
+                <input type="text" id="remove-pages" placeholder="1, 3-5" class="text-input">
+                <span id="remove-preview" class="range-preview"></span>
+            </div>
+            <input type="password" id="remove-password" class="text-input password-input" placeholder="🔒 Password (if encrypted)">
+            <button id="remove-btn" class="primary-btn" disabled>Remove Pages</button>
+            <div id="remove-status" class="status-message">Ready.</div>
+        </div>
+
+        <!-- PDF TO TEXT -->
+        <div id="tool-totext" class="tool-section hidden-tool">
+            <div id="drop-zone-totext" class="file-drop">
+                <p>Drop PDF to extract all text content</p>
+                <button onclick="document.getElementById('totext-upload').click()" class="secondary-btn">Browse</button>
+                <input type="file" id="totext-upload" accept="application/pdf" hidden>
+            </div>
+            <input type="password" id="totext-password" class="text-input password-input" placeholder="🔒 Password (if encrypted)">
+            <button id="totext-btn" class="primary-btn" disabled>Extract Text</button>
+            <div id="totext-status" class="status-message">Ready.</div>
+        </div>
+
+        <!-- PDF TO IMAGES -->
+        <div id="tool-topng" class="tool-section hidden-tool">
+            <div id="drop-zone-topng" class="file-drop">
+                <p>Drop PDF to export pages as images</p>
+                <button onclick="document.getElementById('topng-upload').click()" class="secondary-btn">Browse</button>
+                <input type="file" id="topng-upload" accept="application/pdf" hidden>
+            </div>
+            <div class="input-group">
+                <label>Image format:</label>
+                <select id="topng-format" class="text-input">
+                    <option value="png">PNG (lossless quality)</option>
+                    <option value="jpeg">JPG (smaller file size)</option>
+                </select>
+            </div>
+            <button id="topng-btn" class="primary-btn" disabled>Convert to Images</button>
+            <div id="topng-status" class="status-message">Ready.</div>
+        </div>
+
+        <!-- IMAGES TO PDF -->
+        <div id="tool-topdf" class="tool-section hidden-tool">
+            <div id="drop-zone-topdf" class="file-drop">
+                <p>Drop JPG or PNG images to combine into a PDF</p>
+                <button onclick="document.getElementById('topdf-upload').click()" class="secondary-btn">Browse</button>
+                <input type="file" id="topdf-upload" accept="image/jpeg,image/jpg,image/png" multiple hidden>
+            </div>
+            <ul id="topdf-list" class="file-list"></ul>
+            <button id="topdf-btn" class="primary-btn">Create PDF</button>
+            <div id="topdf-status" class="status-message">Ready.</div>
+        </div>
+
+        <!-- WATERMARK -->
+        <div id="tool-watermark" class="tool-section hidden-tool">
+            <div id="drop-zone-watermark" class="file-drop">
+                <p>Drop PDF to add a diagonal text watermark</p>
+                <button onclick="document.getElementById('watermark-upload').click()" class="secondary-btn">Browse</button>
+                <input type="file" id="watermark-upload" accept="application/pdf" hidden>
+            </div>
+            <div class="input-group">
+                <label>Watermark text:</label>
+                <input type="text" id="watermark-text" placeholder="CONFIDENTIAL" class="text-input">
+            </div>
+            <div class="input-group">
+                <label>Opacity: <span id="opacity-value">30%</span></label>
+                <input type="range" id="watermark-opacity" min="10" max="80" value="30" class="range-slider">
+            </div>
+            <input type="password" id="watermark-password" class="text-input password-input" placeholder="🔒 Password (if encrypted)">
+            <button id="watermark-btn" class="primary-btn" disabled>Apply Watermark</button>
+            <div id="watermark-status" class="status-message">Ready.</div>
+        </div>
+
+        <!-- PAGE NUMBERS -->
+        <div id="tool-pagenums" class="tool-section hidden-tool">
+            <div id="drop-zone-pagenums" class="file-drop">
+                <p>Drop PDF to add page numbers</p>
+                <button onclick="document.getElementById('pagenums-upload').click()" class="secondary-btn">Browse</button>
+                <input type="file" id="pagenums-upload" accept="application/pdf" hidden>
+            </div>
+            <div class="input-group">
+                <label>Position:</label>
+                <select id="pagenums-position" class="text-input">
+                    <option value="bottom-center">Bottom Centre</option>
+                    <option value="bottom-right">Bottom Right</option>
+                    <option value="bottom-left">Bottom Left</option>
+                    <option value="top-center">Top Centre</option>
+                    <option value="top-right">Top Right</option>
+                    <option value="top-left">Top Left</option>
+                </select>
+            </div>
+            <div class="input-group">
+                <label>Start number:</label>
+                <input type="number" id="pagenums-start" value="1" min="0" class="text-input num-input">
+            </div>
+            <input type="password" id="pagenums-password" class="text-input password-input" placeholder="🔒 Password (if encrypted)">
+            <button id="pagenums-btn" class="primary-btn" disabled>Add Page Numbers</button>
+            <div id="pagenums-status" class="status-message">Ready.</div>
         </div>
     </main>
 
     <script>
-        /** 1. THEME TOGGLE **/
-        const themeBtn = document.getElementById('theme-toggle');
+        /** 1. THEME — auto-detect system preference **/
+        const themeBtn  = document.getElementById('theme-toggle');
         const savedTheme = localStorage.getItem('theme') ||
             (window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light');
         document.documentElement.setAttribute('data-theme', savedTheme);
-
         themeBtn.onclick = () => {
-            const theme = document.documentElement.getAttribute('data-theme') === 'dark' ? 'light' : 'dark';
-            document.documentElement.setAttribute('data-theme', theme);
-            localStorage.setItem('theme', theme);
+            const t = document.documentElement.getAttribute('data-theme') === 'dark' ? 'light' : 'dark';
+            document.documentElement.setAttribute('data-theme', t);
+            localStorage.setItem('theme', t);
         };
 
         /** 2. WORKER BRIDGE **/
         const worker = new Worker('./assets/js/pdf_worker.js');
         let isReady = false;
-        let pendingCompressInfo = null; // {origSize, isBulk} for before/after display
+        let pendingCompressInfo = null;
 
         worker.onmessage = (e) => {
-            const { type, id, result, error, isZip, pct, msg } = e.data;
+            const { type, id, result, error, isZip, isText } = e.data;
 
             if (type === 'SYSTEM_READY') {
                 isReady = true;
                 document.querySelectorAll('.primary-btn').forEach(b => b.disabled = false);
+                // topdf-btn is JS-only and always enabled
                 setAllStatus("Ready.", "");
                 updateStatus("status", mergeFilesArray.length >= 2
-                    ? `${mergeFilesArray.length} files ready to merge.`
+                    ? `${mergeFilesArray.length} files ready.`
                     : "Add at least 2 PDFs to merge.", "");
+
             } else if (type === 'PROGRESS') {
-                updateStatus(id, msg, "");
+                updateStatus(e.data.id, e.data.msg, "");
+
             } else if (type === 'SUCCESS') {
-                const mime = isZip ? "application/zip" : "application/pdf";
-                const ext  = isZip ? "zip" : "pdf";
+                let mime, ext;
+                if (isText)     { mime = 'text/plain';        ext = 'txt'; }
+                else if (isZip) { mime = 'application/zip';   ext = 'zip'; }
+                else            { mime = 'application/pdf';   ext = 'pdf'; }
+
                 const blob = new Blob([result], { type: mime });
                 const url  = URL.createObjectURL(blob);
-                const a    = document.createElement("a");
+                const a    = document.createElement('a');
                 a.href = url;
                 a.download = `LocalPDF_Export_${Date.now()}.${ext}`;
                 a.click();
                 URL.revokeObjectURL(url);
 
-                // For compress, show before/after sizes
                 if (id === 'compress-status' && pendingCompressInfo && !pendingCompressInfo.isBulk) {
                     const orig = pendingCompressInfo.origSize;
                     const now  = result.byteLength;
                     const pct  = ((orig - now) / orig * 100).toFixed(1);
                     const fmt  = n => (n / 1048576).toFixed(2) + ' MB';
-                    const msg  = pct > 0
+                    updateStatus(id, pct > 0
                         ? `Done: ${fmt(orig)} → ${fmt(now)} (${pct}% smaller)`
-                        : `Done: ${fmt(orig)} → ${fmt(now)} (already optimised)`;
-                    updateStatus(id, msg, "text-green");
+                        : `Done: ${fmt(orig)} → ${fmt(now)} (already optimised)`, "text-green");
                 } else {
                     updateStatus(id, "Done! File downloaded.", "text-green");
                 }
                 pendingCompressInfo = null;
+
             } else if (type === 'ERROR') {
                 updateStatus(id, "Error: " + error, "text-red");
                 pendingCompressInfo = null;
@@ -172,10 +315,9 @@
         function setAllStatus(msg, cls) {
             document.querySelectorAll('.status-message').forEach(el => {
                 el.textContent = msg;
-                el.className = `status-message ${cls}`;
+                el.className   = `status-message ${cls}`;
             });
         }
-
         function updateStatus(id, msg, cls) {
             const el = document.getElementById(id);
             if (el) { el.textContent = msg; el.className = `status-message ${cls}`; }
@@ -191,130 +333,38 @@
             document.getElementById(`tool-${tool}`).classList.replace('hidden-tool', 'active-tool');
         }
 
-        /** 4. FILE SIZE VALIDATION (FE-3) **/
-        const MAX_BYTES  = 200 * 1024 * 1024; // 200 MB hard limit
-        const WARN_BYTES =  50 * 1024 * 1024; // 50 MB soft warning
+        /** 4. FILE SIZE VALIDATION **/
+        const MAX_BYTES  = 200 * 1024 * 1024;
+        const WARN_BYTES =  50 * 1024 * 1024;
 
         function validateFileSizes(files) {
             for (const f of files) {
-                if (f.size > MAX_BYTES) {
-                    return { ok: false, msg: `"${f.name}" is ${(f.size / 1048576).toFixed(1)} MB — exceeds the 200 MB limit.` };
-                }
+                if (f.size > MAX_BYTES)
+                    return { ok: false, msg: `"${f.name}" is ${(f.size / 1048576).toFixed(1)} MB — exceeds 200 MB limit.` };
             }
             const total = Array.from(files).reduce((s, f) => s + f.size, 0);
-            if (total > WARN_BYTES) {
+            if (total > WARN_BYTES)
                 return { ok: true, warn: `Large files (${(total / 1048576).toFixed(1)} MB total) — processing may take a while.` };
-            }
             return { ok: true };
         }
 
-        /** 5. MERGE — SORTABLE FILE LIST (FE-4) **/
-        const mInput = document.getElementById('pdf-upload');
-        let mergeFilesArray = []; // [{id, file}, ...]
-        let fileIdCounter   = 0;
-        let mergeSortable   = null;
+        /** 5. SHARED HELPERS **/
+        async function toUint8(file) { return new Uint8Array(await file.arrayBuffer()); }
 
-        function addMergeFiles(fileList) {
-            for (const f of fileList) mergeFilesArray.push({ id: fileIdCounter++, file: f });
-            renderMergeList();
-        }
-
-        function removeMergeFile(fileId) {
-            mergeFilesArray = mergeFilesArray.filter(item => item.id !== fileId);
-            renderMergeList();
-        }
-
-        function renderMergeList() {
-            const list = document.getElementById('file-list');
-            list.innerHTML = '';
-            mergeFilesArray.forEach(item => {
-                const li = document.createElement('li');
-                li.className = 'file-list-item';
-                li.dataset.fileId = item.id;
-                li.innerHTML =
-                    `<span class="drag-handle" title="Drag to reorder">⠿</span>` +
-                    `<span class="file-name">📄 ${item.file.name}</span>` +
-                    `<button class="remove-file-btn" onclick="removeMergeFile(${item.id})" title="Remove">×</button>`;
-                list.appendChild(li);
-            });
-
-            const count = mergeFilesArray.length;
-            if (isReady) {
-                updateStatus('status', count === 0
-                    ? 'Add at least 2 PDFs to merge.'
-                    : count === 1
-                        ? '1 file added — need at least one more.'
-                        : `${count} files ready to merge.`,
-                    count >= 2 ? 'text-green' : '');
+        function checkReady(statusId) {
+            if (!isReady) {
+                updateStatus(statusId, 'Engine still loading — please wait.', 'text-red');
+                return false;
             }
-
-            if (mergeSortable) { mergeSortable.destroy(); mergeSortable = null; }
-            if (mergeFilesArray.length > 1) {
-                mergeSortable = new Sortable(list, {
-                    animation: 150,
-                    handle: '.drag-handle',
-                    dataIdAttr: 'data-file-id',
-                    onEnd: () => {
-                        // Rebuild array from current DOM order
-                        const newOrder = Array.from(list.children).map(el => parseInt(el.dataset.fileId));
-                        const map = new Map(mergeFilesArray.map(item => [item.id, item.file]));
-                        mergeFilesArray = newOrder.map(id => ({ id, file: map.get(id) })).filter(x => x.file);
-                    }
-                });
-            }
+            return true;
         }
-
-        mInput.onchange = () => { addMergeFiles(mInput.files); mInput.value = ''; };
-
-        /** 6. OTHER FILE INPUTS **/
-        const sInput = document.getElementById('split-upload');
-        const aInput = document.getElementById('anonymize-upload');
-        const cInput = document.getElementById('compress-upload');
-        const rInput = document.getElementById('reorder-upload');
-
-        function updateFileList(inputEl, listId, statusId) {
-            const list = document.getElementById(listId);
-            list.innerHTML = '';
-            Array.from(inputEl.files).forEach(f => {
-                const li = document.createElement('li');
-                li.textContent = `📄 ${f.name}`;
-                list.appendChild(li);
-            });
-            updateStatus(statusId, `${inputEl.files.length} file(s) selected.`, "text-green");
-        }
-
-        cInput.onchange = () => updateFileList(cInput, 'compress-list', 'compress-status');
-        aInput.onchange = () => updateFileList(aInput, 'anonymize-list', 'anonymize-status');
-
-        /** 7. SPLIT: PAGE COUNT DETECTION + REAL-TIME RANGE PREVIEW (FE-7) **/
-        let splitTotalPages = 0;
-
-        sInput.onchange = async () => {
-            const f = sInput.files[0];
-            if (!f) return;
-            splitTotalPages = 0;
-            document.getElementById('range-preview').textContent = '';
-            updateStatus('split-status', `Loading ${f.name}...`, '');
-            try {
-                const pdf = await pdfjsLib.getDocument(await f.arrayBuffer()).promise;
-                splitTotalPages = pdf.numPages;
-                updateStatus('split-status', `${f.name} — ${splitTotalPages} page(s)`, 'text-green');
-                validateSplitRange();
-            } catch {
-                updateStatus('split-status', `Loaded: ${f.name}`, 'text-green');
-            }
-        };
-
-        document.getElementById('page-range').addEventListener('input', validateSplitRange);
 
         function parseRangePart(part) {
             const indices = [];
             part = part.trim();
             if (part.includes('-')) {
                 const [s, e] = part.split('-').map(n => parseInt(n.trim()));
-                if (!isNaN(s) && !isNaN(e)) {
-                    for (let i = s; i <= e; i++) indices.push(i - 1);
-                }
+                if (!isNaN(s) && !isNaN(e)) for (let i = s; i <= e; i++) indices.push(i - 1);
             } else {
                 const n = parseInt(part);
                 if (!isNaN(n)) indices.push(n - 1);
@@ -328,46 +378,7 @@
             return [...new Set(indices)].sort((a, b) => a - b);
         }
 
-        function validateSplitRange() {
-            const range = document.getElementById('page-range').value.trim();
-            const preview = document.getElementById('range-preview');
-            if (!range || !splitTotalPages) { preview.textContent = ''; return; }
-
-            const isMulti = document.getElementById('split-multi').checked;
-            if (isMulti) {
-                const groups = range.replace(/\s/g, '').split(',').map(p => parseRangePart(p)).filter(g => g.length);
-                preview.textContent = `→ ${groups.length} separate file(s)`;
-                preview.className = 'range-preview text-green';
-                return;
-            }
-
-            const indices = parsePageRange(range);
-            const invalid = indices.filter(i => i < 0 || i >= splitTotalPages);
-            if (invalid.length) {
-                preview.textContent = `⚠ Page(s) ${invalid.map(i => i + 1).join(', ')} out of range (1–${splitTotalPages})`;
-                preview.className = 'range-preview text-red';
-            } else if (indices.length) {
-                preview.textContent = `✓ ${indices.length} page(s) of ${splitTotalPages}`;
-                preview.className = 'range-preview text-green';
-            } else {
-                preview.textContent = '';
-            }
-        }
-
-        // Update helper text when split mode toggles (FE-5)
-        document.getElementById('split-multi').addEventListener('change', () => {
-            const isMulti = document.getElementById('split-multi').checked;
-            document.getElementById('page-range-label').textContent = isMulti
-                ? 'Page groups, comma-separated (e.g. 1-3, 4-6, 7):'
-                : 'Pages to extract (e.g. 1, 3-5):';
-            document.getElementById('split-help').textContent = isMulti
-                ? 'Each group becomes a separate PDF, downloaded as a ZIP.'
-                : 'All selected pages combined into one PDF.';
-            document.getElementById('split-btn').textContent = isMulti ? 'Split into Files' : 'Extract Pages';
-            validateSplitRange();
-        });
-
-        /** 8. DRAG & DROP **/
+        /** 6. DRAG & DROP **/
         function bindDrop(zoneId, onDrop) {
             const zone = document.getElementById(zoneId);
             ['dragover', 'dragleave', 'drop'].forEach(evt =>
@@ -377,32 +388,66 @@
             zone.addEventListener('drop', e => { zone.classList.remove('drag-active'); onDrop(e.dataTransfer.files); });
         }
 
-        bindDrop('drop-zone-merge', files => addMergeFiles(files));
-        bindDrop('drop-zone-split', files => { sInput.files = files; sInput.dispatchEvent(new Event('change')); });
-        bindDrop('drop-zone-anonymize', files => { aInput.files = files; aInput.dispatchEvent(new Event('change')); });
-        bindDrop('drop-zone-compress',  files => { cInput.files = files; cInput.dispatchEvent(new Event('change')); });
-
-        /** 9. ACTION HELPERS **/
-        async function toUint8(file) { return new Uint8Array(await file.arrayBuffer()); }
-
-        function checkReady(statusId) {
-            if (!isReady) {
-                updateStatus(statusId, 'Engine still loading — please wait a moment.', 'text-red');
-                return false;
-            }
-            return true;
+        function bindSimpleDrop(zoneId, inputEl, statusId) {
+            bindDrop(zoneId, files => {
+                inputEl.files = files;
+                inputEl.dispatchEvent(new Event('change'));
+            });
         }
 
-        /** 10. ACTION HANDLERS **/
+        /** ════════════════════════════════════════════════════════════════
+         *  TOOLS — MERGE  (sortable accumulating list)
+         * ════════════════════════════════════════════════════════════════ */
+        const mInput = document.getElementById('pdf-upload');
+        let mergeFilesArray = [], fileIdCounter = 0, mergeSortable = null;
+
+        function addMergeFiles(fileList) {
+            for (const f of fileList) mergeFilesArray.push({ id: fileIdCounter++, file: f });
+            renderMergeList();
+        }
+        function removeMergeFile(fileId) {
+            mergeFilesArray = mergeFilesArray.filter(item => item.id !== fileId);
+            renderMergeList();
+        }
+        function renderMergeList() {
+            const list  = document.getElementById('file-list');
+            list.innerHTML = '';
+            mergeFilesArray.forEach(item => {
+                const li = document.createElement('li');
+                li.className = 'file-list-item';
+                li.dataset.fileId = item.id;
+                li.innerHTML =
+                    `<span class="drag-handle" title="Drag to reorder">⠿</span>` +
+                    `<span class="file-name">📄 ${item.file.name}</span>` +
+                    `<button class="remove-file-btn" onclick="removeMergeFile(${item.id})" title="Remove">×</button>`;
+                list.appendChild(li);
+            });
+            const count = mergeFilesArray.length;
+            if (isReady) updateStatus('status', count === 0
+                ? 'Add at least 2 PDFs to merge.'
+                : count === 1 ? '1 file added — need at least one more.'
+                : `${count} files ready to merge.`, count >= 2 ? 'text-green' : '');
+            if (mergeSortable) { mergeSortable.destroy(); mergeSortable = null; }
+            if (count > 1) {
+                mergeSortable = new Sortable(list, {
+                    animation: 150, handle: '.drag-handle', dataIdAttr: 'data-file-id',
+                    onEnd: () => {
+                        const newOrder = Array.from(list.children).map(el => parseInt(el.dataset.fileId));
+                        const map = new Map(mergeFilesArray.map(i => [i.id, i.file]));
+                        mergeFilesArray = newOrder.map(id => ({ id, file: map.get(id) })).filter(x => x.file);
+                    }
+                });
+            }
+        }
+        mInput.onchange = () => { addMergeFiles(mInput.files); mInput.value = ''; };
+        bindDrop('drop-zone-merge', files => addMergeFiles(files));
+
         document.getElementById('merge-btn').onclick = async () => {
             if (!checkReady('status')) return;
-            if (mergeFilesArray.length < 2) {
-                updateStatus('status', 'Add at least 2 PDFs to merge.', 'text-red'); return;
-            }
+            if (mergeFilesArray.length < 2) { updateStatus('status', 'Add at least 2 PDFs.', 'text-red'); return; }
             const check = validateFileSizes(mergeFilesArray.map(i => i.file));
             if (!check.ok) { updateStatus('status', check.msg, 'text-red'); return; }
             if (check.warn) updateStatus('status', check.warn, '');
-
             const password = document.getElementById('merge-password').value;
             updateStatus('status', `Merging ${mergeFilesArray.length} files...`, '');
             const buffers = [];
@@ -410,49 +455,24 @@
             worker.postMessage({ id: 'status', action: 'MERGE', payload: { buffers, password } });
         };
 
-        document.getElementById('split-btn').onclick = async () => {
-            if (!checkReady('split-status')) return;
-            const range = document.getElementById('page-range').value.trim();
-            if (!sInput.files.length || !range) {
-                updateStatus('split-status', 'Select a PDF and enter page numbers.', 'text-red'); return;
-            }
-            const check = validateFileSizes([sInput.files[0]]);
-            if (!check.ok) { updateStatus('split-status', check.msg, 'text-red'); return; }
+        /** ════════════════════════════════════════════════════════════════
+         *  COMPRESS
+         * ════════════════════════════════════════════════════════════════ */
+        const cInput = document.getElementById('compress-upload');
 
-            const password = document.getElementById('split-password').value;
-            const buffer   = await toUint8(sInput.files[0]);
-            const isMulti  = document.getElementById('split-multi').checked;
+        function updateFileList(inputEl, listId, statusId) {
+            const list = document.getElementById(listId);
+            list.innerHTML = '';
+            Array.from(inputEl.files).forEach(f => {
+                const li = document.createElement('li');
+                li.textContent = `📄 ${f.name}`;
+                list.appendChild(li);
+            });
+            updateStatus(statusId, `${inputEl.files.length} file(s) selected.`, 'text-green');
+        }
 
-            if (isMulti) {
-                const groups = range.replace(/\s/g, '').split(',').map(p => parseRangePart(p)).filter(g => g.length);
-                if (!groups.length) { updateStatus('split-status', 'Enter valid page ranges.', 'text-red'); return; }
-                updateStatus('split-status', `Splitting into ${groups.length} file(s)...`, '');
-                worker.postMessage({ id: 'split-status', action: 'SPLIT_MULTI', payload: { buffer, ranges: groups, password } });
-            } else {
-                const indices = parsePageRange(range);
-                if (!indices.length) { updateStatus('split-status', 'Enter valid page numbers.', 'text-red'); return; }
-                updateStatus('split-status', 'Extracting pages...', '');
-                worker.postMessage({ id: 'split-status', action: 'SPLIT', payload: { buffer, indices, password } });
-            }
-        };
-
-        document.getElementById('anonymize-btn').onclick = async () => {
-            if (!checkReady('anonymize-status')) return;
-            const files = aInput.files;
-            if (!files.length) { updateStatus('anonymize-status', 'Select at least one PDF.', 'text-red'); return; }
-            const check = validateFileSizes(files);
-            if (!check.ok) { updateStatus('anonymize-status', check.msg, 'text-red'); return; }
-
-            const password = document.getElementById('anonymize-password').value;
-            updateStatus('anonymize-status', `Scrubbing ${files.length} file(s)...`, '');
-            if (files.length === 1) {
-                worker.postMessage({ id: 'anonymize-status', action: 'ANONYMIZE', payload: { buffer: await toUint8(files[0]), password } });
-            } else {
-                const names = [], buffers = [];
-                for (const f of files) { names.push(f.name); buffers.push(await toUint8(f)); }
-                worker.postMessage({ id: 'anonymize-status', action: 'BULK_PROCESS', payload: { sub_action: 'ANONYMIZE', names, buffers, password } });
-            }
-        };
+        cInput.onchange = () => updateFileList(cInput, 'compress-list', 'compress-status');
+        bindSimpleDrop('drop-zone-compress', cInput);
 
         document.getElementById('compress-btn').onclick = async () => {
             if (!checkReady('compress-status')) return;
@@ -461,7 +481,6 @@
             const check = validateFileSizes(files);
             if (!check.ok) { updateStatus('compress-status', check.msg, 'text-red'); return; }
             if (check.warn) updateStatus('compress-status', check.warn, '');
-
             const password = document.getElementById('compress-password').value;
             updateStatus('compress-status', `Squeezing ${files.length} file(s)...`, '');
             if (files.length === 1) {
@@ -475,42 +494,142 @@
             }
         };
 
-        /** 11. VISUAL REORDERING **/
+        /** ════════════════════════════════════════════════════════════════
+         *  ANONYMIZE
+         * ════════════════════════════════════════════════════════════════ */
+        const aInput = document.getElementById('anonymize-upload');
+        aInput.onchange = () => updateFileList(aInput, 'anonymize-list', 'anonymize-status');
+        bindSimpleDrop('drop-zone-anonymize', aInput);
+
+        document.getElementById('anonymize-btn').onclick = async () => {
+            if (!checkReady('anonymize-status')) return;
+            const files = aInput.files;
+            if (!files.length) { updateStatus('anonymize-status', 'Select at least one PDF.', 'text-red'); return; }
+            const check = validateFileSizes(files);
+            if (!check.ok) { updateStatus('anonymize-status', check.msg, 'text-red'); return; }
+            const password = document.getElementById('anonymize-password').value;
+            updateStatus('anonymize-status', `Scrubbing ${files.length} file(s)...`, '');
+            if (files.length === 1) {
+                worker.postMessage({ id: 'anonymize-status', action: 'ANONYMIZE', payload: { buffer: await toUint8(files[0]), password } });
+            } else {
+                const names = [], buffers = [];
+                for (const f of files) { names.push(f.name); buffers.push(await toUint8(f)); }
+                worker.postMessage({ id: 'anonymize-status', action: 'BULK_PROCESS', payload: { sub_action: 'ANONYMIZE', names, buffers, password } });
+            }
+        };
+
+        /** ════════════════════════════════════════════════════════════════
+         *  SPLIT  (page count detection + real-time preview + multi-file)
+         * ════════════════════════════════════════════════════════════════ */
+        const sInput = document.getElementById('split-upload');
+        let splitTotalPages = 0;
+
+        sInput.onchange = async () => {
+            const f = sInput.files[0];
+            if (!f) return;
+            splitTotalPages = 0;
+            document.getElementById('range-preview').textContent = '';
+            updateStatus('split-status', `Loading ${f.name}...`, '');
+            try {
+                const pdf = await pdfjsLib.getDocument(await f.arrayBuffer()).promise;
+                splitTotalPages = pdf.numPages;
+                updateStatus('split-status', `${f.name} — ${splitTotalPages} page(s)`, 'text-green');
+                validateSplitRange();
+            } catch { updateStatus('split-status', `Loaded: ${f.name}`, 'text-green'); }
+        };
+        bindSimpleDrop('drop-zone-split', sInput);
+
+        document.getElementById('page-range').addEventListener('input', validateSplitRange);
+        document.getElementById('split-multi').addEventListener('change', () => {
+            const multi = document.getElementById('split-multi').checked;
+            document.getElementById('page-range-label').textContent = multi
+                ? 'Page groups, comma-separated (e.g. 1-3, 4-6, 7):'
+                : 'Pages to extract (e.g. 1, 3-5):';
+            document.getElementById('split-help').textContent = multi
+                ? 'Each group becomes a separate PDF, downloaded as a ZIP.'
+                : 'All selected pages combined into one PDF.';
+            document.getElementById('split-btn').textContent = multi ? 'Split into Files' : 'Extract Pages';
+            validateSplitRange();
+        });
+
+        function validateSplitRange() {
+            const range   = document.getElementById('page-range').value.trim();
+            const preview = document.getElementById('range-preview');
+            if (!range || !splitTotalPages) { preview.textContent = ''; return; }
+            const multi = document.getElementById('split-multi').checked;
+            if (multi) {
+                const groups = range.replace(/\s/g, '').split(',').map(p => parseRangePart(p)).filter(g => g.length);
+                preview.textContent = `→ ${groups.length} separate file(s)`;
+                preview.className   = 'range-preview text-green';
+                return;
+            }
+            const indices = parsePageRange(range);
+            const invalid = indices.filter(i => i < 0 || i >= splitTotalPages);
+            if (invalid.length) {
+                preview.textContent = `⚠ Page(s) ${invalid.map(i => i + 1).join(', ')} out of range (1–${splitTotalPages})`;
+                preview.className   = 'range-preview text-red';
+            } else if (indices.length) {
+                preview.textContent = `✓ ${indices.length} page(s) of ${splitTotalPages}`;
+                preview.className   = 'range-preview text-green';
+            } else { preview.textContent = ''; }
+        }
+
+        document.getElementById('split-btn').onclick = async () => {
+            if (!checkReady('split-status')) return;
+            const range = document.getElementById('page-range').value.trim();
+            if (!sInput.files.length || !range) { updateStatus('split-status', 'Select a PDF and enter page numbers.', 'text-red'); return; }
+            const check = validateFileSizes([sInput.files[0]]);
+            if (!check.ok) { updateStatus('split-status', check.msg, 'text-red'); return; }
+            const password = document.getElementById('split-password').value;
+            const buffer   = await toUint8(sInput.files[0]);
+            const multi    = document.getElementById('split-multi').checked;
+            if (multi) {
+                const groups = range.replace(/\s/g, '').split(',').map(p => parseRangePart(p)).filter(g => g.length);
+                if (!groups.length) { updateStatus('split-status', 'Enter valid page ranges.', 'text-red'); return; }
+                updateStatus('split-status', `Splitting into ${groups.length} file(s)...`, '');
+                worker.postMessage({ id: 'split-status', action: 'SPLIT_MULTI', payload: { buffer, ranges: groups, password } });
+            } else {
+                const indices = parsePageRange(range);
+                if (!indices.length) { updateStatus('split-status', 'Enter valid page numbers.', 'text-red'); return; }
+                updateStatus('split-status', 'Extracting pages...', '');
+                worker.postMessage({ id: 'split-status', action: 'SPLIT', payload: { buffer, indices, password } });
+            }
+        };
+
+        /** ════════════════════════════════════════════════════════════════
+         *  REORDER
+         * ════════════════════════════════════════════════════════════════ */
+        const rInput = document.getElementById('reorder-upload');
         let sortable;
         rInput.onchange = async () => {
             const file = rInput.files[0];
             if (!file) return;
             const grid = document.getElementById('thumbnail-grid');
             grid.innerHTML = '';
-            updateStatus('reorder-status', 'Generating previews...', '');
             document.getElementById('reorder-btn').style.display = 'none';
             document.getElementById('reorder-password').style.display = 'none';
-
+            updateStatus('reorder-status', 'Generating previews...', '');
             const pdf = await pdfjsLib.getDocument(await file.arrayBuffer()).promise;
             for (let i = 1; i <= pdf.numPages; i++) {
                 const page     = await pdf.getPage(i);
                 const viewport = page.getViewport({ scale: 0.3 });
                 const wrapper  = document.createElement('div');
-                wrapper.className = 'thumbnail-item';
-                wrapper.dataset.index = i - 1;
-                const canvas   = document.createElement('canvas');
-                canvas.width   = viewport.width;
-                canvas.height  = viewport.height;
+                wrapper.className = 'thumbnail-item'; wrapper.dataset.index = i - 1;
+                const canvas  = document.createElement('canvas');
+                canvas.width  = viewport.width; canvas.height = viewport.height;
                 wrapper.appendChild(canvas);
-                const badge    = document.createElement('span');
-                badge.className = 'page-badge';
-                badge.innerText = i;
+                const badge   = document.createElement('span');
+                badge.className = 'page-badge'; badge.innerText = i;
                 wrapper.appendChild(badge);
                 grid.appendChild(wrapper);
                 await page.render({ canvasContext: canvas.getContext('2d'), viewport }).promise;
             }
-            document.getElementById('reorder-btn').style.display = 'block';
+            document.getElementById('reorder-btn').style.display   = 'block';
             document.getElementById('reorder-password').style.display = 'block';
             updateStatus('reorder-status', 'Drag to rearrange, then save.', 'text-green');
             if (sortable) sortable.destroy();
             sortable = new Sortable(grid, { animation: 150 });
         };
-
         document.getElementById('reorder-btn').onclick = async () => {
             if (!checkReady('reorder-status')) return;
             const order    = Array.from(document.getElementById('thumbnail-grid').children).map(el => parseInt(el.dataset.index));
@@ -518,6 +637,318 @@
             updateStatus('reorder-status', 'Saving new order...', '');
             worker.postMessage({ id: 'reorder-status', action: 'REORDER', payload: { buffer: await toUint8(rInput.files[0]), order, password } });
         };
+
+        /** ════════════════════════════════════════════════════════════════
+         *  ROTATE
+         * ════════════════════════════════════════════════════════════════ */
+        const rotateInput = document.getElementById('rotate-upload');
+        let rotateTotalPages = 0;
+
+        rotateInput.onchange = async () => {
+            const f = rotateInput.files[0];
+            if (!f) return;
+            rotateTotalPages = 0;
+            updateStatus('rotate-status', `Loading ${f.name}...`, '');
+            try {
+                const pdf = await pdfjsLib.getDocument(await f.arrayBuffer()).promise;
+                rotateTotalPages = pdf.numPages;
+                updateStatus('rotate-status', `${f.name} — ${rotateTotalPages} page(s)`, 'text-green');
+                validateRotateRange();
+            } catch { updateStatus('rotate-status', `Loaded: ${f.name}`, 'text-green'); }
+        };
+        bindSimpleDrop('drop-zone-rotate', rotateInput);
+        document.getElementById('rotate-pages').addEventListener('input', validateRotateRange);
+
+        function validateRotateRange() {
+            const range   = document.getElementById('rotate-pages').value.trim();
+            const preview = document.getElementById('rotate-preview');
+            if (!rotateTotalPages) { preview.textContent = ''; return; }
+            if (!range) {
+                preview.textContent = `✓ All ${rotateTotalPages} pages will be rotated`;
+                preview.className   = 'range-preview text-green';
+                return;
+            }
+            const indices = parsePageRange(range);
+            const invalid = indices.filter(i => i < 0 || i >= rotateTotalPages);
+            if (invalid.length) {
+                preview.textContent = `⚠ Page(s) ${invalid.map(i => i + 1).join(', ')} out of range (1–${rotateTotalPages})`;
+                preview.className   = 'range-preview text-red';
+            } else {
+                preview.textContent = `✓ Rotating ${indices.length} page(s)`;
+                preview.className   = 'range-preview text-green';
+            }
+        }
+
+        document.getElementById('rotate-btn').onclick = async () => {
+            if (!checkReady('rotate-status')) return;
+            if (!rotateInput.files[0]) { updateStatus('rotate-status', 'Select a PDF first.', 'text-red'); return; }
+            const check = validateFileSizes([rotateInput.files[0]]);
+            if (!check.ok) { updateStatus('rotate-status', check.msg, 'text-red'); return; }
+            const degrees  = parseInt(document.getElementById('rotate-degrees').value);
+            const pagesStr = document.getElementById('rotate-pages').value.trim();
+            const indices  = pagesStr ? parsePageRange(pagesStr) : [];
+            const password = document.getElementById('rotate-password').value;
+            updateStatus('rotate-status', 'Rotating pages...', '');
+            worker.postMessage({ id: 'rotate-status', action: 'ROTATE', payload: { buffer: await toUint8(rotateInput.files[0]), degrees, indices, password } });
+        };
+
+        /** ════════════════════════════════════════════════════════════════
+         *  REMOVE PAGES
+         * ════════════════════════════════════════════════════════════════ */
+        const removeInput = document.getElementById('remove-upload');
+        let removeTotalPages = 0;
+
+        removeInput.onchange = async () => {
+            const f = removeInput.files[0];
+            if (!f) return;
+            removeTotalPages = 0;
+            updateStatus('remove-status', `Loading ${f.name}...`, '');
+            try {
+                const pdf = await pdfjsLib.getDocument(await f.arrayBuffer()).promise;
+                removeTotalPages = pdf.numPages;
+                updateStatus('remove-status', `${f.name} — ${removeTotalPages} page(s)`, 'text-green');
+                validateRemoveRange();
+            } catch { updateStatus('remove-status', `Loaded: ${f.name}`, 'text-green'); }
+        };
+        bindSimpleDrop('drop-zone-remove', removeInput);
+        document.getElementById('remove-pages').addEventListener('input', validateRemoveRange);
+
+        function validateRemoveRange() {
+            const range   = document.getElementById('remove-pages').value.trim();
+            const preview = document.getElementById('remove-preview');
+            if (!range || !removeTotalPages) { preview.textContent = ''; return; }
+            const indices = parsePageRange(range);
+            const invalid = indices.filter(i => i < 0 || i >= removeTotalPages);
+            if (invalid.length) {
+                preview.textContent = `⚠ Page(s) ${invalid.map(i => i + 1).join(', ')} out of range`;
+                preview.className   = 'range-preview text-red';
+            } else {
+                const remaining = removeTotalPages - indices.length;
+                if (remaining <= 0) {
+                    preview.textContent = `⚠ Cannot remove all ${removeTotalPages} pages`;
+                    preview.className   = 'range-preview text-red';
+                } else {
+                    preview.textContent = `✓ Removing ${indices.length}, keeping ${remaining} page(s)`;
+                    preview.className   = 'range-preview text-green';
+                }
+            }
+        }
+
+        document.getElementById('remove-btn').onclick = async () => {
+            if (!checkReady('remove-status')) return;
+            if (!removeInput.files[0]) { updateStatus('remove-status', 'Select a PDF first.', 'text-red'); return; }
+            const range = document.getElementById('remove-pages').value.trim();
+            if (!range) { updateStatus('remove-status', 'Enter page numbers to remove.', 'text-red'); return; }
+            const check = validateFileSizes([removeInput.files[0]]);
+            if (!check.ok) { updateStatus('remove-status', check.msg, 'text-red'); return; }
+            const indices  = parsePageRange(range);
+            const password = document.getElementById('remove-password').value;
+            updateStatus('remove-status', 'Removing pages...', '');
+            worker.postMessage({ id: 'remove-status', action: 'REMOVE_PAGES', payload: { buffer: await toUint8(removeInput.files[0]), indices, password } });
+        };
+
+        /** ════════════════════════════════════════════════════════════════
+         *  PDF TO TEXT
+         * ════════════════════════════════════════════════════════════════ */
+        const totextInput = document.getElementById('totext-upload');
+        totextInput.onchange = () => {
+            if (totextInput.files[0]) updateStatus('totext-status', `Loaded: ${totextInput.files[0].name}`, 'text-green');
+        };
+        bindSimpleDrop('drop-zone-totext', totextInput);
+
+        document.getElementById('totext-btn').onclick = async () => {
+            if (!checkReady('totext-status')) return;
+            if (!totextInput.files[0]) { updateStatus('totext-status', 'Select a PDF first.', 'text-red'); return; }
+            const check = validateFileSizes([totextInput.files[0]]);
+            if (!check.ok) { updateStatus('totext-status', check.msg, 'text-red'); return; }
+            const password = document.getElementById('totext-password').value;
+            updateStatus('totext-status', 'Extracting text...', '');
+            worker.postMessage({ id: 'totext-status', action: 'EXTRACT_TEXT', payload: { buffer: await toUint8(totextInput.files[0]), password } });
+        };
+
+        /** ════════════════════════════════════════════════════════════════
+         *  PDF TO IMAGES  (pure JS — PDF.js + JSZip, no Python)
+         * ════════════════════════════════════════════════════════════════ */
+        const topngInput = document.getElementById('topng-upload');
+        topngInput.onchange = () => {
+            if (topngInput.files[0]) updateStatus('topng-status', `Loaded: ${topngInput.files[0].name}`, 'text-green');
+        };
+        bindSimpleDrop('drop-zone-topng', topngInput);
+
+        document.getElementById('topng-btn').onclick = async () => {
+            if (!topngInput.files[0]) { updateStatus('topng-status', 'Select a PDF first.', 'text-red'); return; }
+            const check = validateFileSizes([topngInput.files[0]]);
+            if (!check.ok) { updateStatus('topng-status', check.msg, 'text-red'); return; }
+            const format   = document.getElementById('topng-format').value;
+            const mimeType = format === 'jpeg' ? 'image/jpeg' : 'image/png';
+            const ext      = format === 'jpeg' ? 'jpg' : 'png';
+            updateStatus('topng-status', 'Rendering pages...', '');
+            try {
+                const pdf      = await pdfjsLib.getDocument(await topngInput.files[0].arrayBuffer()).promise;
+                const numPages = pdf.numPages;
+                const blobs    = [];
+                for (let i = 1; i <= numPages; i++) {
+                    updateStatus('topng-status', `Rendering page ${i} of ${numPages}...`, '');
+                    const page     = await pdf.getPage(i);
+                    const viewport = page.getViewport({ scale: 2.0 });
+                    const canvas   = document.createElement('canvas');
+                    canvas.width   = viewport.width;
+                    canvas.height  = viewport.height;
+                    await page.render({ canvasContext: canvas.getContext('2d'), viewport }).promise;
+                    const blob = await new Promise(res => canvas.toBlob(res, mimeType, 0.92));
+                    blobs.push({ blob, name: `page_${String(i).padStart(3, '0')}.${ext}` });
+                }
+                if (numPages === 1) {
+                    const url = URL.createObjectURL(blobs[0].blob);
+                    const a   = document.createElement('a');
+                    a.href = url; a.download = `LocalPDF_Image_${Date.now()}.${ext}`; a.click();
+                    URL.revokeObjectURL(url);
+                    updateStatus('topng-status', 'Done! Image downloaded.', 'text-green');
+                } else {
+                    updateStatus('topng-status', 'Packing into ZIP...', '');
+                    const zip = new JSZip();
+                    for (const { blob, name } of blobs) zip.file(name, blob);
+                    const zipBlob = await zip.generateAsync({ type: 'blob' });
+                    const url = URL.createObjectURL(zipBlob);
+                    const a   = document.createElement('a');
+                    a.href = url; a.download = `LocalPDF_Images_${Date.now()}.zip`; a.click();
+                    URL.revokeObjectURL(url);
+                    updateStatus('topng-status', `Done! ${numPages} images in ZIP.`, 'text-green');
+                }
+            } catch (err) {
+                updateStatus('topng-status', 'Error: ' + err.message, 'text-red');
+            }
+        };
+
+        /** ════════════════════════════════════════════════════════════════
+         *  IMAGES TO PDF  (pure JS — pdf-lib, no Python, sortable list)
+         * ════════════════════════════════════════════════════════════════ */
+        const topdfInput = document.getElementById('topdf-upload');
+        let topdfFilesArray = [], topdfIdCounter = 0, topdfSortable = null;
+
+        function addTopdfFiles(fileList) {
+            for (const f of fileList) topdfFilesArray.push({ id: topdfIdCounter++, file: f });
+            renderTopdfList();
+        }
+        function removeTopdfFile(fileId) {
+            topdfFilesArray = topdfFilesArray.filter(item => item.id !== fileId);
+            renderTopdfList();
+        }
+        function renderTopdfList() {
+            const list = document.getElementById('topdf-list');
+            list.innerHTML = '';
+            topdfFilesArray.forEach(item => {
+                const li = document.createElement('li');
+                li.className = 'file-list-item'; li.dataset.fileId = item.id;
+                li.innerHTML =
+                    `<span class="drag-handle" title="Drag to reorder">⠿</span>` +
+                    `<span class="file-name">🖼 ${item.file.name}</span>` +
+                    `<button class="remove-file-btn" onclick="removeTopdfFile(${item.id})" title="Remove">×</button>`;
+                list.appendChild(li);
+            });
+            const count = topdfFilesArray.length;
+            updateStatus('topdf-status', count === 0
+                ? 'Add JPG or PNG images to convert.'
+                : `${count} image(s) ready — drag to reorder.`,
+                count > 0 ? 'text-green' : '');
+            if (topdfSortable) { topdfSortable.destroy(); topdfSortable = null; }
+            if (count > 1) {
+                topdfSortable = new Sortable(list, {
+                    animation: 150, handle: '.drag-handle', dataIdAttr: 'data-file-id',
+                    onEnd: () => {
+                        const order = Array.from(list.children).map(el => parseInt(el.dataset.fileId));
+                        const map   = new Map(topdfFilesArray.map(i => [i.id, i.file]));
+                        topdfFilesArray = order.map(id => ({ id, file: map.get(id) })).filter(x => x.file);
+                    }
+                });
+            }
+        }
+        topdfInput.onchange = () => { addTopdfFiles(topdfInput.files); topdfInput.value = ''; };
+        bindDrop('drop-zone-topdf', files => addTopdfFiles(files));
+
+        document.getElementById('topdf-btn').onclick = async () => {
+            if (topdfFilesArray.length === 0) { updateStatus('topdf-status', 'Add at least one image.', 'text-red'); return; }
+            const check = validateFileSizes(topdfFilesArray.map(i => i.file));
+            if (!check.ok) { updateStatus('topdf-status', check.msg, 'text-red'); return; }
+            updateStatus('topdf-status', 'Creating PDF...', '');
+            try {
+                const { PDFDocument } = PDFLib;
+                const pdfDoc = await PDFDocument.create();
+                let added = 0;
+                for (let i = 0; i < topdfFilesArray.length; i++) {
+                    const file  = topdfFilesArray[i].file;
+                    updateStatus('topdf-status', `Adding image ${i + 1} of ${topdfFilesArray.length}...`, '');
+                    const bytes = new Uint8Array(await file.arrayBuffer());
+                    const mime  = file.type;
+                    let img;
+                    try {
+                        if (mime === 'image/jpeg' || mime === 'image/jpg') img = await pdfDoc.embedJpg(bytes);
+                        else if (mime === 'image/png') img = await pdfDoc.embedPng(bytes);
+                        else { updateStatus('topdf-status', `Skipped "${file.name}" — only JPG and PNG supported.`, 'text-red'); continue; }
+                    } catch (e) { updateStatus('topdf-status', `Skipped "${file.name}": ${e.message}`, 'text-red'); continue; }
+                    const page = pdfDoc.addPage([img.width, img.height]);
+                    page.drawImage(img, { x: 0, y: 0, width: img.width, height: img.height });
+                    added++;
+                }
+                if (added === 0) { updateStatus('topdf-status', 'No valid images were added.', 'text-red'); return; }
+                const pdfBytes = await pdfDoc.save();
+                const blob = new Blob([pdfBytes], { type: 'application/pdf' });
+                const url  = URL.createObjectURL(blob);
+                const a    = document.createElement('a');
+                a.href = url; a.download = `LocalPDF_Export_${Date.now()}.pdf`; a.click();
+                URL.revokeObjectURL(url);
+                updateStatus('topdf-status', `Done! PDF with ${added} page(s) downloaded.`, 'text-green');
+            } catch (err) {
+                updateStatus('topdf-status', 'Error: ' + err.message, 'text-red');
+            }
+        };
+
+        /** ════════════════════════════════════════════════════════════════
+         *  WATERMARK
+         * ════════════════════════════════════════════════════════════════ */
+        const watermarkInput = document.getElementById('watermark-upload');
+        watermarkInput.onchange = () => {
+            if (watermarkInput.files[0]) updateStatus('watermark-status', `Loaded: ${watermarkInput.files[0].name}`, 'text-green');
+        };
+        bindSimpleDrop('drop-zone-watermark', watermarkInput);
+        document.getElementById('watermark-opacity').addEventListener('input', function () {
+            document.getElementById('opacity-value').textContent = this.value + '%';
+        });
+
+        document.getElementById('watermark-btn').onclick = async () => {
+            if (!checkReady('watermark-status')) return;
+            if (!watermarkInput.files[0]) { updateStatus('watermark-status', 'Select a PDF first.', 'text-red'); return; }
+            const text = document.getElementById('watermark-text').value.trim();
+            if (!text) { updateStatus('watermark-status', 'Enter watermark text.', 'text-red'); return; }
+            const check = validateFileSizes([watermarkInput.files[0]]);
+            if (!check.ok) { updateStatus('watermark-status', check.msg, 'text-red'); return; }
+            const opacity  = parseInt(document.getElementById('watermark-opacity').value) / 100;
+            const password = document.getElementById('watermark-password').value;
+            updateStatus('watermark-status', 'Applying watermark...', '');
+            worker.postMessage({ id: 'watermark-status', action: 'WATERMARK', payload: { buffer: await toUint8(watermarkInput.files[0]), text, opacity, password } });
+        };
+
+        /** ════════════════════════════════════════════════════════════════
+         *  PAGE NUMBERS
+         * ════════════════════════════════════════════════════════════════ */
+        const pagenumInput = document.getElementById('pagenums-upload');
+        pagenumInput.onchange = () => {
+            if (pagenumInput.files[0]) updateStatus('pagenums-status', `Loaded: ${pagenumInput.files[0].name}`, 'text-green');
+        };
+        bindSimpleDrop('drop-zone-pagenums', pagenumInput);
+
+        document.getElementById('pagenums-btn').onclick = async () => {
+            if (!checkReady('pagenums-status')) return;
+            if (!pagenumInput.files[0]) { updateStatus('pagenums-status', 'Select a PDF first.', 'text-red'); return; }
+            const check = validateFileSizes([pagenumInput.files[0]]);
+            if (!check.ok) { updateStatus('pagenums-status', check.msg, 'text-red'); return; }
+            const position = document.getElementById('pagenums-position').value;
+            const startNum = parseInt(document.getElementById('pagenums-start').value) || 1;
+            const password = document.getElementById('pagenums-password').value;
+            updateStatus('pagenums-status', 'Adding page numbers...', '');
+            worker.postMessage({ id: 'pagenums-status', action: 'ADD_PAGE_NUMBERS', payload: { buffer: await toUint8(pagenumInput.files[0]), position, startNum, password } });
+        };
+
     </script>
 </body>
 </html>

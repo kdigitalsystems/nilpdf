@@ -21,7 +21,7 @@ def _post_progress(status_id, pct, msg):
         from js import reportProgress
         reportProgress(status_id, pct, msg)
     except Exception:
-        pass  # Not running in Pyodide (e.g. unit tests)
+        pass
 
 def _compress_images(writer, quality=75):
     """Best-effort re-compression of raw image XObjects to JPEG. Silent on failure."""
@@ -52,7 +52,6 @@ def _compress_images(writer, quality=75):
                     if str(xobj.get("/Subtype")) != "/Image":
                         continue
 
-                    # Skip already JPEG/JPEG2000 images — can't improve further
                     current_filter = xobj.get("/Filter")
                     if current_filter is not None:
                         if any(f in str(current_filter) for f in ("DCTDecode", "JPXDecode")):
@@ -64,18 +63,17 @@ def _compress_images(writer, quality=75):
 
                     width = int(xobj["/Width"])
                     height = int(xobj["/Height"])
-
                     cs_str = str(xobj.get("/ColorSpace", "/DeviceRGB"))
                     if cs_str == "/DeviceRGB":
                         mode, bpp = "RGB", 3
                     elif cs_str == "/DeviceGray":
                         mode, bpp = "L", 1
                     else:
-                        continue  # CMYK, indexed etc. — skip
+                        continue
 
                     raw = xobj.get_data()
                     if len(raw) != width * height * bpp:
-                        continue  # Not plain decoded pixels
+                        continue
 
                     img = Image.frombytes(mode, (width, height), raw)
                     buf = io.BytesIO()
@@ -83,7 +81,7 @@ def _compress_images(writer, quality=75):
                     jpeg_bytes = buf.getvalue()
 
                     if len(jpeg_bytes) >= len(raw):
-                        continue  # No improvement, skip
+                        continue
 
                     xobj._raw_data = jpeg_bytes
                     xobj._data = None
@@ -96,6 +94,8 @@ def _compress_images(writer, quality=75):
             continue
 
 
+# ── Existing tools ─────────────────────────────────────────────────────────
+
 def process_compress(js_buf, status_id="", password=""):
     reader = _open_reader(_ensure_py(js_buf), password)
     writer = PdfWriter()
@@ -106,7 +106,7 @@ def process_compress(js_buf, status_id="", password=""):
         try:
             page.compress_content_streams()
         except Exception:
-            pass  # Stream already optimised or unsupported — skip silently
+            pass
         _post_progress(status_id, int((i + 1) / total * 70), f"Compressing page {i + 1} of {total}...")
 
     _post_progress(status_id, 75, "Re-compressing images...")
@@ -127,7 +127,6 @@ def process_anonymize(js_buf, status_id="", password=""):
         "/Subject": "", "/Title": "", "/Keywords": "",
         "/CreationDate": "D:19700101000000Z", "/ModDate": "D:19700101000000Z"
     })
-    # Remove XMP metadata via document catalog (avoids private _xmp_metadata attribute)
     try:
         writer._root_object.pop("/Metadata", None)
     except Exception:
@@ -158,9 +157,7 @@ def process_split(js_buf, page_indices, status_id="", password=""):
 
     out_of_range = [idx + 1 for idx in indices if not (0 <= idx < total_pages)]
     if out_of_range:
-        raise ValueError(
-            f"Page(s) {out_of_range} don't exist — this PDF has {total_pages} page(s)."
-        )
+        raise ValueError(f"Page(s) {out_of_range} don't exist — this PDF has {total_pages} page(s).")
 
     for idx in indices:
         writer.add_page(reader.pages[idx])
@@ -230,3 +227,158 @@ def process_bulk(action, file_names, js_buffers, status_id="", password=""):
             zf.writestr(f"{base_name}{suffix}", processed_bytes)
 
     return out_zip_stream.getvalue()
+
+
+# ── New tools (Part 3) ─────────────────────────────────────────────────────
+
+def process_rotate(js_buf, degrees, page_indices, status_id="", password=""):
+    """Rotate specific pages (or all pages if page_indices is empty)."""
+    reader = _open_reader(_ensure_py(js_buf), password)
+    writer = PdfWriter()
+    indices_set = set(_ensure_py(page_indices))
+    rotate_all = len(indices_set) == 0
+    total = len(reader.pages)
+
+    for i, page in enumerate(reader.pages):
+        if rotate_all or i in indices_set:
+            page.rotate(int(degrees))
+        writer.add_page(page)
+        _post_progress(status_id, int((i + 1) / total * 90), f"Rotating page {i + 1} of {total}...")
+
+    out = io.BytesIO()
+    writer.write(out)
+    return out.getvalue()
+
+
+def process_remove_pages(js_buf, page_indices, status_id="", password=""):
+    """Remove the specified pages; keep everything else."""
+    reader = _open_reader(_ensure_py(js_buf), password)
+    indices_to_remove = set(_ensure_py(page_indices))
+    total = len(reader.pages)
+
+    out_of_range = [idx + 1 for idx in indices_to_remove if not (0 <= idx < total)]
+    if out_of_range:
+        raise ValueError(f"Page(s) {out_of_range} don't exist — this PDF has {total} page(s).")
+
+    writer = PdfWriter()
+    for i, page in enumerate(reader.pages):
+        if i not in indices_to_remove:
+            writer.add_page(page)
+
+    if len(writer.pages) == 0:
+        raise ValueError("Cannot remove all pages — at least one page must remain.")
+
+    out = io.BytesIO()
+    writer.write(out)
+    return out.getvalue()
+
+
+def process_extract_text(js_buf, status_id="", password=""):
+    """Extract all text content from the PDF. Returns UTF-8 encoded bytes."""
+    reader = _open_reader(_ensure_py(js_buf), password)
+    total = len(reader.pages)
+    parts = []
+
+    for i, page in enumerate(reader.pages):
+        _post_progress(status_id, int((i + 1) / total * 90), f"Extracting page {i + 1} of {total}...")
+        text = page.extract_text() or ""
+        if text.strip():
+            parts.append(f"--- Page {i + 1} ---\n{text.strip()}")
+
+    result = "\n\n".join(parts) if parts else "(No extractable text found in this PDF.)"
+    return result.encode("utf-8")
+
+
+def process_watermark(js_buf, text, opacity, status_id="", password=""):
+    """Overlay a diagonal text watermark on every page."""
+    try:
+        from reportlab.pdfgen import canvas as rl_canvas
+        from reportlab.lib.colors import Color
+    except ImportError:
+        raise ImportError("Watermark requires reportlab. Please reload the page.")
+
+    reader = _open_reader(_ensure_py(js_buf), password)
+    writer = PdfWriter()
+    writer.append_pages_from_reader(reader)
+    total = len(writer.pages)
+
+    for i in range(total):
+        page = writer.pages[i]
+        w = float(page.mediabox.width)
+        h = float(page.mediabox.height)
+
+        overlay_buf = io.BytesIO()
+        c = rl_canvas.Canvas(overlay_buf, pagesize=(w, h))
+        c.saveState()
+        c.setFillColor(Color(0.45, 0.45, 0.45, alpha=float(opacity)))
+        font_size = max(10.0, min(w, h) * 0.11)
+        c.setFont("Helvetica-Bold", font_size)
+        c.translate(w / 2, h / 2)
+        c.rotate(45)
+        c.drawCentredString(0, 0, str(text))
+        c.restoreState()
+        c.save()
+        overlay_buf.seek(0)
+
+        overlay_page = PdfReader(overlay_buf).pages[0]
+        try:
+            page.merge_page(overlay_page, over=True)
+        except TypeError:
+            page.merge_page(overlay_page)  # older pypdf without `over` param
+        _post_progress(status_id, int((i + 1) / total * 90), f"Watermarking page {i + 1} of {total}...")
+
+    out = io.BytesIO()
+    writer.write(out)
+    return out.getvalue()
+
+
+def process_add_page_numbers(js_buf, position, start_num, status_id="", password=""):
+    """Stamp a page number on every page."""
+    try:
+        from reportlab.pdfgen import canvas as rl_canvas
+        from reportlab.lib.colors import black
+    except ImportError:
+        raise ImportError("Page numbers require reportlab. Please reload the page.")
+
+    reader = _open_reader(_ensure_py(js_buf), password)
+    writer = PdfWriter()
+    writer.append_pages_from_reader(reader)
+    total = len(writer.pages)
+    start = int(start_num) if start_num else 1
+    pos = str(position) if position else "bottom-center"
+    MARGIN = 28
+    FONT_SIZE = 11
+
+    for i in range(total):
+        page = writer.pages[i]
+        w = float(page.mediabox.width)
+        h = float(page.mediabox.height)
+
+        overlay_buf = io.BytesIO()
+        c = rl_canvas.Canvas(overlay_buf, pagesize=(w, h))
+        c.setFont("Helvetica", FONT_SIZE)
+        c.setFillColor(black)
+
+        label = str(start + i)
+        y = MARGIN if "bottom" in pos else (h - MARGIN)
+
+        if "center" in pos:
+            c.drawCentredString(w / 2, y, label)
+        elif "right" in pos:
+            c.drawRightString(w - MARGIN, y, label)
+        else:
+            c.drawString(MARGIN, y, label)
+
+        c.save()
+        overlay_buf.seek(0)
+
+        overlay_page = PdfReader(overlay_buf).pages[0]
+        try:
+            page.merge_page(overlay_page, over=True)
+        except TypeError:
+            page.merge_page(overlay_page)
+        _post_progress(status_id, int((i + 1) / total * 90), f"Numbering page {i + 1} of {total}...")
+
+    out = io.BytesIO()
+    writer.write(out)
+    return out.getvalue()

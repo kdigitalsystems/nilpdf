@@ -4,7 +4,7 @@ async function bootEngine() {
     self.pyodide = await loadPyodide();
     await self.pyodide.loadPackage("micropip");
     const micropip = self.pyodide.pyimport("micropip");
-    await micropip.install(["pypdf", "cryptography", "Pillow"]);
+    await micropip.install(["pypdf", "cryptography", "Pillow", "reportlab"]);
 
     // Expose a JS-global progress reporter so Python can call it via `from js import reportProgress`
     self.reportProgress = (id, pct, msg) => {
@@ -27,9 +27,11 @@ self.onmessage = async (event) => {
 
     try {
         let result_py;
-        let isZip = false;
+        let isZip  = false;
+        let isText = false;
         const password = payload.password || "";
 
+        // ── Existing tools ──────────────────────────────────────────────
         if (action === 'MERGE') {
             result_py = self.pyodide.globals.get('process_merge')(payload.buffers, id, password);
         } else if (action === 'SPLIT') {
@@ -46,12 +48,25 @@ self.onmessage = async (event) => {
         } else if (action === 'BULK_PROCESS') {
             result_py = self.pyodide.globals.get('process_bulk')(payload.sub_action, payload.names, payload.buffers, id, password);
             isZip = true;
+
+        // ── New tools (Part 3) ───────────────────────────────────────────
+        } else if (action === 'ROTATE') {
+            result_py = self.pyodide.globals.get('process_rotate')(payload.buffer, payload.degrees, payload.indices, id, password);
+        } else if (action === 'REMOVE_PAGES') {
+            result_py = self.pyodide.globals.get('process_remove_pages')(payload.buffer, payload.indices, id, password);
+        } else if (action === 'EXTRACT_TEXT') {
+            result_py = self.pyodide.globals.get('process_extract_text')(payload.buffer, id, password);
+            isText = true;
+        } else if (action === 'WATERMARK') {
+            result_py = self.pyodide.globals.get('process_watermark')(payload.buffer, payload.text, payload.opacity, id, password);
+        } else if (action === 'ADD_PAGE_NUMBERS') {
+            result_py = self.pyodide.globals.get('process_add_page_numbers')(payload.buffer, payload.position, payload.startNum, id, password);
         }
 
         const result_uint8 = result_py.toJs();
         result_py.destroy();
 
-        postMessage({ type: 'SUCCESS', id, result: result_uint8, isZip }, [result_uint8.buffer]);
+        postMessage({ type: 'SUCCESS', id, result: result_uint8, isZip, isText }, [result_uint8.buffer]);
 
     } catch (error) {
         postMessage({ type: 'ERROR', id, error: error.message });
