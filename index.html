@@ -13,6 +13,8 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>NilPDF — Free PDF Tools. Zero Uploads. 100% Private.</title>
 
+    <script src="/version.js"></script>
+
     <!-- PWA service worker (also sets COOP/COEP for Pyodide SharedArrayBuffer) -->
     <script>
         if ('serviceWorker' in navigator) {
@@ -343,6 +345,7 @@
         </div>
         <footer class="app-footer">
             <p>A property of <strong>K Digital Systems LLC</strong></p>
+            <p id="build-version" class="build-version"></p>
         </footer>
     </main>
 
@@ -393,6 +396,10 @@
         let pendingFooter = false;  // whether to add footer credit after next SUCCESS
         let lastLoadedFile = null;  // most-recently loaded single-file PDF
         let lastLoadedTool = null;  // which tool it came from
+
+        if (window.BUILD_VERSION) {
+            document.getElementById('build-version').textContent = 'build ' + window.BUILD_VERSION;
+        }
         function stem(filename) { return filename.replace(/\.[^/.]+$/, ''); }
         function escHtml(s) { return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
 

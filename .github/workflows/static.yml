@@ -47,6 +47,8 @@ jobs:
         uses: actions/checkout@v4
       - name: Setup Pages
         uses: actions/configure-pages@v4
+      - name: Write build version
+        run: echo "window.BUILD_VERSION='$(git log -1 --format='%h · %as')';" > version.js
       - name: Upload artifact
         uses: actions/upload-pages-artifact@v3
         with:

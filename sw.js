@@ -21,8 +21,9 @@ function addSecurityHeaders(res) {
     const h = new Headers(res.headers);
     h.set('Cross-Origin-Opener-Policy', 'same-origin');
     h.set('Cross-Origin-Embedder-Policy', 'credentialless');
-    // Remove any CSP that would block eval() — required by Pyodide (WASM Python) and Google Analytics
-    h.delete('Content-Security-Policy');
+    // Override CSP with a permissive policy — eval() is required by Pyodide (WASM) and Google Analytics.
+    // Deletion alone is not enough; explicitly setting ensures no restrictive policy survives.
+    h.set('Content-Security-Policy', "default-src * 'unsafe-inline' 'unsafe-eval' data: blob:; worker-src * blob:;");
     h.delete('Content-Security-Policy-Report-Only');
     return new Response(res.body, { status: res.status, statusText: res.statusText, headers: h });
 }

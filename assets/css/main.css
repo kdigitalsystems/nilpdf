@@ -455,6 +455,13 @@ select.text-input {
     color: var(--text-main);
 }
 
+.build-version {
+    font-size: 0.68rem;
+    opacity: 0.45;
+    margin-top: 0.2rem;
+    font-family: monospace;
+}
+
 /* ── Inspect tool ── */
 .inspect-results {
     margin: 1rem 0;
