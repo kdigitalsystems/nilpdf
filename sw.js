@@ -1,4 +1,4 @@
-const CACHE = 'nilpdf-v3';
+const CACHE = 'nilpdf-v4';
 // pdf_worker.js is intentionally excluded — it must always be fetched fresh
 // so stale cached workers (e.g. with broken boot sequences) never get stuck.
 const SHELL = ['/', '/index.html', '/assets/css/main.css'];
@@ -21,6 +21,9 @@ function addSecurityHeaders(res) {
     const h = new Headers(res.headers);
     h.set('Cross-Origin-Opener-Policy', 'same-origin');
     h.set('Cross-Origin-Embedder-Policy', 'credentialless');
+    // Remove any CSP that would block eval() — required by Pyodide (WASM Python) and Google Analytics
+    h.delete('Content-Security-Policy');
+    h.delete('Content-Security-Policy-Report-Only');
     return new Response(res.body, { status: res.status, statusText: res.statusText, headers: h });
 }
 
