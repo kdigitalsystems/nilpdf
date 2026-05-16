@@ -16,6 +16,8 @@ from core.pdf_engine import (
     process_watermark,
     process_add_page_numbers,
     process_bulk,
+    process_repair,
+    process_add_footer,
 )
 
 
@@ -356,6 +358,43 @@ class TestBulk(unittest.TestCase):
         result = process_bulk("COMPRESS", names, buffers)
         with zipfile.ZipFile(io.BytesIO(result)) as zf:
             self.assertIn("report_squeezed.pdf", zf.namelist())
+
+
+# ── Repair ─────────────────────────────────────────────────────────────────
+
+class TestRepair(unittest.TestCase):
+    def test_repair_valid_pdf_preserves_page_count(self):
+        result = process_repair(make_pdf(3))
+        self.assertEqual(len(read_pdf(result).pages), 3)
+
+    def test_repair_stamps_producer(self):
+        result = process_repair(make_pdf(1))
+        self.assertIn("NilPDF", producer_of(result))
+
+    def test_repair_wrong_password_raises(self):
+        with self.assertRaises(ValueError):
+            process_repair(make_encrypted_pdf(password="x"), password="wrong")
+
+    def test_repair_correct_password_works(self):
+        enc = make_encrypted_pdf(num_pages=2, password="abc")
+        result = process_repair(enc, password="abc")
+        self.assertEqual(len(read_pdf(result).pages), 2)
+
+
+# ── Add footer ─────────────────────────────────────────────────────────────
+
+class TestAddFooter(unittest.TestCase):
+    def test_footer_preserves_page_count(self):
+        result = process_add_footer(make_pdf(2))
+        self.assertEqual(len(read_pdf(result).pages), 2)
+
+    def test_footer_stamps_producer(self):
+        result = process_add_footer(make_pdf(1))
+        self.assertIn("NilPDF", producer_of(result))
+
+    def test_footer_wrong_password_raises(self):
+        with self.assertRaises(ValueError):
+            process_add_footer(make_encrypted_pdf(password="x"), password="wrong")
 
 
 if __name__ == "__main__":
