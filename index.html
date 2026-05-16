@@ -465,6 +465,7 @@
 
             } else if (type === 'SYSTEM_READY') {
                 isReady = true;
+                renderMergeList();
                 // Reset any status divs still showing boot text
                 document.querySelectorAll('.status-message').forEach(el => {
                     if (el.textContent.startsWith('Starting') ||
