@@ -15,17 +15,46 @@
     </script>
 
     <!-- SEO & Social -->
-    <meta name="description" content="NilPDF — 12 free PDF tools that run entirely in your browser. Merge, split, compress, rotate, watermark and more. Zero uploads. Zero tracking. 100% private.">
+    <meta name="description" content="NilPDF — 13 free PDF tools that run entirely in your browser. Merge, split, compress, rotate, watermark and more. Zero uploads. Zero tracking. 100% private.">
     <meta property="og:title" content="NilPDF — Free PDF Tools. Zero Uploads.">
-    <meta property="og:description" content="Merge, split, compress, rotate, watermark and more. Your files never leave your device.">
+    <meta property="og:description" content="13 PDF tools. Your files never leave your device. Zero uploads. Zero tracking.">
     <meta property="og:type" content="website">
     <meta property="og:url" content="https://nilpdf.com/">
-    <meta property="og:image" content="https://nilpdf.com/assets/icon.svg">
-    <meta name="twitter:card" content="summary">
+    <meta property="og:image" content="https://nilpdf.com/assets/og-image.png">
+    <meta property="og:image:width" content="1200">
+    <meta property="og:image:height" content="630">
+    <meta name="twitter:card" content="summary_large_image">
     <meta name="twitter:title" content="NilPDF — Free PDF Tools. Zero Uploads.">
-    <meta name="twitter:description" content="12 PDF tools in your browser. Zero uploads. Zero tracking. 100% private.">
+    <meta name="twitter:description" content="13 PDF tools in your browser. Zero uploads. Zero tracking. 100% private.">
+    <meta name="twitter:image" content="https://nilpdf.com/assets/og-image.png">
     <link rel="canonical" href="https://nilpdf.com/">
     <link rel="manifest" href="./manifest.json">
+
+    <!-- Structured data -->
+    <script type="application/ld+json">
+    {
+      "@context": "https://schema.org",
+      "@type": "WebApplication",
+      "name": "NilPDF",
+      "url": "https://nilpdf.com/",
+      "description": "13 free PDF tools that run entirely in your browser. Merge, split, compress, rotate, watermark and more. Zero uploads. Zero tracking. 100% private.",
+      "applicationCategory": "UtilitiesApplication",
+      "operatingSystem": "Any (browser-based)",
+      "browserRequirements": "Requires a modern browser with JavaScript enabled",
+      "screenshot": "https://nilpdf.com/assets/og-image.png",
+      "offers": { "@type": "Offer", "price": "0", "priceCurrency": "USD" },
+      "featureList": [
+        "Merge PDFs", "Split PDF", "Compress PDF", "Remove PDF metadata",
+        "Reorder pages", "Rotate pages", "Remove pages", "Extract text",
+        "Convert PDF to images", "Convert images to PDF",
+        "Add watermark", "Add page numbers", "Inspect PDF metadata"
+      ]
+    }
+    </script>
+
+    <!-- DNS prefetch for CDN assets -->
+    <link rel="preconnect" href="https://cdnjs.cloudflare.com">
+    <link rel="preconnect" href="https://cdn.jsdelivr.net">
 
     <link rel="icon" href="./assets/icon.svg" type="image/svg+xml">
     <link rel="stylesheet" href="./assets/css/main.css">
@@ -399,6 +428,11 @@
                 a.click();
                 URL.revokeObjectURL(url);
                 incrementCounter();
+                // Show share nudge once per session after first successful operation
+                if (!sessionStorage.getItem('nilpdf_nudged')) {
+                    sessionStorage.setItem('nilpdf_nudged', '1');
+                    setTimeout(showShareNudge, 1800);
+                }
 
                 // Clear file lists after successful operations so users start fresh
                 if (id === 'status') {
@@ -446,6 +480,22 @@
         }
 
         /** 3. NAVIGATION **/
+        const TOOL_META = {
+            merge:    { title: 'Merge PDFs',              desc: 'Combine multiple PDF files into one. Runs privately in your browser — zero uploads.' },
+            compress: { title: 'Compress PDF',            desc: 'Reduce PDF file size without quality loss. No uploads. Runs entirely in your browser.' },
+            anonymize:{ title: 'Scrub PDF Metadata',      desc: 'Strip all hidden metadata from a PDF privately. Zero uploads. Zero tracking.' },
+            split:    { title: 'Split PDF',               desc: 'Extract specific pages from a PDF. Runs locally in your browser. No uploads.' },
+            reorder:  { title: 'Reorder PDF Pages',       desc: 'Drag and drop to reorder pages in any PDF. No uploads. 100% private.' },
+            rotate:   { title: 'Rotate PDF Pages',        desc: 'Rotate any pages in a PDF. Runs entirely in your browser.' },
+            remove:   { title: 'Remove PDF Pages',        desc: 'Delete unwanted pages from a PDF privately. No uploads.' },
+            totext:   { title: 'PDF to Text',             desc: 'Extract all text from a PDF privately. Zero uploads. Runs in your browser.' },
+            topng:    { title: 'PDF to Images',           desc: 'Convert PDF pages to PNG images. Runs locally. No uploads.' },
+            topdf:    { title: 'Images to PDF',           desc: 'Combine images into a PDF file. No uploads. 100% private.' },
+            watermark:{ title: 'Watermark PDF',           desc: 'Add a custom text watermark to any PDF. Runs in your browser.' },
+            pagenums: { title: 'Add Page Numbers to PDF', desc: 'Stamp page numbers onto a PDF. No uploads. Zero tracking.' },
+            inspect:  { title: 'Inspect PDF',             desc: 'View PDF metadata, page count, fonts and more. Zero uploads.' },
+        };
+
         function switchTab(event, tool) {
             document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
             document.querySelectorAll('.tool-section').forEach(s => {
@@ -454,6 +504,14 @@
             event.target.classList.add('active');
             document.getElementById(`tool-${tool}`).classList.replace('hidden-tool', 'active-tool');
             history.replaceState(null, '', '#' + tool);
+            const meta = TOOL_META[tool];
+            if (meta) {
+                document.title = `NilPDF — ${meta.title} (Free, No Uploads)`;
+                document.querySelector('meta[property="og:title"]').setAttribute('content', `NilPDF — ${meta.title}`);
+                document.querySelector('meta[property="og:description"]').setAttribute('content', meta.desc);
+                document.querySelector('meta[name="twitter:title"]').setAttribute('content', `NilPDF — ${meta.title}`);
+                document.querySelector('meta[name="twitter:description"]').setAttribute('content', meta.desc);
+            }
         }
 
         /** 4. FILE SIZE VALIDATION **/
@@ -1244,14 +1302,43 @@
         /** ════════════════════════════════════════════════════════════════
          *  V6 — SHARE BUTTON
          * ════════════════════════════════════════════════════════════════ */
+        function getSharePayload() {
+            const hash = location.hash.replace('#', '');
+            const meta = TOOL_META[hash];
+            const url  = 'https://nilpdf.com/' + (hash ? '#' + hash : '');
+            const title = meta ? `NilPDF — ${meta.title}` : 'NilPDF — Free PDF Tools';
+            const text  = meta
+                ? `${meta.title} — free, no uploads, runs in your browser: ${url}`
+                : 'NilPDF: 13 free PDF tools that run entirely in your browser. Zero uploads. 100% private: https://nilpdf.com/';
+            return { title, text, url };
+        }
+
         document.getElementById('share-btn').onclick = () => {
-            const url = location.href;
+            const payload = getSharePayload();
             if (navigator.share) {
-                navigator.share({ title: 'NilPDF', url }).catch(() => {});
+                navigator.share(payload).catch(() => {});
             } else {
-                navigator.clipboard.writeText(url).then(() => showToast('Link copied!')).catch(() => {});
+                navigator.clipboard.writeText(payload.url).then(() => showToast('Link copied!')).catch(() => {});
             }
         };
+
+        function showShareNudge() {
+            if (document.getElementById('share-nudge')) return;
+            const payload = getSharePayload();
+            const tweetText = encodeURIComponent(payload.text);
+            const nudge = document.createElement('div');
+            nudge.id = 'share-nudge';
+            nudge.className = 'share-nudge';
+            nudge.innerHTML = `
+                <span>Liked it? Help others find NilPDF</span>
+                <a class="nudge-tweet-btn" href="https://twitter.com/intent/tweet?text=${tweetText}" target="_blank" rel="noopener">Post on X</a>
+                <button class="nudge-copy-btn" onclick="navigator.clipboard.writeText('${payload.url}').then(()=>showToast('Link copied!'));this.textContent='Copied!'">Copy link</button>
+                <button class="nudge-dismiss" onclick="this.closest('.share-nudge').remove()" aria-label="Dismiss">✕</button>
+            `;
+            document.querySelector('main.container').appendChild(nudge);
+            requestAnimationFrame(() => nudge.classList.add('share-nudge-visible'));
+            setTimeout(() => { nudge.classList.remove('share-nudge-visible'); setTimeout(() => nudge.remove(), 400); }, 12000);
+        }
 
         /** ════════════════════════════════════════════════════════════════
          *  V2 — TOTEXT COPY-TO-CLIPBOARD
