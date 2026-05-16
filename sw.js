@@ -16,27 +16,34 @@ self.addEventListener('activate', e => {
     );
 });
 
+function addSecurityHeaders(res) {
+    if (!res || res.status === 0) return res;
+    const h = new Headers(res.headers);
+    h.set('Cross-Origin-Opener-Policy', 'same-origin');
+    h.set('Cross-Origin-Embedder-Policy', 'credentialless');
+    return new Response(res.body, { status: res.status, statusText: res.statusText, headers: h });
+}
+
 self.addEventListener('fetch', e => {
     if (e.request.method !== 'GET') return;
+    const reqPath = new URL(e.request.url).pathname;
 
     // Set COOP/COEP on navigation responses so Pyodide can use SharedArrayBuffer
     if (e.request.mode === 'navigate') {
         e.respondWith(
-            fetch(e.request)
-                .then(res => {
-                    if (!res || res.status === 0) return res;
-                    const h = new Headers(res.headers);
-                    h.set('Cross-Origin-Opener-Policy', 'same-origin');
-                    h.set('Cross-Origin-Embedder-Policy', 'credentialless');
-                    return new Response(res.body, { status: res.status, statusText: res.statusText, headers: h });
-                })
-                .catch(() => caches.match(e.request))
+            fetch(e.request).then(addSecurityHeaders).catch(() => caches.match(e.request))
         );
         return;
     }
 
+    // Also stamp COEP on the worker script so it inherits cross-origin isolation.
+    // Without this, Chrome blocks the Worker and Pyodide can't start.
+    if (reqPath.includes('pdf_worker.js')) {
+        e.respondWith(fetch(e.request).then(addSecurityHeaders));
+        return;
+    }
+
     // Cache-first for app shell files (match by pathname, ignoring any query params)
-    const reqPath = new URL(e.request.url).pathname;
     if (SHELL.some(path => reqPath === path || reqPath.endsWith(path))) {
         e.respondWith(caches.match(e.request).then(r => r || fetch(e.request).then(res => {
             const clone = res.clone();
