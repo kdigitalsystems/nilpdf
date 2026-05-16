@@ -48,7 +48,10 @@ jobs:
       - name: Setup Pages
         uses: actions/configure-pages@v4
       - name: Write build version
-        run: echo "window.BUILD_VERSION='$(git log -1 --format='%h · %as')';" > version.js
+        run: |
+          SHORT="${GITHUB_SHA:0:7}"
+          DATE="$(date -u +%Y-%m-%d)"
+          printf "window.BUILD_VERSION='%s %s';\n" "$SHORT" "$DATE" > version.js
       - name: Upload artifact
         uses: actions/upload-pages-artifact@v3
         with:
