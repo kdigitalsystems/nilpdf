@@ -171,6 +171,10 @@ self.onmessage = async (event) => {
             result_py = self.pyodide.globals.get('process_watermark')(payload.buffer, payload.text, payload.opacity, id, password);
         } else if (action === 'ADD_PAGE_NUMBERS') {
             result_py = self.pyodide.globals.get('process_add_page_numbers')(payload.buffer, payload.position, payload.startNum, id, password);
+        } else if (action === 'ADD_FOOTER') {
+            result_py = self.pyodide.globals.get('process_add_footer')(payload.buffer, id, password);
+        } else if (action === 'REPAIR') {
+            result_py = self.pyodide.globals.get('process_repair')(payload.buffer, id, password);
         } else {
             throw new Error(`Unknown action: ${action}`);
         }

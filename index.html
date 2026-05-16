@@ -69,8 +69,8 @@
 
     <main class="container">
         <header class="app-header">
-            <button class="theme-toggle" id="theme-toggle" title="Toggle Theme">🌓</button>
-            <button class="share-btn" id="share-btn" title="Share this tool">🔗</button>
+            <button class="theme-toggle" id="theme-toggle" title="Toggle Theme" aria-label="Toggle colour theme">🌓</button>
+            <button class="share-btn" id="share-btn" title="Share this tool" aria-label="Share this tool">🔗</button>
             <h2>NilPDF</h2>
             <p>100% Private • No Uploads</p>
             <p id="counter-display" class="counter-display"></p>
@@ -90,6 +90,7 @@
             <button class="tab-btn" onclick="switchTab(event, 'watermark')">Watermark</button>
             <button class="tab-btn" onclick="switchTab(event, 'pagenums')">Page #s</button>
             <button class="tab-btn" onclick="switchTab(event, 'inspect')">Inspect</button>
+            <button class="tab-btn" onclick="switchTab(event, 'repair')">Repair</button>
         </nav>
 
         <!-- MERGE -->
@@ -97,46 +98,48 @@
             <div id="drop-zone-merge" class="file-drop">
                 <p>Drag PDFs here — drop multiple times to add more</p>
                 <button onclick="document.getElementById('pdf-upload').click()" class="secondary-btn">Browse</button>
-                <input type="file" id="pdf-upload" accept="application/pdf" multiple hidden>
+                <input type="file" id="pdf-upload" accept="application/pdf" multiple hidden aria-label="Select PDF files to merge">
             </div>
             <ul id="file-list" class="file-list"></ul>
             <input type="password" id="merge-password" class="text-input password-input" placeholder="🔒 Password (if encrypted)">
+            <label class="footer-credit-label"><input type="checkbox" class="footer-credit-cb" id="merge-footer"> Add "Processed with NilPDF.com" to footer</label>
             <button id="merge-btn" class="primary-btn" disabled>Merge Files</button>
-            <div id="status" class="status-message"></div>
+            <div id="status" class="status-message" role="status" aria-live="polite" aria-atomic="true"></div>
         </div>
 
         <!-- COMPRESS -->
         <div id="tool-compress" class="tool-section hidden-tool">
-            <div id="drop-zone-compress" class="file-drop">
+            <div id="drop-zone-compress" class="file-drop" aria-label="Drop zone">
                 <p>Drop PDFs to reduce file size</p>
                 <button onclick="document.getElementById('compress-upload').click()" class="secondary-btn">Browse</button>
-                <input type="file" id="compress-upload" accept="application/pdf" multiple hidden>
+                <input type="file" id="compress-upload" accept="application/pdf" multiple hidden aria-label="Select PDF files to compress">
             </div>
             <ul id="compress-list" class="file-list"></ul>
             <input type="password" id="compress-password" class="text-input password-input" placeholder="🔒 Password (if encrypted)">
+            <label class="footer-credit-label"><input type="checkbox" class="footer-credit-cb" id="compress-footer"> Add "Processed with NilPDF.com" to footer</label>
             <button id="compress-btn" class="primary-btn">Optimize Size</button>
-            <div id="compress-status" class="status-message">Ready.</div>
+            <div id="compress-status" class="status-message" role="status" aria-live="polite" aria-atomic="true">Ready.</div>
         </div>
 
         <!-- ANONYMIZE -->
         <div id="tool-anonymize" class="tool-section hidden-tool">
-            <div id="drop-zone-anonymize" class="file-drop">
+            <div id="drop-zone-anonymize" class="file-drop" aria-label="Drop zone">
                 <p>Drop PDFs to strip metadata</p>
                 <button onclick="document.getElementById('anonymize-upload').click()" class="secondary-btn">Browse</button>
-                <input type="file" id="anonymize-upload" accept="application/pdf" multiple hidden>
+                <input type="file" id="anonymize-upload" accept="application/pdf" multiple hidden aria-label="Select PDF files to scrub metadata">
             </div>
             <ul id="anonymize-list" class="file-list"></ul>
             <input type="password" id="anonymize-password" class="text-input password-input" placeholder="🔒 Password (if encrypted)">
             <button id="anonymize-btn" class="primary-btn">Strip Identifiers</button>
-            <div id="anonymize-status" class="status-message">Ready.</div>
+            <div id="anonymize-status" class="status-message" role="status" aria-live="polite" aria-atomic="true">Ready.</div>
         </div>
 
         <!-- SPLIT -->
         <div id="tool-split" class="tool-section hidden-tool">
-            <div id="drop-zone-split" class="file-drop">
+            <div id="drop-zone-split" class="file-drop" aria-label="Drop zone">
                 <p>Select PDF to extract pages</p>
                 <button onclick="document.getElementById('split-upload').click()" class="secondary-btn">Browse</button>
-                <input type="file" id="split-upload" accept="application/pdf" hidden>
+                <input type="file" id="split-upload" accept="application/pdf" hidden aria-label="Select a PDF to split">
             </div>
             <div class="input-group">
                 <label id="page-range-label">Pages to extract (e.g. 1, 3-5):</label>
@@ -151,28 +154,30 @@
                 <span id="split-help" class="split-help">All selected pages combined into one PDF.</span>
             </div>
             <input type="password" id="split-password" class="text-input password-input" placeholder="🔒 Password (if encrypted)">
+            <label class="footer-credit-label"><input type="checkbox" class="footer-credit-cb" id="split-footer"> Add "Processed with NilPDF.com" to footer</label>
             <button id="split-btn" class="primary-btn">Extract Pages</button>
-            <div id="split-status" class="status-message">Ready.</div>
+            <div id="split-status" class="status-message" role="status" aria-live="polite" aria-atomic="true">Ready.</div>
         </div>
 
         <!-- REORDER -->
         <div id="tool-reorder" class="tool-section hidden-tool">
-            <div id="drop-zone-reorder" class="file-drop">
+            <div id="drop-zone-reorder" class="file-drop" aria-label="Drop zone">
                 <button onclick="document.getElementById('reorder-upload').click()" class="secondary-btn">Load for Reordering</button>
-                <input type="file" id="reorder-upload" accept="application/pdf" hidden>
+                <input type="file" id="reorder-upload" accept="application/pdf" hidden aria-label="Select a PDF to reorder">
             </div>
             <div id="thumbnail-grid" class="thumbnail-grid"></div>
             <input type="password" id="reorder-password" class="text-input password-input" placeholder="🔒 Password (if encrypted)" style="display:none;">
+            <label class="footer-credit-label" style="display:none;" id="reorder-footer-label"><input type="checkbox" class="footer-credit-cb" id="reorder-footer"> Add "Processed with NilPDF.com" to footer</label>
             <button id="reorder-btn" class="primary-btn" style="display:none;">Save Reordered PDF</button>
-            <div id="reorder-status" class="status-message">Ready.</div>
+            <div id="reorder-status" class="status-message" role="status" aria-live="polite" aria-atomic="true">Ready.</div>
         </div>
 
         <!-- ROTATE -->
         <div id="tool-rotate" class="tool-section hidden-tool">
-            <div id="drop-zone-rotate" class="file-drop">
+            <div id="drop-zone-rotate" class="file-drop" aria-label="Drop zone">
                 <p>Select PDF to rotate pages</p>
                 <button onclick="document.getElementById('rotate-upload').click()" class="secondary-btn">Browse</button>
-                <input type="file" id="rotate-upload" accept="application/pdf" hidden>
+                <input type="file" id="rotate-upload" accept="application/pdf" hidden aria-label="Select a PDF to rotate">
             </div>
             <div class="input-group">
                 <label>Pages to rotate (blank = rotate all):</label>
@@ -188,16 +193,17 @@
                 </select>
             </div>
             <input type="password" id="rotate-password" class="text-input password-input" placeholder="🔒 Password (if encrypted)">
+            <label class="footer-credit-label"><input type="checkbox" class="footer-credit-cb" id="rotate-footer"> Add "Processed with NilPDF.com" to footer</label>
             <button id="rotate-btn" class="primary-btn">Rotate Pages</button>
-            <div id="rotate-status" class="status-message">Ready.</div>
+            <div id="rotate-status" class="status-message" role="status" aria-live="polite" aria-atomic="true">Ready.</div>
         </div>
 
         <!-- REMOVE PAGES -->
         <div id="tool-remove" class="tool-section hidden-tool">
-            <div id="drop-zone-remove" class="file-drop">
+            <div id="drop-zone-remove" class="file-drop" aria-label="Drop zone">
                 <p>Select PDF to remove pages from</p>
                 <button onclick="document.getElementById('remove-upload').click()" class="secondary-btn">Browse</button>
-                <input type="file" id="remove-upload" accept="application/pdf" hidden>
+                <input type="file" id="remove-upload" accept="application/pdf" hidden aria-label="Select a PDF to remove pages from">
             </div>
             <div class="input-group">
                 <label>Pages to remove (e.g. 1, 3-5):</label>
@@ -205,20 +211,21 @@
                 <span id="remove-preview" class="range-preview"></span>
             </div>
             <input type="password" id="remove-password" class="text-input password-input" placeholder="🔒 Password (if encrypted)">
+            <label class="footer-credit-label"><input type="checkbox" class="footer-credit-cb" id="remove-footer"> Add "Processed with NilPDF.com" to footer</label>
             <button id="remove-btn" class="primary-btn">Remove Pages</button>
-            <div id="remove-status" class="status-message">Ready.</div>
+            <div id="remove-status" class="status-message" role="status" aria-live="polite" aria-atomic="true">Ready.</div>
         </div>
 
         <!-- PDF TO TEXT -->
         <div id="tool-totext" class="tool-section hidden-tool">
-            <div id="drop-zone-totext" class="file-drop">
+            <div id="drop-zone-totext" class="file-drop" aria-label="Drop zone">
                 <p>Drop PDF to extract all text content</p>
                 <button onclick="document.getElementById('totext-upload').click()" class="secondary-btn">Browse</button>
-                <input type="file" id="totext-upload" accept="application/pdf" hidden>
+                <input type="file" id="totext-upload" accept="application/pdf" hidden aria-label="Select a PDF to extract text from">
             </div>
             <input type="password" id="totext-password" class="text-input password-input" placeholder="🔒 Password (if encrypted)">
             <button id="totext-btn" class="primary-btn">Extract Text</button>
-            <div id="totext-status" class="status-message">Ready.</div>
+            <div id="totext-status" class="status-message" role="status" aria-live="polite" aria-atomic="true">Ready.</div>
             <div id="totext-preview-area" style="display:none;">
                 <textarea id="totext-preview" class="totext-preview" readonly placeholder="Extracted text appears here…"></textarea>
                 <button id="totext-copy-btn" class="secondary-btn" style="width:100%;margin-top:0.5rem;">Copy to Clipboard</button>
@@ -227,10 +234,10 @@
 
         <!-- PDF TO IMAGES -->
         <div id="tool-topng" class="tool-section hidden-tool">
-            <div id="drop-zone-topng" class="file-drop">
+            <div id="drop-zone-topng" class="file-drop" aria-label="Drop zone">
                 <p>Drop PDF to export pages as images</p>
                 <button onclick="document.getElementById('topng-upload').click()" class="secondary-btn">Browse</button>
-                <input type="file" id="topng-upload" accept="application/pdf" hidden>
+                <input type="file" id="topng-upload" accept="application/pdf" hidden aria-label="Select a PDF to convert to images">
             </div>
             <div class="input-group">
                 <label>Image format:</label>
@@ -240,27 +247,27 @@
                 </select>
             </div>
             <button id="topng-btn" class="primary-btn">Convert to Images</button>
-            <div id="topng-status" class="status-message">Ready.</div>
+            <div id="topng-status" class="status-message" role="status" aria-live="polite" aria-atomic="true">Ready.</div>
         </div>
 
         <!-- IMAGES TO PDF -->
         <div id="tool-topdf" class="tool-section hidden-tool">
-            <div id="drop-zone-topdf" class="file-drop">
+            <div id="drop-zone-topdf" class="file-drop" aria-label="Drop zone">
                 <p>Drop JPG or PNG images to combine into a PDF</p>
                 <button onclick="document.getElementById('topdf-upload').click()" class="secondary-btn">Browse</button>
-                <input type="file" id="topdf-upload" accept="image/jpeg,image/jpg,image/png" multiple hidden>
+                <input type="file" id="topdf-upload" accept="image/jpeg,image/jpg,image/png" multiple hidden aria-label="Select images to combine into PDF">
             </div>
             <ul id="topdf-list" class="file-list"></ul>
             <button id="topdf-btn" class="primary-btn">Create PDF</button>
-            <div id="topdf-status" class="status-message">Ready.</div>
+            <div id="topdf-status" class="status-message" role="status" aria-live="polite" aria-atomic="true">Ready.</div>
         </div>
 
         <!-- WATERMARK -->
         <div id="tool-watermark" class="tool-section hidden-tool">
-            <div id="drop-zone-watermark" class="file-drop">
+            <div id="drop-zone-watermark" class="file-drop" aria-label="Drop zone">
                 <p>Drop PDF to add a diagonal text watermark</p>
                 <button onclick="document.getElementById('watermark-upload').click()" class="secondary-btn">Browse</button>
-                <input type="file" id="watermark-upload" accept="application/pdf" hidden>
+                <input type="file" id="watermark-upload" accept="application/pdf" hidden aria-label="Select a PDF to watermark">
             </div>
             <div class="input-group">
                 <label>Watermark text:</label>
@@ -271,16 +278,17 @@
                 <input type="range" id="watermark-opacity" min="10" max="80" value="30" class="range-slider">
             </div>
             <input type="password" id="watermark-password" class="text-input password-input" placeholder="🔒 Password (if encrypted)">
+            <label class="footer-credit-label"><input type="checkbox" class="footer-credit-cb" id="watermark-footer"> Add "Processed with NilPDF.com" to footer</label>
             <button id="watermark-btn" class="primary-btn">Apply Watermark</button>
-            <div id="watermark-status" class="status-message">Ready.</div>
+            <div id="watermark-status" class="status-message" role="status" aria-live="polite" aria-atomic="true">Ready.</div>
         </div>
 
         <!-- PAGE NUMBERS -->
         <div id="tool-pagenums" class="tool-section hidden-tool">
-            <div id="drop-zone-pagenums" class="file-drop">
+            <div id="drop-zone-pagenums" class="file-drop" aria-label="Drop zone">
                 <p>Drop PDF to add page numbers</p>
                 <button onclick="document.getElementById('pagenums-upload').click()" class="secondary-btn">Browse</button>
-                <input type="file" id="pagenums-upload" accept="application/pdf" hidden>
+                <input type="file" id="pagenums-upload" accept="application/pdf" hidden aria-label="Select a PDF to add page numbers to">
             </div>
             <div class="input-group">
                 <label>Position:</label>
@@ -298,20 +306,32 @@
                 <input type="number" id="pagenums-start" value="1" min="1" class="text-input num-input">
             </div>
             <input type="password" id="pagenums-password" class="text-input password-input" placeholder="🔒 Password (if encrypted)">
+            <label class="footer-credit-label"><input type="checkbox" class="footer-credit-cb" id="pagenums-footer"> Add "Processed with NilPDF.com" to footer</label>
             <button id="pagenums-btn" class="primary-btn">Add Page Numbers</button>
-            <div id="pagenums-status" class="status-message">Ready.</div>
+            <div id="pagenums-status" class="status-message" role="status" aria-live="polite" aria-atomic="true">Ready.</div>
         </div>
         <!-- INSPECT -->
         <div id="tool-inspect" class="tool-section hidden-tool">
-            <div id="drop-zone-inspect" class="file-drop">
+            <div id="drop-zone-inspect" class="file-drop" aria-label="Drop zone">
                 <p>Drop PDF to inspect metadata &amp; document info</p>
                 <button onclick="document.getElementById('inspect-upload').click()" class="secondary-btn">Browse</button>
-                <input type="file" id="inspect-upload" accept="application/pdf" hidden>
+                <input type="file" id="inspect-upload" accept="application/pdf" hidden aria-label="Select a PDF to inspect">
             </div>
             <input type="password" id="inspect-password" class="text-input password-input" placeholder="🔒 Password (if encrypted)">
             <button id="inspect-btn" class="primary-btn">Inspect PDF</button>
             <div id="inspect-results" class="inspect-results"></div>
-            <div id="inspect-status" class="status-message">Ready.</div>
+            <div id="inspect-status" class="status-message" role="status" aria-live="polite" aria-atomic="true">Ready.</div>
+        </div>
+        <!-- REPAIR -->
+        <div id="tool-repair" class="tool-section hidden-tool">
+            <div id="drop-zone-repair" class="file-drop" aria-label="Drop zone">
+                <p>Drop a corrupted or truncated PDF to attempt recovery</p>
+                <button onclick="document.getElementById('repair-upload').click()" class="secondary-btn">Browse</button>
+                <input type="file" id="repair-upload" accept="application/pdf" hidden aria-label="Select a PDF to repair">
+            </div>
+            <input type="password" id="repair-password" class="text-input password-input" placeholder="🔒 Password (if encrypted)">
+            <button id="repair-btn" class="primary-btn">Recover PDF</button>
+            <div id="repair-status" class="status-message" role="status" aria-live="polite" aria-atomic="true">Ready.</div>
         </div>
         <footer class="app-footer">
             <p>A property of <strong>K Digital Systems LLC</strong></p>
@@ -362,6 +382,9 @@
         let pendingAction = null;  // queued fn to run once SYSTEM_READY fires
         let pendingCompressInfo = null;
         let pendingDownload = null;
+        let pendingFooter = false;  // whether to add footer credit after next SUCCESS
+        let lastLoadedFile = null;  // most-recently loaded single-file PDF
+        let lastLoadedTool = null;  // which tool it came from
         function stem(filename) { return filename.replace(/\.[^/.]+$/, ''); }
         function escHtml(s) { return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
 
@@ -452,6 +475,17 @@
                 updateStatus(e.data.id, e.data.msg, "");
 
             } else if (type === 'SUCCESS') {
+                // Two-pass footer credit: intercept result and run ADD_FOOTER before downloading
+                if (pendingFooter && !isZip && !isText) {
+                    pendingFooter = false;
+                    const transferBuf = result instanceof Uint8Array ? result : new Uint8Array(result);
+                    worker.postMessage(
+                        { id, action: 'ADD_FOOTER', payload: { buffer: transferBuf, password: '' } },
+                        [transferBuf.buffer]
+                    );
+                    return;
+                }
+
                 let mime, ext;
                 if (isText)     { mime = 'text/plain';        ext = 'txt'; }
                 else if (isZip) { mime = 'application/zip';   ext = 'zip'; }
@@ -488,6 +522,7 @@
                     document.getElementById('thumbnail-grid').innerHTML = '';
                     document.getElementById('reorder-btn').style.display = 'none';
                     document.getElementById('reorder-password').style.display = 'none';
+                    document.getElementById('reorder-footer-label').style.display = 'none';
                     document.getElementById('reorder-upload').value = '';
                 }
 
@@ -540,7 +575,10 @@
             watermark:{ title: 'Watermark PDF',           desc: 'Add a custom text watermark to any PDF. Runs in your browser.' },
             pagenums: { title: 'Add Page Numbers to PDF', desc: 'Stamp page numbers onto a PDF. No uploads. Zero tracking.' },
             inspect:  { title: 'Inspect PDF',             desc: 'View PDF metadata, page count, fonts and more. Zero uploads.' },
+            repair:   { title: 'Repair PDF',              desc: 'Attempt to recover pages from a corrupted or truncated PDF. Runs privately in your browser.' },
         };
+
+        const SINGLE_FILE_TOOLS = ['split','reorder','rotate','remove','totext','topng','watermark','pagenums','inspect','repair'];
 
         function switchTab(event, tool) {
             document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
@@ -557,6 +595,31 @@
                 document.querySelector('meta[property="og:description"]').setAttribute('content', meta.desc);
                 document.querySelector('meta[name="twitter:title"]').setAttribute('content', `NilPDF — ${meta.title}`);
                 document.querySelector('meta[name="twitter:description"]').setAttribute('content', meta.desc);
+            }
+            // Remove any existing persistent-file banner
+            document.getElementById('persistent-file-banner')?.remove();
+            if (lastLoadedFile && SINGLE_FILE_TOOLS.includes(tool) && tool !== lastLoadedTool) {
+                const targetInput = document.getElementById(`${tool}-upload`);
+                if (targetInput && !targetInput.files[0]) {
+                    const banner = document.createElement('div');
+                    banner.id = 'persistent-file-banner';
+                    banner.className = 'persistent-file-banner';
+                    const short = lastLoadedFile.name.length > 28
+                        ? lastLoadedFile.name.slice(0, 25) + '…'
+                        : lastLoadedFile.name;
+                    banner.innerHTML = `<span>Use <strong>${short}</strong>?</span>
+                        <button class="nudge-copy-btn" id="pf-use-btn">Use it</button>
+                        <button class="nudge-dismiss" id="pf-dismiss-btn" aria-label="Dismiss">✕</button>`;
+                    document.getElementById(`tool-${tool}`).prepend(banner);
+                    document.getElementById('pf-use-btn').onclick = () => {
+                        const dt = new DataTransfer();
+                        dt.items.add(lastLoadedFile);
+                        targetInput.files = dt.files;
+                        targetInput.dispatchEvent(new Event('change'));
+                        banner.remove();
+                    };
+                    document.getElementById('pf-dismiss-btn').onclick = () => banner.remove();
+                }
             }
         }
 
@@ -686,8 +749,9 @@
             const count = mergeFilesArray.length;
             pendingDownload = 'merged.pdf';
             runWhenReady('status', () => {
+                pendingFooter = document.getElementById('merge-footer')?.checked ?? false;
                 updateStatus('status', `Merging ${count} files...`, '');
-                worker.postMessage({ id: 'status', action: 'MERGE', payload: { buffers, password } });
+                worker.postMessage({ id: 'status', action: 'MERGE', payload: { buffers, password } }, buffers.map(b => b.buffer));
             });
         };
 
@@ -725,13 +789,15 @@
             runWhenReady('compress-status', () => {
                 updateStatus('compress-status', `Squeezing ${fcount} file(s)...`, '');
                 if (single) {
+                    pendingFooter = document.getElementById('compress-footer')?.checked ?? false;
                     pendingCompressInfo = { origSize, isBulk: false };
                     pendingDownload = stem(fname) + '_compressed.pdf';
-                    worker.postMessage({ id: 'compress-status', action: 'COMPRESS', payload: { buffer: buffers[0], password } });
+                    worker.postMessage({ id: 'compress-status', action: 'COMPRESS', payload: { buffer: buffers[0], password } }, [buffers[0].buffer]);
                 } else {
+                    pendingFooter = false;
                     pendingCompressInfo = { isBulk: true };
                     pendingDownload = 'compressed_batch.zip';
-                    worker.postMessage({ id: 'compress-status', action: 'BULK_PROCESS', payload: { sub_action: 'COMPRESS', names, buffers, password } });
+                    worker.postMessage({ id: 'compress-status', action: 'BULK_PROCESS', payload: { sub_action: 'COMPRESS', names, buffers, password } }, buffers.map(b => b.buffer));
                 }
             });
         };
@@ -755,13 +821,14 @@
             const single = files.length === 1;
             const fname = files[0].name; const fcount = files.length;
             runWhenReady('anonymize-status', () => {
+                pendingFooter = false;
                 updateStatus('anonymize-status', `Scrubbing ${fcount} file(s)...`, '');
                 if (single) {
                     pendingDownload = stem(fname) + '_scrubbed.pdf';
-                    worker.postMessage({ id: 'anonymize-status', action: 'ANONYMIZE', payload: { buffer: buffers[0], password } });
+                    worker.postMessage({ id: 'anonymize-status', action: 'ANONYMIZE', payload: { buffer: buffers[0], password } }, [buffers[0].buffer]);
                 } else {
                     pendingDownload = 'scrubbed_batch.zip';
-                    worker.postMessage({ id: 'anonymize-status', action: 'BULK_PROCESS', payload: { sub_action: 'ANONYMIZE', names, buffers, password } });
+                    worker.postMessage({ id: 'anonymize-status', action: 'BULK_PROCESS', payload: { sub_action: 'ANONYMIZE', names, buffers, password } }, buffers.map(b => b.buffer));
                 }
             });
         };
@@ -775,6 +842,7 @@
         sInput.onchange = async () => {
             const f = sInput.files[0];
             if (!f) return;
+            lastLoadedFile = f; lastLoadedTool = 'split';
             splitTotalPages = 0;
             document.getElementById('range-preview').textContent = '';
             updateStatus('split-status', `Loading ${f.name}...`, '');
@@ -836,16 +904,18 @@
                 if (!groups.length) { updateStatus('split-status', 'Enter valid page ranges.', 'text-red'); return; }
                 pendingDownload = stem(fname) + '_split.zip';
                 runWhenReady('split-status', () => {
+                    pendingFooter = false;
                     updateStatus('split-status', `Splitting into ${groups.length} file(s)...`, '');
-                    worker.postMessage({ id: 'split-status', action: 'SPLIT_MULTI', payload: { buffer, ranges: groups, password } });
+                    worker.postMessage({ id: 'split-status', action: 'SPLIT_MULTI', payload: { buffer, ranges: groups, password } }, [buffer.buffer]);
                 });
             } else {
                 const indices = parsePageRange(range);
                 if (!indices.length) { updateStatus('split-status', 'Enter valid page numbers.', 'text-red'); return; }
                 pendingDownload = stem(fname) + '_split.pdf';
                 runWhenReady('split-status', () => {
+                    pendingFooter = document.getElementById('split-footer')?.checked ?? false;
                     updateStatus('split-status', 'Extracting pages...', '');
-                    worker.postMessage({ id: 'split-status', action: 'SPLIT', payload: { buffer, indices, password } });
+                    worker.postMessage({ id: 'split-status', action: 'SPLIT', payload: { buffer, indices, password } }, [buffer.buffer]);
                 });
             }
         };
@@ -858,6 +928,7 @@
         rInput.onchange = async () => {
             const file = rInput.files[0];
             if (!file) return;
+            lastLoadedFile = file; lastLoadedTool = 'reorder';
             const myVersion = ++reorderVersion;
             const grid = document.getElementById('thumbnail-grid');
             grid.innerHTML = '';
@@ -888,6 +959,7 @@
             }
             document.getElementById('reorder-btn').style.display   = 'block';
             document.getElementById('reorder-password').style.display = 'block';
+            document.getElementById('reorder-footer-label').style.display = 'flex';
             updateStatus('reorder-status', 'Drag to rearrange, then save.', 'text-green');
             if (sortable) sortable.destroy();
             sortable = new Sortable(grid, { animation: 150 });
@@ -900,8 +972,9 @@
             const buffer   = await toUint8(rInput.files[0]);
             pendingDownload = stem(rInput.files[0].name) + '_reordered.pdf';
             runWhenReady('reorder-status', () => {
+                pendingFooter = document.getElementById('reorder-footer')?.checked ?? false;
                 updateStatus('reorder-status', 'Saving new order...', '');
-                worker.postMessage({ id: 'reorder-status', action: 'REORDER', payload: { buffer, order, password } });
+                worker.postMessage({ id: 'reorder-status', action: 'REORDER', payload: { buffer, order, password } }, [buffer.buffer]);
             });
         };
 
@@ -914,6 +987,7 @@
         rotateInput.onchange = async () => {
             const f = rotateInput.files[0];
             if (!f) return;
+            lastLoadedFile = f; lastLoadedTool = 'rotate';
             rotateTotalPages = 0;
             updateStatus('rotate-status', `Loading ${f.name}...`, '');
             try {
@@ -957,8 +1031,9 @@
             const buffer   = await toUint8(rotateInput.files[0]);
             pendingDownload = stem(rotateInput.files[0].name) + '_rotated.pdf';
             runWhenReady('rotate-status', () => {
+                pendingFooter = document.getElementById('rotate-footer')?.checked ?? false;
                 updateStatus('rotate-status', 'Rotating pages...', '');
-                worker.postMessage({ id: 'rotate-status', action: 'ROTATE', payload: { buffer, degrees, indices, password } });
+                worker.postMessage({ id: 'rotate-status', action: 'ROTATE', payload: { buffer, degrees, indices, password } }, [buffer.buffer]);
             });
         };
 
@@ -971,6 +1046,7 @@
         removeInput.onchange = async () => {
             const f = removeInput.files[0];
             if (!f) return;
+            lastLoadedFile = f; lastLoadedTool = 'remove';
             removeTotalPages = 0;
             updateStatus('remove-status', `Loading ${f.name}...`, '');
             try {
@@ -1019,8 +1095,9 @@
             const buffer   = await toUint8(removeInput.files[0]);
             pendingDownload = stem(removeInput.files[0].name) + '_pages_removed.pdf';
             runWhenReady('remove-status', () => {
+                pendingFooter = document.getElementById('remove-footer')?.checked ?? false;
                 updateStatus('remove-status', 'Removing pages...', '');
-                worker.postMessage({ id: 'remove-status', action: 'REMOVE_PAGES', payload: { buffer, indices, password } });
+                worker.postMessage({ id: 'remove-status', action: 'REMOVE_PAGES', payload: { buffer, indices, password } }, [buffer.buffer]);
             });
         };
 
@@ -1029,7 +1106,10 @@
          * ════════════════════════════════════════════════════════════════ */
         const totextInput = document.getElementById('totext-upload');
         totextInput.onchange = () => {
-            if (totextInput.files[0]) updateStatus('totext-status', `Loaded: ${totextInput.files[0].name}`, 'text-green');
+            if (totextInput.files[0]) {
+                lastLoadedFile = totextInput.files[0]; lastLoadedTool = 'totext';
+                updateStatus('totext-status', `Loaded: ${totextInput.files[0].name}`, 'text-green');
+            }
         };
         bindSimpleDrop('drop-zone-totext', totextInput);
 
@@ -1041,8 +1121,9 @@
             const buffer   = await toUint8(totextInput.files[0]);
             pendingDownload = stem(totextInput.files[0].name) + '.txt';
             runWhenReady('totext-status', () => {
+                pendingFooter = false;
                 updateStatus('totext-status', 'Extracting text...', '');
-                worker.postMessage({ id: 'totext-status', action: 'EXTRACT_TEXT', payload: { buffer, password } });
+                worker.postMessage({ id: 'totext-status', action: 'EXTRACT_TEXT', payload: { buffer, password } }, [buffer.buffer]);
             });
         };
 
@@ -1196,7 +1277,10 @@
          * ════════════════════════════════════════════════════════════════ */
         const watermarkInput = document.getElementById('watermark-upload');
         watermarkInput.onchange = () => {
-            if (watermarkInput.files[0]) updateStatus('watermark-status', `Loaded: ${watermarkInput.files[0].name}`, 'text-green');
+            if (watermarkInput.files[0]) {
+                lastLoadedFile = watermarkInput.files[0]; lastLoadedTool = 'watermark';
+                updateStatus('watermark-status', `Loaded: ${watermarkInput.files[0].name}`, 'text-green');
+            }
         };
         bindSimpleDrop('drop-zone-watermark', watermarkInput);
         document.getElementById('watermark-opacity').addEventListener('input', function () {
@@ -1214,8 +1298,9 @@
             const buffer   = await toUint8(watermarkInput.files[0]);
             pendingDownload = stem(watermarkInput.files[0].name) + '_watermarked.pdf';
             runWhenReady('watermark-status', () => {
+                pendingFooter = document.getElementById('watermark-footer')?.checked ?? false;
                 updateStatus('watermark-status', 'Applying watermark...', '');
-                worker.postMessage({ id: 'watermark-status', action: 'WATERMARK', payload: { buffer, text, opacity, password } });
+                worker.postMessage({ id: 'watermark-status', action: 'WATERMARK', payload: { buffer, text, opacity, password } }, [buffer.buffer]);
             });
         };
 
@@ -1224,7 +1309,10 @@
          * ════════════════════════════════════════════════════════════════ */
         const pagenumInput = document.getElementById('pagenums-upload');
         pagenumInput.onchange = () => {
-            if (pagenumInput.files[0]) updateStatus('pagenums-status', `Loaded: ${pagenumInput.files[0].name}`, 'text-green');
+            if (pagenumInput.files[0]) {
+                lastLoadedFile = pagenumInput.files[0]; lastLoadedTool = 'pagenums';
+                updateStatus('pagenums-status', `Loaded: ${pagenumInput.files[0].name}`, 'text-green');
+            }
         };
         bindSimpleDrop('drop-zone-pagenums', pagenumInput);
 
@@ -1238,8 +1326,9 @@
             const buffer   = await toUint8(pagenumInput.files[0]);
             pendingDownload = stem(pagenumInput.files[0].name) + '_numbered.pdf';
             runWhenReady('pagenums-status', () => {
+                pendingFooter = document.getElementById('pagenums-footer')?.checked ?? false;
                 updateStatus('pagenums-status', 'Adding page numbers...', '');
-                worker.postMessage({ id: 'pagenums-status', action: 'ADD_PAGE_NUMBERS', payload: { buffer, position, startNum, password } });
+                worker.postMessage({ id: 'pagenums-status', action: 'ADD_PAGE_NUMBERS', payload: { buffer, position, startNum, password } }, [buffer.buffer]);
             });
         };
 
@@ -1248,7 +1337,10 @@
          * ════════════════════════════════════════════════════════════════ */
         const inspectInput = document.getElementById('inspect-upload');
         inspectInput.onchange = () => {
-            if (inspectInput.files[0]) updateStatus('inspect-status', `Loaded: ${inspectInput.files[0].name}`, 'text-green');
+            if (inspectInput.files[0]) {
+                lastLoadedFile = inspectInput.files[0]; lastLoadedTool = 'inspect';
+                updateStatus('inspect-status', `Loaded: ${inspectInput.files[0].name}`, 'text-green');
+            }
         };
         bindSimpleDrop('drop-zone-inspect', inspectInput);
 
@@ -1340,6 +1432,31 @@
                     : 'Error: ' + err.message;
                 updateStatus('inspect-status', msg, 'text-red');
             }
+        };
+
+        /** ════════════════════════════════════════════════════════════════
+         *  REPAIR
+         * ════════════════════════════════════════════════════════════════ */
+        const repairInput = document.getElementById('repair-upload');
+        repairInput.onchange = () => {
+            if (repairInput.files[0]) {
+                lastLoadedFile = repairInput.files[0]; lastLoadedTool = 'repair';
+                updateStatus('repair-status', `Loaded: ${repairInput.files[0].name}`, 'text-green');
+            }
+        };
+        bindSimpleDrop('drop-zone-repair', repairInput);
+
+        document.getElementById('repair-btn').onclick = async () => {
+            if (!repairInput.files[0]) { updateStatus('repair-status', 'Select a PDF first.', 'text-red'); return; }
+            const check = validateFileSizes([repairInput.files[0]]);
+            if (!check.ok) { updateStatus('repair-status', check.msg, 'text-red'); return; }
+            const password = document.getElementById('repair-password').value;
+            const buffer   = await toUint8(repairInput.files[0]);
+            pendingDownload = stem(repairInput.files[0].name) + '_repaired.pdf';
+            runWhenReady('repair-status', () => {
+                updateStatus('repair-status', 'Attempting recovery…', '');
+                worker.postMessage({ id: 'repair-status', action: 'REPAIR', payload: { buffer, password } }, [buffer.buffer]);
+            });
         };
 
         /** ════════════════════════════════════════════════════════════════
@@ -1448,7 +1565,7 @@
          *  V1 — HASH ROUTING (init)
          * ════════════════════════════════════════════════════════════════ */
         (function initHash() {
-            const TOOL_NAMES = ['merge','compress','anonymize','split','reorder','rotate','remove','totext','topng','topdf','watermark','pagenums','inspect'];
+            const TOOL_NAMES = ['merge','compress','anonymize','split','reorder','rotate','remove','totext','topng','topdf','watermark','pagenums','inspect','repair'];
             const hash = location.hash.replace('#', '');
             if (TOOL_NAMES.includes(hash)) {
                 const btn = document.querySelector(`.tab-btn[onclick*="'${hash}'"]`);

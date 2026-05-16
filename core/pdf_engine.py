@@ -7,8 +7,11 @@ def _ensure_py(data):
     return data.to_py() if hasattr(data, 'to_py') else data
 
 def _open_reader(buf, password=""):
-    """Open a PdfReader, decrypting with password if needed."""
-    reader = PdfReader(io.BytesIO(buf))
+    """Open a PdfReader, decrypting with password if needed. Falls back to strict=False on parse error."""
+    try:
+        reader = PdfReader(io.BytesIO(buf), strict=True)
+    except Exception:
+        reader = PdfReader(io.BytesIO(buf), strict=False)
     if reader.is_encrypted:
         result = reader.decrypt(password or "")
         if result == 0:
@@ -108,6 +111,7 @@ def process_compress(js_buf, status_id="", password=""):
     writer = PdfWriter()
     writer.append_pages_from_reader(reader)
 
+    import gc
     total = len(writer.pages)
     for i, page in enumerate(writer.pages):
         try:
@@ -115,6 +119,8 @@ def process_compress(js_buf, status_id="", password=""):
         except Exception:
             pass
         _post_progress(status_id, int((i + 1) / total * 70), f"Compressing page {i + 1} of {total}...")
+        if i % 20 == 19:
+            gc.collect()
 
     _post_progress(status_id, 75, "Re-compressing images...")
     _compress_images(writer)
@@ -394,6 +400,79 @@ def process_add_page_numbers(js_buf, position, start_num, status_id="", password
             page.merge_page(overlay_page)
         _post_progress(status_id, int((i + 1) / total * 90), f"Numbering page {i + 1} of {total}...")
 
+    _stamp_producer(writer)
+    out = io.BytesIO()
+    writer.write(out)
+    return out.getvalue()
+
+
+def _add_footer(writer, credit_text="Processed with NilPDF.com"):
+    """Overlay a small grey credit line at the bottom-centre of every page."""
+    try:
+        from reportlab.pdfgen import canvas as rl_canvas
+        from reportlab.lib.colors import Color
+    except ImportError:
+        return
+    for page in writer.pages:
+        w = float(page.mediabox.width)
+        h = float(page.mediabox.height)
+        buf = io.BytesIO()
+        c = rl_canvas.Canvas(buf, pagesize=(w, h))
+        c.setFont("Helvetica", 8)
+        c.setFillColor(Color(0.5, 0.5, 0.5, alpha=0.55))
+        c.drawCentredString(w / 2, 10, str(credit_text))
+        c.save()
+        buf.seek(0)
+        overlay = PdfReader(buf).pages[0]
+        try:
+            page.merge_page(overlay, over=True)
+        except TypeError:
+            page.merge_page(overlay)
+
+
+def process_add_footer(js_buf, status_id="", password=""):
+    """Add a small 'Processed with NilPDF.com' credit line to every page."""
+    buf = _ensure_py(js_buf)
+    reader = _open_reader(buf, password)
+    writer = PdfWriter()
+    writer.append_pages_from_reader(reader)
+    _post_progress(status_id, 50, "Adding footer credit…")
+    _add_footer(writer)
+    _stamp_producer(writer)
+    out = io.BytesIO()
+    writer.write(out)
+    return out.getvalue()
+
+
+def process_repair(js_buf, status_id="", password=""):
+    """Attempt to recover pages from a corrupted or truncated PDF."""
+    buf = _ensure_py(js_buf)
+    _post_progress(status_id, 5, "Attempting to open PDF…")
+    try:
+        reader = PdfReader(io.BytesIO(buf), strict=True)
+    except Exception:
+        _post_progress(status_id, 15, "Strict parse failed — retrying with error recovery…")
+        reader = PdfReader(io.BytesIO(buf), strict=False)
+    if reader.is_encrypted:
+        result = reader.decrypt(password or "")
+        if result == 0:
+            raise ValueError("Incorrect or missing password.")
+    total = len(reader.pages)
+    if total == 0:
+        raise ValueError("PDF contains no pages.")
+    writer = PdfWriter()
+    recovered, skipped = 0, 0
+    for i, page in enumerate(reader.pages):
+        try:
+            writer.add_page(page)
+            recovered += 1
+        except Exception:
+            skipped += 1
+        _post_progress(status_id, int(20 + (i + 1) / total * 70),
+                       f"Recovered {recovered} of {total} pages…")
+    if recovered == 0:
+        raise ValueError("No readable pages could be recovered.")
+    _post_progress(status_id, 95, f"Finalising — {recovered} pages recovered, {skipped} skipped…")
     _stamp_producer(writer)
     out = io.BytesIO()
     writer.write(out)
