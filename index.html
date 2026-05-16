@@ -13,8 +13,6 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>NilPDF — Free PDF Tools. Zero Uploads. 100% Private.</title>
 
-    <script src="/version.js"></script>
-
     <!-- PWA service worker (also sets COOP/COEP for Pyodide SharedArrayBuffer) -->
     <script>
         if ('serviceWorker' in navigator) {
@@ -397,8 +395,9 @@
         let lastLoadedFile = null;  // most-recently loaded single-file PDF
         let lastLoadedTool = null;  // which tool it came from
 
-        if (window.BUILD_VERSION) {
-            document.getElementById('build-version').textContent = 'build ' + window.BUILD_VERSION;
+        const _bv = '__BUILD_VERSION__';
+        if (!_bv.startsWith('__')) {
+            document.getElementById('build-version').textContent = 'build ' + _bv;
         }
         function stem(filename) { return filename.replace(/\.[^/.]+$/, ''); }
         function escHtml(s) { return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }

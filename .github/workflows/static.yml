@@ -47,11 +47,11 @@ jobs:
         uses: actions/checkout@v4
       - name: Setup Pages
         uses: actions/configure-pages@v4
-      - name: Write build version
+      - name: Stamp build version into index.html
         run: |
           SHORT="${GITHUB_SHA:0:7}"
           DATE="$(date -u +%Y-%m-%d)"
-          printf "window.BUILD_VERSION='%s %s';\n" "$SHORT" "$DATE" > version.js
+          sed -i "s/__BUILD_VERSION__/${SHORT} ${DATE}/g" index.html
       - name: Upload artifact
         uses: actions/upload-pages-artifact@v3
         with:
