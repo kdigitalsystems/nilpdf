@@ -1088,6 +1088,90 @@ body {
     color: var(--text-main);
 }
 
+/* ── Nav link (GitHub) ── */
+.nav-link {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.4rem;
+    font-size: 0.85rem;
+    font-weight: 600;
+    color: var(--text-muted);
+    text-decoration: none;
+    padding: 0.4rem 0.75rem;
+    border-radius: 6px;
+    transition: color 0.15s ease, background 0.15s ease;
+}
+
+.nav-link:hover {
+    color: var(--text-main);
+    background: var(--tab-bg);
+}
+
+/* ── Hero CTA button ── */
+.hero-cta {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+    background: var(--accent);
+    color: #fff;
+    font-size: 1rem;
+    font-weight: 700;
+    padding: 0.85rem 2rem;
+    border-radius: 8px;
+    border: none;
+    cursor: pointer;
+    transition: opacity 0.2s ease, transform 0.15s ease;
+    margin-bottom: 1.75rem;
+    text-decoration: none;
+}
+
+.hero-cta:hover {
+    opacity: 0.9;
+    transform: translateY(-1px);
+}
+
+/* ── Drop zone upgrade ── */
+.file-drop {
+    padding: 3rem 1.5rem;
+}
+
+.drop-icon {
+    display: block;
+    margin: 0 auto 0.75rem;
+    color: var(--accent);
+    opacity: 0.7;
+}
+
+.file-drop p {
+    font-size: 0.95rem;
+    color: var(--text-muted);
+    margin-bottom: 0.85rem;
+}
+
+.file-drop .secondary-btn {
+    font-size: 0.9rem;
+    padding: 0.5rem 1.4rem;
+    border-radius: 7px;
+}
+
+/* ── Workspace container wider ── */
+.workspace .container {
+    max-width: 580px;
+}
+
+/* ── Primary button accent colour ── */
+.primary-btn {
+    background-color: var(--accent);
+    border-radius: 8px;
+    padding: 0.9rem;
+    font-size: 1rem;
+    letter-spacing: 0.01em;
+}
+
+.primary-btn:hover:not(:disabled) {
+    background-color: #2563eb;
+}
+
 /* ── Responsive grid ── */
 @media (max-width: 1024px) {
     .tools-grid { grid-template-columns: repeat(3, 1fr); }

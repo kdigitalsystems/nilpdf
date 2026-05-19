@@ -91,6 +91,10 @@
             <span>NilPDF</span>
         </a>
         <div class="site-nav-right">
+            <a href="https://github.com/kdigitalsystems/nilpdf" target="_blank" rel="noopener" class="nav-link" title="View on GitHub">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M12 0C5.37 0 0 5.37 0 12c0 5.31 3.435 9.795 8.205 11.385.6.105.825-.255.825-.57 0-.285-.015-1.23-.015-2.235-3.015.555-3.795-.735-4.035-1.41-.135-.345-.72-1.41-1.23-1.695-.42-.225-1.02-.78-.015-.795.945-.015 1.62.87 1.845 1.23 1.08 1.815 2.805 1.305 3.495.99.105-.78.42-1.305.765-1.605-2.67-.3-5.46-1.335-5.46-5.925 0-1.305.465-2.385 1.23-3.225-.12-.3-.54-1.53.12-3.18 0 0 1.005-.315 3.3 1.23.96-.27 1.98-.405 3-.405s2.04.135 3 .405c2.295-1.56 3.3-1.23 3.3-1.23.66 1.65.24 2.88.12 3.18.765.84 1.23 1.905 1.23 3.225 0 4.605-2.805 5.625-5.475 5.925.435.375.81 1.095.81 2.22 0 1.605-.015 2.895-.015 3.3 0 .315.225.69.825.57A12.02 12.02 0 0024 12c0-6.63-5.37-12-12-12z"/></svg>
+                GitHub
+            </a>
             <button class="theme-toggle" id="theme-toggle" title="Toggle theme" aria-label="Toggle colour theme">🌓</button>
             <button class="share-btn" id="share-btn" title="Share" aria-label="Share this tool">🔗</button>
         </div>
@@ -104,6 +108,10 @@
     <section class="hero">
         <h1 class="hero-title">PDF tools that<br>stay in your browser</h1>
         <p class="hero-sub">14 free tools. Zero uploads. Completely private.</p>
+        <button class="hero-cta" onclick="document.querySelector('.tools-section').scrollIntoView({behavior:'smooth'})">
+            Browse all tools
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg>
+        </button>
         <p id="counter-display" class="counter-display"></p>
         <div class="trust-pills">
             <span class="trust-pill">
@@ -303,6 +311,7 @@
         <!-- MERGE -->
         <div id="tool-merge" class="tool-section active-tool">
             <div id="drop-zone-merge" class="file-drop">
+                <svg class="drop-icon" width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
                 <p>Drag PDFs here — drop multiple times to add more</p>
                 <button onclick="document.getElementById('pdf-upload').click()" class="secondary-btn">Browse</button>
                 <input type="file" id="pdf-upload" accept="application/pdf" multiple hidden aria-label="Select PDF files to merge">
@@ -317,6 +326,7 @@
         <!-- COMPRESS -->
         <div id="tool-compress" class="tool-section hidden-tool">
             <div id="drop-zone-compress" class="file-drop" aria-label="Drop zone">
+                <svg class="drop-icon" width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
                 <p>Drop PDFs to reduce file size</p>
                 <button onclick="document.getElementById('compress-upload').click()" class="secondary-btn">Browse</button>
                 <input type="file" id="compress-upload" accept="application/pdf" multiple hidden aria-label="Select PDF files to compress">
@@ -332,6 +342,8 @@
         <!-- ANONYMIZE -->
         <div id="tool-anonymize" class="tool-section hidden-tool">
             <div id="drop-zone-anonymize" class="file-drop" aria-label="Drop zone">
+                <svg class="drop-icon" width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
+                
                 <p>Drop PDFs to strip metadata</p>
                 <button onclick="document.getElementById('anonymize-upload').click()" class="secondary-btn">Browse</button>
                 <input type="file" id="anonymize-upload" accept="application/pdf" multiple hidden aria-label="Select PDF files to scrub metadata">
@@ -346,6 +358,8 @@
         <!-- SPLIT -->
         <div id="tool-split" class="tool-section hidden-tool">
             <div id="drop-zone-split" class="file-drop" aria-label="Drop zone">
+                <svg class="drop-icon" width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
+                
                 <p>Select PDF to extract pages</p>
                 <button onclick="document.getElementById('split-upload').click()" class="secondary-btn">Browse</button>
                 <input type="file" id="split-upload" accept="application/pdf" hidden aria-label="Select a PDF to split">
@@ -371,6 +385,8 @@
         <!-- REORDER -->
         <div id="tool-reorder" class="tool-section hidden-tool">
             <div id="drop-zone-reorder" class="file-drop" aria-label="Drop zone">
+                <svg class="drop-icon" width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
+                
                 <button onclick="document.getElementById('reorder-upload').click()" class="secondary-btn">Load for Reordering</button>
                 <input type="file" id="reorder-upload" accept="application/pdf" hidden aria-label="Select a PDF to reorder">
             </div>
@@ -384,6 +400,8 @@
         <!-- ROTATE -->
         <div id="tool-rotate" class="tool-section hidden-tool">
             <div id="drop-zone-rotate" class="file-drop" aria-label="Drop zone">
+                <svg class="drop-icon" width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
+                
                 <p>Select PDF to rotate pages</p>
                 <button onclick="document.getElementById('rotate-upload').click()" class="secondary-btn">Browse</button>
                 <input type="file" id="rotate-upload" accept="application/pdf" hidden aria-label="Select a PDF to rotate">
@@ -410,6 +428,8 @@
         <!-- REMOVE PAGES -->
         <div id="tool-remove" class="tool-section hidden-tool">
             <div id="drop-zone-remove" class="file-drop" aria-label="Drop zone">
+                <svg class="drop-icon" width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
+                
                 <p>Select PDF to remove pages from</p>
                 <button onclick="document.getElementById('remove-upload').click()" class="secondary-btn">Browse</button>
                 <input type="file" id="remove-upload" accept="application/pdf" hidden aria-label="Select a PDF to remove pages from">
@@ -428,6 +448,8 @@
         <!-- PDF TO TEXT -->
         <div id="tool-totext" class="tool-section hidden-tool">
             <div id="drop-zone-totext" class="file-drop" aria-label="Drop zone">
+                <svg class="drop-icon" width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
+                
                 <p>Drop PDF to extract all text content</p>
                 <button onclick="document.getElementById('totext-upload').click()" class="secondary-btn">Browse</button>
                 <input type="file" id="totext-upload" accept="application/pdf" hidden aria-label="Select a PDF to extract text from">
@@ -444,6 +466,8 @@
         <!-- PDF TO IMAGES -->
         <div id="tool-topng" class="tool-section hidden-tool">
             <div id="drop-zone-topng" class="file-drop" aria-label="Drop zone">
+                <svg class="drop-icon" width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
+                
                 <p>Drop PDF to export pages as images</p>
                 <button onclick="document.getElementById('topng-upload').click()" class="secondary-btn">Browse</button>
                 <input type="file" id="topng-upload" accept="application/pdf" hidden aria-label="Select a PDF to convert to images">
@@ -462,6 +486,8 @@
         <!-- IMAGES TO PDF -->
         <div id="tool-topdf" class="tool-section hidden-tool">
             <div id="drop-zone-topdf" class="file-drop" aria-label="Drop zone">
+                <svg class="drop-icon" width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
+                
                 <p>Drop JPG or PNG images to combine into a PDF</p>
                 <button onclick="document.getElementById('topdf-upload').click()" class="secondary-btn">Browse</button>
                 <input type="file" id="topdf-upload" accept="image/jpeg,image/jpg,image/png" multiple hidden aria-label="Select images to combine into PDF">
@@ -474,6 +500,8 @@
         <!-- WATERMARK -->
         <div id="tool-watermark" class="tool-section hidden-tool">
             <div id="drop-zone-watermark" class="file-drop" aria-label="Drop zone">
+                <svg class="drop-icon" width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
+                
                 <p>Drop PDF to add a diagonal text watermark</p>
                 <button onclick="document.getElementById('watermark-upload').click()" class="secondary-btn">Browse</button>
                 <input type="file" id="watermark-upload" accept="application/pdf" hidden aria-label="Select a PDF to watermark">
@@ -495,6 +523,8 @@
         <!-- PAGE NUMBERS -->
         <div id="tool-pagenums" class="tool-section hidden-tool">
             <div id="drop-zone-pagenums" class="file-drop" aria-label="Drop zone">
+                <svg class="drop-icon" width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
+                
                 <p>Drop PDF to add page numbers</p>
                 <button onclick="document.getElementById('pagenums-upload').click()" class="secondary-btn">Browse</button>
                 <input type="file" id="pagenums-upload" accept="application/pdf" hidden aria-label="Select a PDF to add page numbers to">
@@ -523,6 +553,8 @@
         <!-- INSPECT -->
         <div id="tool-inspect" class="tool-section hidden-tool">
             <div id="drop-zone-inspect" class="file-drop" aria-label="Drop zone">
+                <svg class="drop-icon" width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
+                
                 <p>Drop PDF to inspect metadata &amp; document info</p>
                 <button onclick="document.getElementById('inspect-upload').click()" class="secondary-btn">Browse</button>
                 <input type="file" id="inspect-upload" accept="application/pdf" hidden aria-label="Select a PDF to inspect">
@@ -536,6 +568,8 @@
         <!-- REPAIR -->
         <div id="tool-repair" class="tool-section hidden-tool">
             <div id="drop-zone-repair" class="file-drop" aria-label="Drop zone">
+                <svg class="drop-icon" width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
+                
                 <p>Drop a corrupted or truncated PDF to attempt recovery</p>
                 <button onclick="document.getElementById('repair-upload').click()" class="secondary-btn">Browse</button>
                 <input type="file" id="repair-upload" accept="application/pdf" hidden aria-label="Select a PDF to repair">
