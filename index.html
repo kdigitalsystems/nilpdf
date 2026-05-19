@@ -106,6 +106,10 @@
 
     <!-- Hero -->
     <section class="hero">
+        <div class="hero-badge">
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg>
+            100% free &amp; open source
+        </div>
         <h1 class="hero-title">PDF tools that<br>stay in your browser</h1>
         <p class="hero-sub">14 free tools. Zero uploads. Completely private.</p>
         <button class="hero-cta" onclick="document.querySelector('.tools-section').scrollIntoView({behavior:'smooth'})">
@@ -133,12 +137,42 @@
         </div>
     </section>
 
+    <!-- Trust stats band -->
+    <section class="trust-stats">
+        <div class="trust-stats-inner">
+            <div class="trust-stat">
+                <span class="trust-stat-number">100%</span>
+                <span class="trust-stat-label">Runs locally in your browser</span>
+            </div>
+            <div class="trust-stat">
+                <span class="trust-stat-number">0</span>
+                <span class="trust-stat-label">Files uploaded to any server</span>
+            </div>
+            <div class="trust-stat">
+                <span class="trust-stat-number">14</span>
+                <span class="trust-stat-label">Free tools, no account needed</span>
+            </div>
+            <div class="trust-stat">
+                <span class="trust-stat-number">MIT</span>
+                <span class="trust-stat-label">Open source &amp; auditable code</span>
+            </div>
+        </div>
+    </section>
+
     <!-- Tool grid -->
     <section class="tools-section">
         <p class="tools-section-title">All tools</p>
+        <div class="category-nav">
+            <button class="cat-btn active" data-cat="all"      onclick="filterTools('all')">All</button>
+            <button class="cat-btn"        data-cat="organize" onclick="filterTools('organize')">Organize</button>
+            <button class="cat-btn"        data-cat="convert"  onclick="filterTools('convert')">Convert</button>
+            <button class="cat-btn"        data-cat="edit"     onclick="filterTools('edit')">Edit</button>
+            <button class="cat-btn"        data-cat="secure"   onclick="filterTools('secure')">Secure</button>
+            <button class="cat-btn"        data-cat="inspect"  onclick="filterTools('inspect')">Inspect</button>
+        </div>
         <div class="tools-grid">
 
-            <div class="tool-card" onclick="openTool('merge')">
+            <div class="tool-card" data-category="organize" onclick="openTool('merge')">
                 <div class="tool-card-icon">
                     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="7" width="12" height="14" rx="2"/><rect x="9" y="3" width="12" height="14" rx="2"/><path d="M9 13l3 3-3 3"/></svg>
                 </div>
@@ -148,7 +182,7 @@
                 </div>
             </div>
 
-            <div class="tool-card" onclick="openTool('compress')">
+            <div class="tool-card" data-category="edit" onclick="openTool('compress')">
                 <div class="tool-card-icon">
                     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M8 3H5a2 2 0 00-2 2v3m18 0V5a2 2 0 00-2-2h-3M3 16v3a2 2 0 002 2h3m8 0h3a2 2 0 002-2v-3"/><path d="M12 8v8m-4-4l4 4 4-4"/></svg>
                 </div>
@@ -158,7 +192,7 @@
                 </div>
             </div>
 
-            <div class="tool-card" onclick="openTool('anonymize')">
+            <div class="tool-card" data-category="secure" onclick="openTool('anonymize')">
                 <div class="tool-card-icon">
                     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2L4 6v5c0 4.4 3.4 8.5 8 9.5 4.6-1 8-5.1 8-9.5V6l-8-4z"/><path d="M9 12l2 2 4-4"/></svg>
                 </div>
@@ -168,7 +202,7 @@
                 </div>
             </div>
 
-            <div class="tool-card" onclick="openTool('split')">
+            <div class="tool-card" data-category="organize" onclick="openTool('split')">
                 <div class="tool-card-icon">
                     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="3" x2="12" y2="21"/><rect x="2" y="5" width="8" height="14" rx="1"/><rect x="14" y="5" width="8" height="14" rx="1"/></svg>
                 </div>
@@ -178,7 +212,7 @@
                 </div>
             </div>
 
-            <div class="tool-card" onclick="openTool('reorder')">
+            <div class="tool-card" data-category="organize" onclick="openTool('reorder')">
                 <div class="tool-card-icon">
                     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/><path d="M8 3l-4 3 4 3"/><path d="M16 15l4 3-4 3"/></svg>
                 </div>
@@ -188,7 +222,7 @@
                 </div>
             </div>
 
-            <div class="tool-card" onclick="openTool('rotate')">
+            <div class="tool-card" data-category="organize" onclick="openTool('rotate')">
                 <div class="tool-card-icon">
                     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M1 4v6h6"/><path d="M3.51 15a9 9 0 102.13-9.36L1 10"/></svg>
                 </div>
@@ -198,7 +232,7 @@
                 </div>
             </div>
 
-            <div class="tool-card" onclick="openTool('remove')">
+            <div class="tool-card" data-category="organize" onclick="openTool('remove')">
                 <div class="tool-card-icon">
                     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="9" y1="13" x2="15" y2="13"/></svg>
                 </div>
@@ -208,7 +242,7 @@
                 </div>
             </div>
 
-            <div class="tool-card" onclick="openTool('totext')">
+            <div class="tool-card" data-category="convert" onclick="openTool('totext')">
                 <div class="tool-card-icon">
                     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><line x1="10" y1="9" x2="8" y2="9"/></svg>
                 </div>
@@ -218,7 +252,7 @@
                 </div>
             </div>
 
-            <div class="tool-card" onclick="openTool('topng')">
+            <div class="tool-card" data-category="convert" onclick="openTool('topng')">
                 <div class="tool-card-icon">
                     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg>
                 </div>
@@ -228,7 +262,7 @@
                 </div>
             </div>
 
-            <div class="tool-card" onclick="openTool('topdf')">
+            <div class="tool-card" data-category="convert" onclick="openTool('topdf')">
                 <div class="tool-card-icon">
                     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="12" height="12" rx="1"/><circle cx="7.5" cy="7.5" r="1"/><polyline points="3 12 7 8 11 12"/><path d="M19 8v8m0 0l-3-3m3 3l3-3"/><path d="M15 4h4a2 2 0 012 2v4"/></svg>
                 </div>
@@ -238,7 +272,7 @@
                 </div>
             </div>
 
-            <div class="tool-card" onclick="openTool('watermark')">
+            <div class="tool-card" data-category="edit" onclick="openTool('watermark')">
                 <div class="tool-card-icon">
                     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22v-5"/><path d="M9 8V2"/><path d="M15 8V2"/><rect x="5" y="8" width="14" height="9" rx="1"/><path d="M9 22h6"/></svg>
                 </div>
@@ -248,7 +282,7 @@
                 </div>
             </div>
 
-            <div class="tool-card" onclick="openTool('pagenums')">
+            <div class="tool-card" data-category="edit" onclick="openTool('pagenums')">
                 <div class="tool-card-icon">
                     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><line x1="4" y1="9" x2="20" y2="9"/><line x1="4" y1="15" x2="20" y2="15"/><line x1="10" y1="3" x2="8" y2="21"/><line x1="16" y1="3" x2="14" y2="21"/></svg>
                 </div>
@@ -258,7 +292,7 @@
                 </div>
             </div>
 
-            <div class="tool-card" onclick="openTool('inspect')">
+            <div class="tool-card" data-category="inspect" onclick="openTool('inspect')">
                 <div class="tool-card-icon">
                     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
                 </div>
@@ -268,7 +302,7 @@
                 </div>
             </div>
 
-            <div class="tool-card" onclick="openTool('repair')">
+            <div class="tool-card" data-category="inspect" onclick="openTool('repair')">
                 <div class="tool-card-icon">
                     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M14.7 6.3a1 1 0 000 1.4l1.6 1.6a1 1 0 001.4 0l3.77-3.77a6 6 0 01-7.94 7.94l-6.91 6.91a2.12 2.12 0 01-3-3l6.91-6.91a6 6 0 017.94-7.94l-3.76 3.76z"/></svg>
                 </div>
@@ -871,6 +905,16 @@
 
     const SINGLE_FILE_TOOLS = ['split','reorder','rotate','remove','totext','topng','watermark','pagenums','inspect','repair'];
 
+    /** Category filter **/
+    function filterTools(cat) {
+        document.querySelectorAll('.tool-card').forEach(card => {
+            card.style.display = (cat === 'all' || card.dataset.category === cat) ? '' : 'none';
+        });
+        document.querySelectorAll('.cat-btn').forEach(btn => {
+            btn.classList.toggle('active', btn.dataset.cat === cat);
+        });
+    }
+
     /** Landing ↔ workspace navigation **/
     function openTool(toolId) {
         document.getElementById('landing').style.display = 'none';
@@ -1023,9 +1067,13 @@
             const li = document.createElement('li');
             li.className = 'file-list-item';
             li.dataset.fileId = item.id;
+            const kb = item.file.size < 1048576
+                ? (item.file.size / 1024).toFixed(0) + ' KB'
+                : (item.file.size / 1048576).toFixed(1) + ' MB';
             li.innerHTML =
                 `<span class="drag-handle" title="Drag to reorder">⠿</span>` +
                 `<span class="file-name">📄 ${escHtml(item.file.name)}</span>` +
+                `<span class="file-size-badge">${kb}</span>` +
                 `<button class="remove-file-btn" onclick="removeMergeFile(${item.id})" title="Remove">×</button>`;
             list.appendChild(li);
         });

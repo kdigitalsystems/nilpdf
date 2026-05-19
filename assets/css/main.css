@@ -1088,6 +1088,163 @@ body {
     color: var(--text-main);
 }
 
+/* ══ PHASES 3–8 ═══════════════════════════════════════════════════════════ */
+
+/* ── Phase 3: Hero gradient background ── */
+.landing-page {
+    position: relative;
+}
+.landing-page::before {
+    content: '';
+    position: absolute;
+    inset: 0 0 auto 0;
+    height: 520px;
+    background: radial-gradient(ellipse 90% 60% at 50% -10%, rgba(59,130,246,0.1) 0%, transparent 70%);
+    pointer-events: none;
+    z-index: 0;
+}
+[data-theme="dark"] .landing-page::before {
+    background: radial-gradient(ellipse 90% 60% at 50% -10%, rgba(96,165,250,0.07) 0%, transparent 70%);
+}
+.hero { position: relative; z-index: 1; }
+
+/* ── Hero top badge ── */
+.hero-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.4rem;
+    background: rgba(59,130,246,0.1);
+    color: var(--accent);
+    font-size: 0.75rem;
+    font-weight: 700;
+    padding: 0.3rem 0.9rem;
+    border-radius: 999px;
+    border: 1px solid rgba(59,130,246,0.25);
+    margin-bottom: 1.5rem;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+}
+
+/* ── Phase 6: Trust stats band ── */
+.trust-stats {
+    background: var(--card-bg);
+    border-top: 1px solid var(--border);
+    border-bottom: 1px solid var(--border);
+    padding: 2.5rem 1.5rem;
+    position: relative;
+    z-index: 1;
+}
+.trust-stats-inner {
+    max-width: 900px;
+    margin: 0 auto;
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 1rem;
+    text-align: center;
+}
+.trust-stat-number {
+    display: block;
+    font-size: 2.25rem;
+    font-weight: 800;
+    color: var(--accent);
+    line-height: 1;
+    letter-spacing: -0.03em;
+}
+.trust-stat-label {
+    display: block;
+    font-size: 0.82rem;
+    color: var(--text-muted);
+    margin-top: 0.45rem;
+    line-height: 1.4;
+}
+
+/* ── Phase 2: Category filter nav ── */
+.category-nav {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+    margin-bottom: 1.5rem;
+}
+.cat-btn {
+    background: var(--tab-bg);
+    border: 1px solid var(--border);
+    color: var(--text-muted);
+    font-size: 0.82rem;
+    font-weight: 600;
+    padding: 0.4rem 1rem;
+    border-radius: 999px;
+    cursor: pointer;
+    transition: all 0.15s ease;
+    white-space: nowrap;
+}
+.cat-btn:hover { color: var(--text-main); border-color: var(--accent); }
+.cat-btn.active { background: var(--accent); color: #fff; border-color: var(--accent); }
+
+/* ── Phase 4: Category-coloured card icons ── */
+.tool-card[data-category="organize"] .tool-card-icon { background: #eff6ff; color: #3b82f6; }
+.tool-card[data-category="convert"]  .tool-card-icon { background: #f0fdf4; color: #16a34a; }
+.tool-card[data-category="edit"]     .tool-card-icon { background: #fff7ed; color: #ea580c; }
+.tool-card[data-category="secure"]   .tool-card-icon { background: #f5f3ff; color: #7c3aed; }
+.tool-card[data-category="inspect"]  .tool-card-icon { background: #fdf4ff; color: #c026d3; }
+
+[data-theme="dark"] .tool-card[data-category="organize"] .tool-card-icon { background: rgba(59,130,246,0.15); color: #60a5fa; }
+[data-theme="dark"] .tool-card[data-category="convert"]  .tool-card-icon { background: rgba(22,163,74,0.15);  color: #4ade80; }
+[data-theme="dark"] .tool-card[data-category="edit"]     .tool-card-icon { background: rgba(234,88,12,0.15);  color: #fb923c; }
+[data-theme="dark"] .tool-card[data-category="secure"]   .tool-card-icon { background: rgba(124,58,237,0.15); color: #a78bfa; }
+[data-theme="dark"] .tool-card[data-category="inspect"]  .tool-card-icon { background: rgba(192,38,211,0.15); color: #e879f9; }
+
+/* ── Phase 5: Tool card typography ── */
+.tool-card-body h3 {
+    font-size: 0.95rem;
+    font-weight: 700;
+    margin: 0 0 0.2rem;
+    color: var(--text-main);
+    line-height: 1.25;
+}
+.tool-card-body p {
+    font-size: 0.82rem;
+    margin: 0;
+    color: var(--text-muted);
+    line-height: 1.45;
+}
+
+/* ── Phase 7: Status message visual indicators ── */
+.status-message.text-green { color: #059669; }
+.status-message.text-green::before { content: '✓\00a0'; }
+.status-message.text-red::before { content: '✕\00a0'; }
+@keyframes pulse-opacity {
+    0%, 100% { opacity: 1; }
+    50%       { opacity: 0.45; }
+}
+.status-message.is-loading { animation: pulse-opacity 1.4s ease-in-out infinite; }
+
+/* ── Phase 7: Merge file list polish ── */
+.file-list-item {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+.file-size-badge {
+    margin-left: auto;
+    flex-shrink: 0;
+    font-size: 0.75rem;
+    font-weight: 600;
+    color: var(--text-muted);
+    background: var(--bg);
+    border: 1px solid var(--border);
+    padding: 0.1rem 0.45rem;
+    border-radius: 4px;
+}
+
+/* ── Responsive adjustments for new sections ── */
+@media (max-width: 640px) {
+    .trust-stats-inner { grid-template-columns: repeat(2, 1fr); gap: 1.5rem; }
+    .trust-stat-number { font-size: 1.75rem; }
+}
+@media (max-width: 380px) {
+    .trust-stats-inner { grid-template-columns: 1fr 1fr; }
+}
+
 /* ── Nav link (GitHub) ── */
 .nav-link {
     display: inline-flex;
