@@ -759,6 +759,354 @@ kbd {
     .tab-btn { font-size: 0.7rem; padding: 0.25rem 0.45rem; }
     .app-header h2 { font-size: 1.3rem; }
 }
+/* ══════════════════════════════════════════════════════════════════════════
+   PHASE 1 — FULL-PAGE LAYOUT
+   body is now block; flex centering is overridden for the landing page.
+   The old .container still styles the workspace card.
+   ══════════════════════════════════════════════════════════════════════════ */
+
+body {
+    display: block;
+    min-height: unset;
+    align-items: unset;
+    justify-content: unset;
+}
+
+/* ── Site nav ── */
+.site-nav {
+    position: sticky;
+    top: 0;
+    z-index: 100;
+    background: var(--card-bg);
+    border-bottom: 1px solid var(--border);
+    height: 60px;
+    display: flex;
+    align-items: center;
+}
+
+.site-nav-inner {
+    width: 100%;
+    max-width: 1280px;
+    margin: 0 auto;
+    padding: 0 1.5rem;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+}
+
+.site-logo {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    text-decoration: none;
+    color: var(--text-main);
+    font-weight: 700;
+    font-size: 1.1rem;
+}
+
+.site-logo-icon {
+    width: 28px;
+    height: 28px;
+}
+
+.site-nav-right {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+/* Override absolute positioning from original .theme-toggle / .share-btn */
+.site-nav .theme-toggle,
+.site-nav .share-btn {
+    position: static;
+    top: auto;
+    right: auto;
+}
+
+/* ── Landing page ── */
+.landing-page {
+    min-height: calc(100vh - 60px);
+}
+
+/* ── Hero ── */
+.hero {
+    text-align: center;
+    padding: 5rem 1.5rem 3rem;
+    max-width: 720px;
+    margin: 0 auto;
+}
+
+.hero-title {
+    font-size: clamp(2rem, 5vw, 3.25rem);
+    font-weight: 800;
+    line-height: 1.15;
+    letter-spacing: -0.02em;
+    margin: 0 0 1rem;
+    color: var(--text-main);
+}
+
+.hero-sub {
+    font-size: 1.15rem;
+    color: var(--text-muted);
+    margin: 0 0 1.25rem;
+}
+
+.hero .counter-display {
+    font-size: 0.85rem;
+    margin-bottom: 2rem;
+}
+
+.trust-pills {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.6rem;
+    justify-content: center;
+}
+
+.trust-pill {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.4rem;
+    font-size: 0.8rem;
+    font-weight: 600;
+    color: var(--text-muted);
+    background: var(--tab-bg);
+    border: 1px solid var(--border);
+    border-radius: 999px;
+    padding: 0.35rem 0.85rem;
+}
+
+.trust-pill svg {
+    flex-shrink: 0;
+    color: var(--accent);
+}
+
+/* ── Tools section + grid ── */
+.tools-section {
+    max-width: 1280px;
+    margin: 0 auto;
+    padding: 0 1.5rem 5rem;
+}
+
+.tools-section-title {
+    font-size: 0.75rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    color: var(--text-muted);
+    margin: 0 0 1.25rem;
+}
+
+.tools-grid {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 1rem;
+}
+
+.tool-card {
+    background: var(--card-bg);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 1.5rem;
+    cursor: pointer;
+    transition: transform 0.2s ease, box-shadow 0.2s ease, border-color 0.2s ease;
+    text-align: left;
+    display: flex;
+    flex-direction: column;
+    gap: 0.75rem;
+}
+
+.tool-card:hover {
+    transform: translateY(-3px);
+    box-shadow: 0 12px 28px -8px rgba(0,0,0,0.12);
+    border-color: var(--accent);
+}
+
+.tool-card:active {
+    transform: translateY(-1px);
+}
+
+.tool-card-icon {
+    width: 44px;
+    height: 44px;
+    background: #eff6ff;
+    border-radius: 10px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: var(--accent);
+    flex-shrink: 0;
+}
+
+[data-theme="dark"] .tool-card-icon {
+    background: rgba(59, 130, 246, 0.15);
+}
+
+.tool-card-icon svg {
+    width: 22px;
+    height: 22px;
+}
+
+.tool-card-body h3 {
+    font-size: 0.95rem;
+    font-weight: 700;
+    margin: 0 0 0.25rem;
+    color: var(--text-main);
+}
+
+.tool-card-body p {
+    font-size: 0.8rem;
+    color: var(--text-muted);
+    margin: 0;
+    line-height: 1.4;
+}
+
+/* ── Workspace panel ── */
+.workspace {
+    background: var(--bg);
+    min-height: calc(100vh - 60px);
+    padding: 2rem 1rem 4rem;
+}
+
+.workspace-topbar {
+    max-width: 520px;
+    margin: 0 auto 1.5rem;
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+}
+
+.back-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.35rem;
+    background: var(--tab-bg);
+    border: 1px solid var(--border);
+    color: var(--text-muted);
+    font-size: 0.85rem;
+    font-weight: 600;
+    padding: 0.4rem 0.85rem;
+    border-radius: 6px;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    white-space: nowrap;
+}
+
+.back-btn:hover {
+    color: var(--text-main);
+    border-color: var(--text-muted);
+    background: var(--border);
+}
+
+.workspace-title {
+    font-size: 0.9rem;
+    font-weight: 600;
+    color: var(--text-muted);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.workspace .container {
+    position: relative;
+}
+
+/* ── Site footer ── */
+.site-footer {
+    background: var(--card-bg);
+    border-top: 1px solid var(--border);
+}
+
+.site-footer-inner {
+    max-width: 1280px;
+    margin: 0 auto;
+    padding: 3rem 1.5rem 2.5rem;
+    display: grid;
+    grid-template-columns: 2fr 3fr 1.5fr;
+    gap: 2.5rem;
+}
+
+.site-footer-brand p {
+    font-size: 0.85rem;
+    color: var(--text-muted);
+    margin: 0.5rem 0 0;
+    max-width: 220px;
+    line-height: 1.5;
+}
+
+.site-footer-brand strong {
+    font-size: 1.05rem;
+    color: var(--text-main);
+}
+
+.site-footer-tools h4,
+.site-footer-links h4 {
+    font-size: 0.75rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.07em;
+    color: var(--text-muted);
+    margin: 0 0 0.85rem;
+}
+
+.site-footer-tool-cols {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 0.25rem 1rem;
+}
+
+.site-footer-tools a,
+.site-footer-links a {
+    display: block;
+    font-size: 0.85rem;
+    color: var(--text-muted);
+    text-decoration: none;
+    padding: 0.2rem 0;
+    transition: color 0.15s ease;
+}
+
+.site-footer-tools a:hover,
+.site-footer-links a:hover {
+    color: var(--accent);
+}
+
+.site-footer-links a {
+    display: flex;
+    align-items: center;
+    gap: 0.4rem;
+}
+
+.site-footer-bottom {
+    border-top: 1px solid var(--border);
+    text-align: center;
+    padding: 1.25rem 1.5rem;
+    font-size: 0.78rem;
+    color: var(--text-muted);
+}
+
+.site-footer-bottom strong {
+    color: var(--text-main);
+}
+
+/* ── Responsive grid ── */
+@media (max-width: 1024px) {
+    .tools-grid { grid-template-columns: repeat(3, 1fr); }
+    .site-footer-inner { grid-template-columns: 1fr 1fr; }
+    .site-footer-brand { grid-column: 1 / -1; }
+}
+
+@media (max-width: 640px) {
+    .tools-grid { grid-template-columns: repeat(2, 1fr); }
+    .hero-title { font-size: 2rem; }
+    .hero { padding: 3rem 1rem 2rem; }
+    .site-footer-inner { grid-template-columns: 1fr; gap: 1.5rem; padding: 2rem 1.25rem; }
+    .site-footer-tool-cols { grid-template-columns: 1fr 1fr; }
+}
+
+@media (max-width: 380px) {
+    .tools-grid { grid-template-columns: 1fr; }
+}
+
 /* ── Progress bar (squeeze / scrub) ─────────────────────────────────────── */
 .pdf-progress {
     display: block;
