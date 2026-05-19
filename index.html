@@ -99,6 +99,7 @@
             <button class="tab-btn" onclick="switchTab(event, 'pagenums')">Page #s</button>
             <button class="tab-btn" onclick="switchTab(event, 'inspect')">Inspect</button>
             <button class="tab-btn" onclick="switchTab(event, 'repair')">Repair</button>
+            <button class="tab-btn tab-pro" onclick="switchTab(event, 'redact')">AI Redact</button>
         </nav>
 
         <!-- MERGE -->
@@ -343,6 +344,30 @@
             <button id="repair-btn" class="primary-btn">Recover PDF</button>
             <div id="repair-status" class="status-message" role="status" aria-live="polite" aria-atomic="true">Ready.</div>
             <progress id="repair-progress" class="pdf-progress" value="0" max="100" style="display:none"></progress>
+        </div>
+
+        <!-- AI REDACT PRO -->
+        <div id="tool-redact" class="tool-section hidden-tool">
+            <div class="waitlist-wrap">
+                <h2>AI Redact <span style="color:var(--accent)">Pro</span></h2>
+                <p>Automatically find and black out sensitive information in any PDF — names, emails, phone numbers, SSNs, addresses, and more. Powered by AI. Nothing stored after processing.</p>
+                <ul class="redact-features">
+                    <li>Detects PII automatically — no manual selection needed</li>
+                    <li>True redaction: underlying text is removed, not just covered</li>
+                    <li>Works on text PDFs and scanned documents</li>
+                    <li>Choose what to redact: names, emails, phones, SSNs, custom patterns</li>
+                    <li>Preview findings before committing</li>
+                    <li>File deleted from server immediately after download</li>
+                </ul>
+                <p style="margin-bottom:0.6rem;font-size:0.88rem;font-weight:600;color:var(--text-main);">Join the waitlist — be first to access and get early pricing:</p>
+                <div class="waitlist-form">
+                    <input type="email" id="redact-email" placeholder="you@example.com" autocomplete="email">
+                    <button class="primary-btn" id="redact-waitlist-btn" onclick="submitWaitlist()">Notify me</button>
+                </div>
+                <div class="waitlist-success" id="waitlist-success">✓ You're on the list! We'll email you when AI Redact launches.</div>
+                <p class="pricing-hint">Planned pricing: from $5 for 100 pages · No subscription required</p>
+            </div>
+            <div id="redact-status" class="status-message" role="status" aria-live="polite" aria-atomic="true" style="display:none"></div>
         </div>
         <footer class="app-footer">
             <p>A property of <strong>K Digital Systems LLC</strong></p>
@@ -607,6 +632,7 @@
             pagenums: { title: 'Add Page Numbers to PDF', desc: 'Stamp page numbers onto a PDF. No uploads. Zero tracking.' },
             inspect:  { title: 'Inspect PDF',             desc: 'View PDF metadata, page count, fonts and more. Zero uploads.' },
             repair:   { title: 'Repair PDF',              desc: 'Attempt to recover pages from a corrupted or truncated PDF. Runs privately in your browser.' },
+            redact:   { title: 'AI Redact PDF',           desc: 'Automatically redact sensitive information from PDFs using AI. Names, emails, SSNs, phone numbers and more.' },
         };
 
         const SINGLE_FILE_TOOLS = ['split','reorder','rotate','remove','totext','topng','watermark','pagenums','inspect','repair'];
@@ -1489,6 +1515,30 @@
         };
 
         /** ════════════════════════════════════════════════════════════════
+         *  AI REDACT — waitlist signup
+         * ════════════════════════════════════════════════════════════════ */
+        async function submitWaitlist() {
+            const email = document.getElementById('redact-email').value.trim();
+            if (!email || !email.includes('@')) {
+                document.getElementById('redact-email').focus();
+                return;
+            }
+            const btn = document.getElementById('redact-waitlist-btn');
+            btn.disabled = true;
+            btn.textContent = 'Saving…';
+            try {
+                await fetch('https://formspree.io/f/FORM_ID', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' },
+                    body: JSON.stringify({ email, source: 'nilpdf-redact-waitlist' })
+                });
+            } catch (_) { /* silent — still show success */ }
+            btn.style.display = 'none';
+            document.getElementById('redact-email').style.display = 'none';
+            document.getElementById('waitlist-success').style.display = 'block';
+        }
+
+        /** ════════════════════════════════════════════════════════════════
          *  V5 — TOAST + PROCESSED-FILES COUNTER
          * ════════════════════════════════════════════════════════════════ */
         function showToast(msg) {
@@ -1594,7 +1644,7 @@
          *  V1 — HASH ROUTING (init)
          * ════════════════════════════════════════════════════════════════ */
         (function initHash() {
-            const TOOL_NAMES = ['merge','compress','anonymize','split','reorder','rotate','remove','totext','topng','topdf','watermark','pagenums','inspect','repair'];
+            const TOOL_NAMES = ['merge','compress','anonymize','split','reorder','rotate','remove','totext','topng','topdf','watermark','pagenums','inspect','repair','redact'];
             const hash = location.hash.replace('#', '');
             if (TOOL_NAMES.includes(hash)) {
                 const btn = document.querySelector(`.tab-btn[onclick*="'${hash}'"]`);

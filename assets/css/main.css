@@ -789,3 +789,95 @@ kbd {
     border-radius: 3px;
     animation: pdf-progress-shimmer 1.2s ease-in-out infinite;
 }
+
+/* ── AI Redact Pro tab badge ─────────────────────────────────────────────── */
+.tab-pro {
+    position: relative;
+}
+.tab-pro::after {
+    content: 'PRO';
+    position: absolute;
+    top: -4px;
+    right: -4px;
+    font-size: 0.45rem;
+    font-weight: 800;
+    letter-spacing: 0.04em;
+    background: var(--accent);
+    color: #fff;
+    border-radius: 3px;
+    padding: 1px 3px;
+    line-height: 1.4;
+    pointer-events: none;
+}
+
+/* ── Waitlist form ───────────────────────────────────────────────────────── */
+.waitlist-wrap {
+    background: var(--card-bg);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 1.5rem 1.25rem;
+    margin-top: 0.75rem;
+}
+.waitlist-wrap h2 {
+    font-size: 1.15rem;
+    font-weight: 800;
+    margin-bottom: 0.4rem;
+}
+.waitlist-wrap p {
+    font-size: 0.9rem;
+    color: var(--text-muted);
+    margin-bottom: 1rem;
+    line-height: 1.6;
+}
+.redact-features {
+    list-style: none;
+    padding: 0;
+    margin: 0 0 1.25rem;
+    display: grid;
+    gap: 0.45rem;
+}
+.redact-features li {
+    font-size: 0.88rem;
+    display: flex;
+    align-items: flex-start;
+    gap: 0.5rem;
+}
+.redact-features li::before {
+    content: '\2736';
+    color: var(--accent);
+    font-size: 0.7rem;
+    margin-top: 0.2em;
+    flex-shrink: 0;
+}
+.waitlist-form {
+    display: flex;
+    gap: 0.5rem;
+    flex-wrap: wrap;
+}
+.waitlist-form input[type=email] {
+    flex: 1;
+    min-width: 0;
+    padding: 0.65rem 0.85rem;
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    background: var(--bg);
+    color: var(--text-main);
+    font-size: 0.9rem;
+}
+.waitlist-form input[type=email]:focus {
+    outline: none;
+    border-color: var(--accent);
+}
+.waitlist-success {
+    font-size: 0.9rem;
+    color: #16a34a;
+    font-weight: 600;
+    margin-top: 0.75rem;
+    display: none;
+}
+.pricing-hint {
+    font-size: 0.78rem;
+    color: var(--text-muted);
+    margin-top: 0.75rem;
+    text-align: center;
+}
