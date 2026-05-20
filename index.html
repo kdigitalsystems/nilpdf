@@ -117,44 +117,31 @@
             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg>
         </button>
         <p id="counter-display" class="counter-display"></p>
-        <div class="trust-pills">
-            <span class="trust-pill">
-                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
-                No uploads
-            </span>
-            <span class="trust-pill">
-                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19"/><line x1="1" y1="1" x2="23" y2="23"/></svg>
-                Zero tracking
-            </span>
-            <span class="trust-pill">
-                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/><line x1="18" y1="8" x2="23" y2="13"/><line x1="23" y1="8" x2="18" y2="13"/></svg>
-                No account
-            </span>
-            <span class="trust-pill">
-                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="16 18 22 12 16 6"/><polyline points="8 6 2 12 8 18"/></svg>
-                Open source
-            </span>
-        </div>
     </section>
 
-    <!-- Trust stats band -->
-    <section class="trust-stats">
-        <div class="trust-stats-inner">
-            <div class="trust-stat">
-                <span class="trust-stat-number">100%</span>
-                <span class="trust-stat-label">Runs locally in your browser</span>
+    <!-- Features band -->
+    <section class="features-band">
+        <div class="features-inner">
+            <div class="feature-card">
+                <div class="feature-icon blue">
+                    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
+                </div>
+                <h3>Runs 100% in your browser</h3>
+                <p>Every tool runs locally using Python compiled to WebAssembly. Your files never leave your device — not even for a millisecond.</p>
             </div>
-            <div class="trust-stat">
-                <span class="trust-stat-number">0</span>
-                <span class="trust-stat-label">Files uploaded to any server</span>
+            <div class="feature-card">
+                <div class="feature-icon green">
+                    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19"/><line x1="1" y1="1" x2="23" y2="23"/></svg>
+                </div>
+                <h3>Zero tracking, zero uploads</h3>
+                <p>No cookies on your files, no account required, no server logs. NilPDF has no idea what you process — by design.</p>
             </div>
-            <div class="trust-stat">
-                <span class="trust-stat-number">14</span>
-                <span class="trust-stat-label">Free tools, no account needed</span>
-            </div>
-            <div class="trust-stat">
-                <span class="trust-stat-number">MIT</span>
-                <span class="trust-stat-label">Open source &amp; auditable code</span>
+            <div class="feature-card">
+                <div class="feature-icon purple">
+                    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><polyline points="16 18 22 12 16 6"/><polyline points="8 6 2 12 8 18"/></svg>
+                </div>
+                <h3>Open source &amp; auditable</h3>
+                <p>MIT licensed. Every line of code is on GitHub — read it, audit it, or contribute. Nothing hidden, nothing proprietary.</p>
             </div>
         </div>
     </section>
@@ -320,8 +307,11 @@
 <!-- ══ WORKSPACE ══════════════════════════════════════════════════════════ -->
 <div id="workspace" class="workspace" style="display:none">
     <div class="workspace-topbar">
-        <button class="back-btn" onclick="goHome()">&#8592; All Tools</button>
-        <span id="workspace-title" class="workspace-title"></span>
+        <button type="button" class="back-btn" onclick="goHome()">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"/></svg>
+            All tools
+        </button>
+        <h1 id="workspace-title" class="workspace-title"></h1>
     </div>
 
     <div class="container">
@@ -614,9 +604,6 @@
             <progress id="repair-progress" class="pdf-progress" value="0" max="100" style="display:none"></progress>
         </div>
 
-        <footer class="app-footer">
-            <p>A property of <strong>K Digital Systems LLC</strong></p>
-        </footer>
     </div><!-- /container -->
 </div><!-- /workspace -->
 
@@ -915,29 +902,54 @@
         });
     }
 
-    /** Landing ↔ workspace navigation **/
-    function openTool(toolId) {
+    /** ── Navigation helpers ── **/
+    let _skipTabHistory = false;   // prevents switchTab overwriting pushState
+
+    // DOM-only: show the landing page (no history change)
+    function _showLanding() {
+        document.getElementById('workspace').style.display = 'none';
+        document.getElementById('landing').style.display = '';
+        document.getElementById('site-footer').style.display = '';
+        document.title = 'NilPDF — Free PDF Tools. Zero Uploads. 100% Private.';
+        document.querySelector('meta[property="og:title"]').setAttribute('content', 'NilPDF — Free PDF Tools. Zero Uploads.');
+        document.querySelector('meta[property="og:description"]').setAttribute('content', '14 PDF tools. Your files never leave your device. Zero uploads. Zero tracking.');
+        document.querySelector('meta[name="twitter:title"]').setAttribute('content', 'NilPDF — Free PDF Tools. Zero Uploads.');
+        document.querySelector('meta[name="twitter:description"]').setAttribute('content', '14 PDF tools in your browser. Zero uploads. Zero tracking. 100% private.');
+    }
+
+    // DOM-only: show workspace for a tool (no history change)
+    function _showWorkspace(toolId) {
         document.getElementById('landing').style.display = 'none';
         document.getElementById('site-footer').style.display = 'none';
         document.getElementById('workspace').style.display = '';
         const meta = TOOL_META[toolId];
-        document.getElementById('workspace-title').textContent = meta ? meta.title : '';
-        // Click the matching tab button (which calls switchTab and updates hash/title)
+        document.getElementById('workspace-title').textContent = meta ? meta.title : toolId;
+        _skipTabHistory = true;
         const btn = document.querySelector(`.tab-btn[onclick*="'${toolId}'"]`);
         if (btn) btn.click();
+        _skipTabHistory = false;
     }
 
-    function goHome() {
-        document.getElementById('workspace').style.display = 'none';
-        document.getElementById('landing').style.display = '';
-        document.getElementById('site-footer').style.display = '';
-        history.replaceState(null, '', location.pathname);
-        document.title = 'NilPDF — Free PDF Tools. Zero Uploads. 100% Private.';
-        document.querySelector('meta[property="og:title"]').setAttribute('content', 'NilPDF — Free PDF Tools. Zero Uploads.');
-        document.querySelector('meta[property="og:description"]').setAttribute('content', '13 PDF tools. Your files never leave your device. Zero uploads. Zero tracking.');
-        document.querySelector('meta[name="twitter:title"]').setAttribute('content', 'NilPDF — Free PDF Tools. Zero Uploads.');
-        document.querySelector('meta[name="twitter:description"]').setAttribute('content', '13 PDF tools in your browser. Zero uploads. Zero tracking. 100% private.');
+    /** Public: open a tool (pushes a history entry so browser-back works) **/
+    function openTool(toolId) {
+        _showWorkspace(toolId);
+        history.pushState({ view: 'tool', tool: toolId }, '', '#' + toolId);
     }
+
+    /** Public: go back to landing page **/
+    function goHome() {
+        _showLanding();
+        history.replaceState(null, '', location.pathname);
+    }
+
+    /** Handle browser Back / Forward buttons **/
+    window.addEventListener('popstate', function (e) {
+        if (e.state && e.state.view === 'tool') {
+            _showWorkspace(e.state.tool);
+        } else {
+            _showLanding();
+        }
+    });
 
     function switchTab(event, tool) {
         document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
@@ -946,7 +958,7 @@
         });
         event.target.classList.add('active');
         document.getElementById(`tool-${tool}`).classList.replace('hidden-tool', 'active-tool');
-        history.replaceState(null, '', '#' + tool);
+        if (!_skipTabHistory) history.replaceState({ view: 'tool', tool }, '', '#' + tool);
         const meta = TOOL_META[tool];
         if (meta) {
             document.title = `NilPDF — ${meta.title} (Free, No Uploads)`;
@@ -1888,7 +1900,9 @@
         const TOOL_NAMES = ['merge','compress','anonymize','split','reorder','rotate','remove','totext','topng','topdf','watermark','pagenums','inspect','repair'];
         const hash = location.hash.replace('#', '');
         if (TOOL_NAMES.includes(hash)) {
-            openTool(hash);
+            // Use replaceState so the initial load doesn't add a spurious history entry
+            _showWorkspace(hash);
+            history.replaceState({ view: 'tool', tool: hash }, '', '#' + hash);
         }
     })();
 
