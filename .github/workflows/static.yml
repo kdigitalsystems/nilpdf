@@ -47,7 +47,7 @@ jobs:
         uses: actions/checkout@v4
       - name: Setup Pages
         uses: actions/configure-pages@v4
-      - name: Stamp build version into index.html
+      - name: Stamp build version into index.html and sw.js
         env:
           COMMIT_SHA: ${{ github.sha }}
         run: |
@@ -56,11 +56,21 @@ jobs:
           sha  = os.environ['COMMIT_SHA'][:7]
           date = datetime.date.today().isoformat()
           ver  = f'{sha} {date}'
+
+          # Stamp index.html (__BUILD_VERSION__ appears in the CSS link and the JS const)
           html = open('index.html').read()
           if '__BUILD_VERSION__' not in html:
-              print('ERROR: placeholder not found in index.html'); exit(1)
+              print('ERROR: __BUILD_VERSION__ placeholder not found in index.html'); exit(1)
           open('index.html', 'w').write(html.replace('__BUILD_VERSION__', ver))
-          print(f'Stamped build version: {ver}')
+          print(f'index.html stamped: {ver}')
+
+          # Stamp sw.js (__SW_VERSION__ is the cache name — changing it on every
+          # deploy forces browsers to delete the old cache and fetch fresh files)
+          sw = open('sw.js').read()
+          if '__SW_VERSION__' not in sw:
+              print('ERROR: __SW_VERSION__ placeholder not found in sw.js'); exit(1)
+          open('sw.js', 'w').write(sw.replace('__SW_VERSION__', sha))
+          print(f'sw.js cache name stamped: nilpdf-{sha}')
           EOF
       - name: Upload artifact
         uses: actions/upload-pages-artifact@v3
