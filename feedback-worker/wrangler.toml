@@ -1,0 +1,10 @@
+name = "nilpdf-feedback"
+main = "index.js"
+compatibility_date = "2024-01-01"
+
+# Secrets (set via `wrangler secret put GITHUB_TOKEN`, never hardcode here):
+#   GITHUB_TOKEN — GitHub PAT with public_repo scope
+#
+# After deploying, copy the Worker URL and set it as FEEDBACK_ENDPOINT
+# in index.html (replace the __FEEDBACK_ENDPOINT__ placeholder), or add
+# a build/CI step to inject it automatically.
