@@ -640,6 +640,10 @@
                 GitHub
             </a>
             <a href="https://nilpdf.com/">nilpdf.com</a>
+            <a href="#" class="footer-feedback-link" onclick="event.preventDefault(); openFeedback()">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
+                Send feedback
+            </a>
         </div>
     </div>
     <div class="site-footer-bottom">
@@ -1906,6 +1910,37 @@
         }
     })();
 
+    /** ════ FEEDBACK ═══════════════════════════════════════════════════════════ */
+    function openFeedback() {
+        const body = [
+            '**Type:** Bug report / Feature request / General feedback',
+            '',
+            '**What happened, or what would you like to see?**',
+            '<!-- Describe your feedback here -->',
+            '',
+            '',
+            '---',
+            'cc @saqibkh'
+        ].join('\n');
+        const params = new URLSearchParams({
+            title: '[Feedback] ',
+            body:  body,
+            labels: 'feedback'
+        });
+        window.open(
+            'https://github.com/kdigitalsystems/nilpdf/issues/new?' + params,
+            '_blank',
+            'noopener,noreferrer'
+        );
+    }
+
 </script>
+
+<!-- Floating feedback button — visible on all pages -->
+<button type="button" class="feedback-fab" onclick="openFeedback()" title="Send feedback or report a bug">
+    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
+    Feedback
+</button>
+
 </body>
 </html>
