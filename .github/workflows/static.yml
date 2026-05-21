@@ -86,6 +86,7 @@ jobs:
           open('sw.js', 'w').write(sw.replace('__SW_VERSION__', sha))
           print(f'sw.js cache name stamped: nilpdf-{sha}')
           EOF
+          
       - name: Upload artifact
         uses: actions/upload-pages-artifact@v3
         with:
