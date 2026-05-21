@@ -1911,22 +1911,21 @@
     })();
 
     /** ════ FEEDBACK MODAL ══════════════════════════════════════════════════════ */
-    // Replace __FEEDBACK_ENDPOINT__ with your Cloudflare Worker URL at deploy time,
-    // or set FEEDBACK_ENDPOINT in the environment. When the placeholder is still
-    // present (local / dev), we gracefully fall back to opening a pre-filled GitHub
-    // issue so feedback is never silently lost.
-    const FEEDBACK_ENDPOINT = '__FEEDBACK_ENDPOINT__';
+    // The token is stamped by CI (static.yml) from the FEEDBACK_GITHUB_TOKEN Actions
+    // secret and is never committed to the repository. It requires only the
+    // `public_repo` scope — the maximum damage from exposure is spam issues.
+    const _GH_REPO  = 'kdigitalsystems/nilpdf';
+    const _GH_TOKEN = '__GH_FEEDBACK_TOKEN__'; // replaced at deploy time by static.yml
 
     function openFeedback() {
         const modal = document.getElementById('feedback-modal');
-        // Reset to form state
-        document.getElementById('feedback-form-state').hidden  = false;
+        document.getElementById('feedback-form-state').hidden    = false;
         document.getElementById('feedback-success-state').hidden = true;
         document.getElementById('feedback-form').reset();
         const errDiv = document.getElementById('feedback-error');
         errDiv.hidden = true;
         errDiv.textContent = '';
-        const submitBtn  = document.getElementById('feedback-submit');
+        const submitBtn = document.getElementById('feedback-submit');
         submitBtn.disabled = false;
         document.getElementById('feedback-submit-text').hidden    = false;
         document.getElementById('feedback-submit-spinner').hidden = true;
@@ -1952,59 +1951,66 @@
         const submitSpinner = document.getElementById('feedback-submit-spinner');
         const errDiv        = document.getElementById('feedback-error');
 
-        submitBtn.disabled  = true;
-        submitText.hidden   = true;
+        submitBtn.disabled   = true;
+        submitText.hidden    = true;
         submitSpinner.hidden = false;
-        errDiv.hidden       = true;
+        errDiv.hidden        = true;
 
         const typeLabels = { bug: 'Bug report', feature: 'Feature request', general: 'General feedback' };
         const typeLabel  = typeLabels[type] || 'General feedback';
 
-        // Fallback: no Worker configured yet — open GitHub with pre-filled form
-        if (!FEEDBACK_ENDPOINT || FEEDBACK_ENDPOINT === '__FEEDBACK_ENDPOINT__') {
-            const ghBody = [
-                `**Type:** ${typeLabel}`,
-                name ? `**From:** ${name}` : '',
-                '',
-                '**Message:**',
-                message,
-                '',
-                '---',
-                'cc @saqibkh'
-            ].filter(l => l !== null).join('\n');
-            const params = new URLSearchParams({ title: `[${typeLabel}] `, body: ghBody, labels: 'feedback' });
-            window.open('https://github.com/kdigitalsystems/nilpdf/issues/new?' + params, '_blank', 'noopener,noreferrer');
+        const issueTitle = `[${typeLabel}] ${message.slice(0, 72)}${message.length > 72 ? '…' : ''}`;
+        const issueBody  = [
+            `**Type:** ${typeLabel}`,
+            name ? `**From:** ${name}` : '**From:** Anonymous',
+            '',
+            '**Message:**',
+            message,
+            '',
+            '---',
+            '*Submitted via NilPDF in-app feedback form*',
+            'cc @saqibkh',
+        ].join('\n');
+
+        // Guard: token not stamped yet (local / dev build)
+        if (!_GH_TOKEN || _GH_TOKEN === '__GH_FEEDBACK_TOKEN__') {
+            errDiv.textContent = 'Feedback is not available in this environment. Visit nilpdf.com to send feedback.';
+            errDiv.hidden      = false;
             submitBtn.disabled   = false;
             submitText.hidden    = false;
             submitSpinner.hidden = true;
-            closeFeedback();
             return;
         }
 
         try {
-            const res = await fetch(FEEDBACK_ENDPOINT, {
+            const res = await fetch(`https://api.github.com/repos/${_GH_REPO}/issues`, {
                 method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ type, name, message })
+                headers: {
+                    'Authorization': `Bearer ${_GH_TOKEN}`,
+                    'Accept':        'application/vnd.github.v3+json',
+                    'Content-Type':  'application/json',
+                    'User-Agent':    'nilpdf-feedback/1.0',
+                },
+                body: JSON.stringify({ title: issueTitle, body: issueBody, labels: ['feedback'] }),
             });
+
             if (!res.ok) {
                 const txt = await res.text().catch(() => '');
-                throw new Error(txt || `Server error ${res.status}`);
+                throw new Error(txt || `GitHub API ${res.status}`);
             }
-            const data = await res.json();
+            const issue = await res.json();
 
-            // Show success
-            document.getElementById('feedback-form-state').hidden   = true;
+            document.getElementById('feedback-form-state').hidden    = true;
             document.getElementById('feedback-success-state').hidden = false;
             const issueLink = document.getElementById('feedback-issue-link');
-            if (data.issue_url) {
-                issueLink.href   = data.issue_url;
+            if (issue.html_url) {
+                issueLink.href   = issue.html_url;
                 issueLink.hidden = false;
             } else {
                 issueLink.hidden = true;
             }
         } catch (_err) {
-            errDiv.textContent = 'Something went wrong — please try again.';
+            errDiv.textContent = 'Could not send feedback — please try again in a moment.';
             errDiv.hidden      = false;
             submitBtn.disabled   = false;
             submitText.hidden    = false;

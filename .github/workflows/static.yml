@@ -47,9 +47,10 @@ jobs:
         uses: actions/checkout@v4
       - name: Setup Pages
         uses: actions/configure-pages@v4
-      - name: Stamp build version into index.html and sw.js
+      - name: Stamp build version and feedback token into index.html and sw.js
         env:
           COMMIT_SHA: ${{ github.sha }}
+          FEEDBACK_GITHUB_TOKEN: ${{ secrets.FEEDBACK_GITHUB_TOKEN }}
         run: |
           python3 - <<'EOF'
           import os, datetime
@@ -61,8 +62,21 @@ jobs:
           html = open('index.html').read()
           if '__BUILD_VERSION__' not in html:
               print('ERROR: __BUILD_VERSION__ placeholder not found in index.html'); exit(1)
-          open('index.html', 'w').write(html.replace('__BUILD_VERSION__', ver))
+          html = html.replace('__BUILD_VERSION__', ver)
           print(f'index.html stamped: {ver}')
+
+          # Stamp the feedback GitHub token (__GH_FEEDBACK_TOKEN__).
+          # The token never touches the git repo — it exists only in the deployed
+          # artifact. It must have public_repo scope only. If the secret is not set
+          # the placeholder stays in place and the modal shows an "unavailable" error.
+          fb_token = os.environ.get('FEEDBACK_GITHUB_TOKEN', '').strip()
+          if fb_token:
+              html = html.replace('__GH_FEEDBACK_TOKEN__', fb_token)
+              print('Feedback token stamped.')
+          else:
+              print('WARNING: FEEDBACK_GITHUB_TOKEN secret not set — feedback form will show unavailable message.')
+
+          open('index.html', 'w').write(html)
 
           # Stamp sw.js (__SW_VERSION__ is the cache name — changing it on every
           # deploy forces browsers to delete the old cache and fetch fresh files)
