@@ -23,9 +23,9 @@
     </script>
 
     <!-- SEO & Social -->
-    <meta name="description" content="NilPDF — 13 free PDF tools that run entirely in your browser. Merge, split, compress, rotate, watermark and more. Zero uploads. Zero tracking. 100% private.">
+    <meta name="description" content="NilPDF — 14 free PDF tools that run entirely in your browser. Merge, split, compress, rotate, watermark and more. Zero uploads. Zero tracking. 100% private.">
     <meta property="og:title" content="NilPDF — Free PDF Tools. Zero Uploads.">
-    <meta property="og:description" content="13 PDF tools. Your files never leave your device. Zero uploads. Zero tracking.">
+    <meta property="og:description" content="14 PDF tools. Your files never leave your device. Zero uploads. Zero tracking.">
     <meta property="og:type" content="website">
     <meta property="og:url" content="https://nilpdf.com/">
     <meta property="og:image" content="https://nilpdf.com/assets/og-image.png">
@@ -45,7 +45,7 @@
       "@type": "WebApplication",
       "name": "NilPDF",
       "url": "https://nilpdf.com/",
-      "description": "13 free PDF tools that run entirely in your browser. Merge, split, compress, rotate, watermark and more. Zero uploads. Zero tracking. 100% private.",
+      "description": "14 free PDF tools that run entirely in your browser. Merge, split, compress, rotate, watermark and more. Zero uploads. Zero tracking. 100% private.",
       "applicationCategory": "UtilitiesApplication",
       "operatingSystem": "Any (browser-based)",
       "browserRequirements": "Requires a modern browser with JavaScript enabled",
@@ -704,7 +704,7 @@
 
     function ensureWorker() {
         if (worker) return;
-        worker = new Worker('./assets/js/pdf_worker.js?v=3');
+        worker = new Worker('./assets/js/pdf_worker.js?v=__BUILD_VERSION__');
         worker.onmessage = workerMessageHandler;
     }
 
@@ -856,6 +856,7 @@
 
         } else if (type === 'ERROR') {
             updateStatus(id, "Error: " + error, "text-red");
+            pendingFooter = false;
             pendingCompressInfo = null;
             const errBar = document.getElementById(id.replace('-status', '-progress'));
             if (errBar) { errBar.style.display = 'none'; errBar.value = 0; }
@@ -1057,7 +1058,7 @@
         zone.addEventListener('drop', e => { zone.classList.remove('drag-active'); onDrop(e.dataTransfer.files); });
     }
 
-    function bindSimpleDrop(zoneId, inputEl, statusId) {
+    function bindSimpleDrop(zoneId, inputEl) {
         bindDrop(zoneId, files => {
             inputEl.files = files;
             inputEl.dispatchEvent(new Event('change'));
@@ -1839,7 +1840,7 @@
         const title = meta ? `NilPDF — ${meta.title}` : 'NilPDF — Free PDF Tools';
         const text  = meta
             ? `${meta.title} — free, no uploads, runs in your browser: ${url}`
-            : 'NilPDF: 13 free PDF tools that run entirely in your browser. Zero uploads. 100% private: https://nilpdf.com/';
+            : 'NilPDF: 14 free PDF tools that run entirely in your browser. Zero uploads. 100% private: https://nilpdf.com/';
         return { title, text, url };
     }
 

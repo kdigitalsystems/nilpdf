@@ -58,7 +58,7 @@ jobs:
           date = datetime.date.today().isoformat()
           ver  = f'{sha} {date}'
 
-          # Stamp index.html (__BUILD_VERSION__ appears in the CSS link and the JS const)
+          # Stamp index.html (__BUILD_VERSION__ appears in the CSS link, the JS const, and the worker URL)
           html = open('index.html').read()
           if '__BUILD_VERSION__' not in html:
               print('ERROR: __BUILD_VERSION__ placeholder not found in index.html'); exit(1)
