@@ -1726,6 +1726,10 @@ body {
     justify-content: flex-end;
     margin-top: 1.5rem;
 }
+.form-actions--centered {
+    justify-content: center;
+    margin-top: 1.75rem;
+}
 
 .modal-btn-primary {
     background: var(--accent);

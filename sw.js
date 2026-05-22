@@ -51,11 +51,11 @@ self.addEventListener('fetch', e => {
         return;
     }
 
-    // App-shell assets (CSS, icons, etc.): network-first so every online visit
+    // Assets (CSS, icons, JS, etc.): network-first so every online visit
     // gets the latest files; update the cache in the background; serve cache
-    // only when the user is offline.
-    if (SHELL.some(p => reqPath === p || reqPath.endsWith(p)) ||
-        reqPath.startsWith('/assets/')) {
+    // only when the user is offline. Navigate requests are already handled above,
+    // so SHELL paths never reach this branch.
+    if (reqPath.startsWith('/assets/')) {
         e.respondWith(
             fetch(e.request)
                 .then(res => {

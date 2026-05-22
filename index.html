@@ -1878,13 +1878,18 @@
 
     /** ════ KEYBOARD SHORTCUTS ════════════════════════════════════════════════ */
     document.addEventListener('keydown', e => {
+        // Escape closes any open overlay regardless of focused element
+        if (e.key === 'Escape') {
+            document.getElementById('shortcuts-modal').style.display = 'none';
+            if (!_feedbackModal.hidden) closeFeedback();
+            return;
+        }
         if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA' || e.target.tagName === 'SELECT') return;
         const modal = document.getElementById('shortcuts-modal');
         if (e.key === '?' || e.key === '/') {
             modal.style.display = modal.style.display === 'flex' ? 'none' : 'flex';
             return;
         }
-        if (e.key === 'Escape') { modal.style.display = 'none'; return; }
         if (e.key === 'Enter') {
             const activeBtn = document.querySelector('.active-tool .primary-btn:not(:disabled)');
             if (activeBtn) activeBtn.click();
@@ -1914,37 +1919,43 @@
     // The token is stamped by CI (static.yml) from the FEEDBACK_GITHUB_TOKEN Actions
     // secret and is never committed to the repository. It requires only the
     // `public_repo` scope — the maximum damage from exposure is spam issues.
-    const _GH_REPO  = 'kdigitalsystems/nilpdf';
-    const _GH_TOKEN = '__GH_FEEDBACK_TOKEN__'; // replaced at deploy time by static.yml
+    const _GH_REPO     = 'kdigitalsystems/nilpdf';
+    const _GH_TOKEN    = '__GH_FEEDBACK_TOKEN__'; // replaced at deploy time by static.yml
+    const _TYPE_LABELS = { bug: 'Bug report', feature: 'Feature request', general: 'General feedback' };
+    const _feedbackModal = document.getElementById('feedback-modal');
 
     function openFeedback() {
-        const modal = document.getElementById('feedback-modal');
         document.getElementById('feedback-form-state').hidden    = false;
         document.getElementById('feedback-success-state').hidden = true;
         document.getElementById('feedback-form').reset();
         const errDiv = document.getElementById('feedback-error');
         errDiv.hidden = true;
         errDiv.textContent = '';
-        const submitBtn = document.getElementById('feedback-submit');
-        submitBtn.disabled = false;
+        document.getElementById('feedback-submit').disabled = false;
         document.getElementById('feedback-submit-text').hidden    = false;
         document.getElementById('feedback-submit-spinner').hidden = true;
-        modal.hidden = false;
+        _feedbackModal.hidden = false;
         document.body.style.overflow = 'hidden';
-        setTimeout(() => document.getElementById('feedback-type').focus(), 50);
+        requestAnimationFrame(() => document.getElementById('feedback-type').focus());
     }
 
     function closeFeedback() {
-        document.getElementById('feedback-modal').hidden = true;
+        _feedbackModal.hidden = true;
         document.body.style.overflow = '';
     }
 
     async function submitFeedback(e) {
         e.preventDefault();
-        const type    = document.getElementById('feedback-type').value;
-        const name    = document.getElementById('feedback-name').value.trim();
         const message = document.getElementById('feedback-message').value.trim();
         if (!message) return;
+
+        // Guard: token not stamped yet (local / dev build) — checked before any UI change
+        if (!_GH_TOKEN || _GH_TOKEN === '__GH_FEEDBACK_TOKEN__') {
+            const errDiv = document.getElementById('feedback-error');
+            errDiv.textContent = 'Feedback is not available in this environment. Visit nilpdf.com to send feedback.';
+            errDiv.hidden = false;
+            return;
+        }
 
         const submitBtn     = document.getElementById('feedback-submit');
         const submitText    = document.getElementById('feedback-submit-text');
@@ -1956,8 +1967,9 @@
         submitSpinner.hidden = false;
         errDiv.hidden        = true;
 
-        const typeLabels = { bug: 'Bug report', feature: 'Feature request', general: 'General feedback' };
-        const typeLabel  = typeLabels[type] || 'General feedback';
+        const type      = document.getElementById('feedback-type').value;
+        const name      = document.getElementById('feedback-name').value.trim();
+        const typeLabel = _TYPE_LABELS[type] || 'General feedback';
 
         const issueTitle = `[${typeLabel}] ${message.slice(0, 72)}${message.length > 72 ? '…' : ''}`;
         const issueBody  = [
@@ -1971,16 +1983,6 @@
             '*Submitted via NilPDF in-app feedback form*',
             'cc @saqibkh',
         ].join('\n');
-
-        // Guard: token not stamped yet (local / dev build)
-        if (!_GH_TOKEN || _GH_TOKEN === '__GH_FEEDBACK_TOKEN__') {
-            errDiv.textContent = 'Feedback is not available in this environment. Visit nilpdf.com to send feedback.';
-            errDiv.hidden      = false;
-            submitBtn.disabled   = false;
-            submitText.hidden    = false;
-            submitSpinner.hidden = true;
-            return;
-        }
 
         try {
             const res = await fetch(`https://api.github.com/repos/${_GH_REPO}/issues`, {
@@ -2007,6 +2009,7 @@
                 issueLink.href   = issue.html_url;
                 issueLink.hidden = false;
             } else {
+                issueLink.removeAttribute('href');
                 issueLink.hidden = true;
             }
         } catch (_err) {
@@ -2018,13 +2021,8 @@
         }
     }
 
-    // Close on backdrop click
-    document.getElementById('feedback-modal').addEventListener('click', function (e) {
+    _feedbackModal.addEventListener('click', function (e) {
         if (e.target === this) closeFeedback();
-    });
-    // Close on Escape
-    document.addEventListener('keydown', function (e) {
-        if (e.key === 'Escape' && !document.getElementById('feedback-modal').hidden) closeFeedback();
     });
 
 </script>
@@ -2096,10 +2094,10 @@
                 </div>
                 <h2 class="modal-title">Thanks for your feedback!</h2>
                 <p class="modal-subtitle" style="margin-top:0.5rem">Your message has been received. We'll look into it soon.</p>
-                <a id="feedback-issue-link" href="#" target="_blank" rel="noopener noreferrer" class="modal-issue-link" hidden>
+                <a id="feedback-issue-link" target="_blank" rel="noopener noreferrer" class="modal-issue-link" hidden>
                     View issue on GitHub →
                 </a>
-                <div class="form-actions" style="justify-content:center;margin-top:1.75rem">
+                <div class="form-actions form-actions--centered">
                     <button type="button" class="modal-btn-primary" onclick="closeFeedback()">Done</button>
                 </div>
             </div>
