@@ -33,7 +33,7 @@
     <meta property="og:image:height" content="630">
     <meta name="twitter:card" content="summary_large_image">
     <meta name="twitter:title" content="NilPDF — Free PDF Tools. Zero Uploads.">
-    <meta name="twitter:description" content="13 PDF tools in your browser. Zero uploads. Zero tracking. 100% private.">
+    <meta name="twitter:description" content="14 PDF tools in your browser. Zero uploads. Zero tracking. 100% private.">
     <meta name="twitter:image" content="https://nilpdf.com/assets/og-image.png">
     <link rel="canonical" href="https://nilpdf.com/">
     <link rel="manifest" href="./manifest.json">
@@ -1187,6 +1187,7 @@
         if (!files.length) { updateStatus('anonymize-status', 'Select at least one PDF.', 'text-red'); return; }
         const check = validateFileSizes(files);
         if (!check.ok) { updateStatus('anonymize-status', check.msg, 'text-red'); return; }
+        if (check.warn) updateStatus('anonymize-status', check.warn, '');
         const password = document.getElementById('anonymize-password').value;
         const names = Array.from(files).map(f => f.name);
         const buffers = [];
@@ -1266,6 +1267,7 @@
         if (!sInput.files.length || !range) { updateStatus('split-status', 'Select a PDF and enter page numbers.', 'text-red'); return; }
         const check = validateFileSizes([sInput.files[0]]);
         if (!check.ok) { updateStatus('split-status', check.msg, 'text-red'); return; }
+        if (check.warn) updateStatus('split-status', check.warn, '');
         const password = document.getElementById('split-password').value;
         const buffer   = await toUint8(sInput.files[0]);
         const multi    = document.getElementById('split-multi').checked;
@@ -1391,6 +1393,7 @@
         if (!rotateInput.files[0]) { updateStatus('rotate-status', 'Select a PDF first.', 'text-red'); return; }
         const check = validateFileSizes([rotateInput.files[0]]);
         if (!check.ok) { updateStatus('rotate-status', check.msg, 'text-red'); return; }
+        if (check.warn) updateStatus('rotate-status', check.warn, '');
         const degrees  = parseInt(document.getElementById('rotate-degrees').value);
         const pagesStr = document.getElementById('rotate-pages').value.trim();
         const indices  = pagesStr ? parsePageRange(pagesStr) : [];
@@ -1451,6 +1454,7 @@
         if (!range) { updateStatus('remove-status', 'Enter page numbers to remove.', 'text-red'); return; }
         const check = validateFileSizes([removeInput.files[0]]);
         if (!check.ok) { updateStatus('remove-status', check.msg, 'text-red'); return; }
+        if (check.warn) updateStatus('remove-status', check.warn, '');
         const indices  = parsePageRange(range);
         if (!indices.length) { updateStatus('remove-status', 'Enter valid page numbers.', 'text-red'); return; }
         if (removeTotalPages > 0 && indices.length >= removeTotalPages) {
@@ -1480,6 +1484,7 @@
         if (!totextInput.files[0]) { updateStatus('totext-status', 'Select a PDF first.', 'text-red'); return; }
         const check = validateFileSizes([totextInput.files[0]]);
         if (!check.ok) { updateStatus('totext-status', check.msg, 'text-red'); return; }
+        if (check.warn) updateStatus('totext-status', check.warn, '');
         const password = document.getElementById('totext-password').value;
         const buffer   = await toUint8(totextInput.files[0]);
         pendingDownload = stem(totextInput.files[0].name) + '.txt';
@@ -1493,7 +1498,10 @@
     /** ════ PDF TO IMAGES ════════════════════════════════════════════════════ */
     const topngInput = document.getElementById('topng-upload');
     topngInput.onchange = () => {
-        if (topngInput.files[0]) updateStatus('topng-status', `Loaded: ${topngInput.files[0].name}`, 'text-green');
+        if (topngInput.files[0]) {
+            lastLoadedFile = topngInput.files[0]; lastLoadedTool = 'topng';
+            updateStatus('topng-status', `Loaded: ${topngInput.files[0].name}`, 'text-green');
+        }
     };
     bindSimpleDrop('drop-zone-topng', topngInput);
 
@@ -1501,6 +1509,7 @@
         if (!topngInput.files[0]) { updateStatus('topng-status', 'Select a PDF first.', 'text-red'); return; }
         const check = validateFileSizes([topngInput.files[0]]);
         if (!check.ok) { updateStatus('topng-status', check.msg, 'text-red'); return; }
+        if (check.warn) updateStatus('topng-status', check.warn, '');
         const format   = document.getElementById('topng-format').value;
         const mimeType = format === 'jpeg' ? 'image/jpeg' : 'image/png';
         const ext      = format === 'jpeg' ? 'jpg' : 'png';
@@ -1527,6 +1536,10 @@
                 a.href = url; a.download = `${topngBase}_page_1.${ext}`; a.click();
                 URL.revokeObjectURL(url);
                 incrementCounter();
+                if (!sessionStorage.getItem('nilpdf_nudged')) {
+                    sessionStorage.setItem('nilpdf_nudged', '1');
+                    setTimeout(showShareNudge, 1800);
+                }
                 updateStatus('topng-status', 'Done! Image downloaded.', 'text-green');
             } else {
                 updateStatus('topng-status', 'Packing into ZIP...', '');
@@ -1538,6 +1551,10 @@
                 a.href = url; a.download = `${topngBase}_images.zip`; a.click();
                 URL.revokeObjectURL(url);
                 incrementCounter();
+                if (!sessionStorage.getItem('nilpdf_nudged')) {
+                    sessionStorage.setItem('nilpdf_nudged', '1');
+                    setTimeout(showShareNudge, 1800);
+                }
                 updateStatus('topng-status', `Done! ${numPages} images in ZIP.`, 'text-green');
             }
         } catch (err) {
@@ -1594,6 +1611,7 @@
         if (topdfFilesArray.length === 0) { updateStatus('topdf-status', 'Add at least one image.', 'text-red'); return; }
         const check = validateFileSizes(topdfFilesArray.map(i => i.file));
         if (!check.ok) { updateStatus('topdf-status', check.msg, 'text-red'); return; }
+        if (check.warn) updateStatus('topdf-status', check.warn, '');
         updateStatus('topdf-status', 'Creating PDF...', '');
         try {
             const { PDFDocument } = PDFLib;
@@ -1625,6 +1643,10 @@
             a.href = url; a.download = topdfName; a.click();
             URL.revokeObjectURL(url);
             incrementCounter();
+            if (!sessionStorage.getItem('nilpdf_nudged')) {
+                sessionStorage.setItem('nilpdf_nudged', '1');
+                setTimeout(showShareNudge, 1800);
+            }
             updateStatus('topdf-status', `Done! PDF with ${added} page(s) downloaded.`, 'text-green');
         } catch (err) {
             updateStatus('topdf-status', 'Error: ' + err.message, 'text-red');
@@ -1650,6 +1672,7 @@
         if (!text) { updateStatus('watermark-status', 'Enter watermark text.', 'text-red'); return; }
         const check = validateFileSizes([watermarkInput.files[0]]);
         if (!check.ok) { updateStatus('watermark-status', check.msg, 'text-red'); return; }
+        if (check.warn) updateStatus('watermark-status', check.warn, '');
         const opacity  = parseInt(document.getElementById('watermark-opacity').value) / 100;
         const password = document.getElementById('watermark-password').value;
         const buffer   = await toUint8(watermarkInput.files[0]);
@@ -1675,6 +1698,7 @@
         if (!pagenumInput.files[0]) { updateStatus('pagenums-status', 'Select a PDF first.', 'text-red'); return; }
         const check = validateFileSizes([pagenumInput.files[0]]);
         if (!check.ok) { updateStatus('pagenums-status', check.msg, 'text-red'); return; }
+        if (check.warn) updateStatus('pagenums-status', check.warn, '');
         const position = document.getElementById('pagenums-position').value;
         const startNum = Math.max(1, parseInt(document.getElementById('pagenums-start').value) || 1);
         const password = document.getElementById('pagenums-password').value;
@@ -1765,6 +1789,7 @@
         if (!inspectInput.files[0]) { updateStatus('inspect-status', 'Select a PDF first.', 'text-red'); return; }
         const check = validateFileSizes([inspectInput.files[0]]);
         if (!check.ok) { updateStatus('inspect-status', check.msg, 'text-red'); return; }
+        if (check.warn) updateStatus('inspect-status', check.warn, '');
         document.getElementById('inspect-results').innerHTML = '';
         updateStatus('inspect-status', 'Reading metadata...', '');
         const password = document.getElementById('inspect-password').value;
@@ -1796,6 +1821,7 @@
         if (!repairInput.files[0]) { updateStatus('repair-status', 'Select a PDF first.', 'text-red'); return; }
         const check = validateFileSizes([repairInput.files[0]]);
         if (!check.ok) { updateStatus('repair-status', check.msg, 'text-red'); return; }
+        if (check.warn) updateStatus('repair-status', check.warn, '');
         const password = document.getElementById('repair-password').value;
         const buffer   = await toUint8(repairInput.files[0]);
         pendingDownload = stem(repairInput.files[0].name) + '_repaired.pdf';
