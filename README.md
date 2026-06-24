@@ -83,7 +83,7 @@ Every operation runs inside a [Web Worker](https://developer.mozilla.org/en-US/d
 ```
 nilpdf/
 ├── core/
-│   └── pdf_engine.py          # All PDF processing logic (18 functions)
+│   └── pdf_engine.py          # All PDF processing logic (20 functions)
 ├── tests/
 │   └── test_engine.py         # Unit tests (14 test classes)
 ├── assets/
@@ -93,10 +93,9 @@ nilpdf/
 │   └── og-image.png
 ├── <tool-name>/               # SEO landing pages, one directory per tool
 │   └── index.html
-├── index.html                 # Main SPA
-├── sw.js                      # Service worker (caching + COOP/COEP headers)
+├── index.html                 # Main SPA (build version stamped by CI)
+├── sw.js                      # Service worker (caching + COOP/COEP headers; cache name stamped by CI)
 ├── manifest.json              # PWA manifest
-├── version.js                 # Build version (stamped by CI)
 ├── generate_pages.py          # Dev utility: regenerate SEO landing pages
 ├── pack_repo.py               # Dev utility: bundle repo into a single text file
 └── .github/workflows/
@@ -173,7 +172,7 @@ pytest tests/ -v --tb=short
 The GitHub Actions workflow ([`.github/workflows/static.yml`](.github/workflows/static.yml)) runs on every push:
 
 1. **Test job** — installs dependencies, runs `pytest tests/ -v --tb=short`.
-2. **Deploy job** (main branch only, after tests pass) — stamps `version.js` with the commit SHA and date, then uploads to GitHub Pages.
+2. **Deploy job** (main branch only, after tests pass) — stamps the commit SHA and date into `index.html` (build version, feedback token) and `sw.js` (cache name), then uploads to GitHub Pages.
 
 ---
 
