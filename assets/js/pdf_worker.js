@@ -121,7 +121,11 @@ async function bootEngine() {
 
     postMessage({ type: 'BOOT_PROGRESS', msg: 'Loading engine…' });
     const baseUrl = location.href.split('assets/js/')[0];
-    const response = await fetch(baseUrl + 'core/pdf_engine.py?v=' + Date.now());
+    // Reuse this worker's own ?v= build-version query param (set by index.html) so the
+    // URL is stable across reloads of the same deploy — letting the service worker cache
+    // it for offline use, while still busting caches on every new deploy.
+    const engineVersion = new URL(location.href).searchParams.get('v') || 'dev';
+    const response = await fetch(baseUrl + 'core/pdf_engine.py?v=' + engineVersion);
     const pythonCode = await response.text();
     self.pyodide.runPython(pythonCode);
 

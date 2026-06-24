@@ -44,10 +44,20 @@ self.addEventListener('fetch', e => {
         return;
     }
 
-    // The worker script must always be fetched fresh and needs COEP so that
-    // Chrome allows it to use SharedArrayBuffer (required by Pyodide).
-    if (reqPath.includes('pdf_worker.js')) {
-        e.respondWith(fetch(e.request).then(addSecurityHeaders));
+    // The worker script and Python engine source: network-first (so online
+    // visits always get the latest code and COEP headers needed for
+    // SharedArrayBuffer), but cached so the app can still boot offline after
+    // the first successful visit.
+    if (reqPath.includes('pdf_worker.js') || reqPath.includes('pdf_engine.py')) {
+        e.respondWith(
+            fetch(e.request)
+                .then(res => {
+                    const clone = res.clone();
+                    caches.open(CACHE).then(c => c.put(e.request, clone));
+                    return addSecurityHeaders(res);
+                })
+                .catch(() => caches.match(e.request))
+        );
         return;
     }
 
