@@ -96,10 +96,11 @@ nilpdf/
 ├── index.html                 # Main SPA (build version stamped by CI)
 ├── sw.js                      # Service worker (caching + COOP/COEP headers; cache name stamped by CI)
 ├── manifest.json              # PWA manifest
+├── requirements.txt           # Pinned deps for the native CI test job
 ├── generate_pages.py          # Dev utility: regenerate SEO landing pages
 ├── pack_repo.py               # Dev utility: bundle repo into a single text file
 └── .github/workflows/
-    └── static.yml             # CI: test → deploy to GitHub Pages
+    └── static.yml             # CI: test → verify SEO pages in sync → deploy to GitHub Pages
 ```
 
 ### Local development
@@ -151,7 +152,7 @@ Then open `http://localhost:8080`.
 The test suite runs the Python engine directly — no browser required.
 
 ```bash
-pip install pypdf cryptography Pillow reportlab pytest
+pip install -r requirements.txt
 pytest tests/ -v --tb=short
 ```
 
@@ -161,7 +162,7 @@ pytest tests/ -v --tb=short
 
 2. **Tests** — add a test class to [`tests/test_engine.py`](tests/test_engine.py). Cover: valid output, producer stamp (or its absence for anonymize), password handling, and error cases.
 
-3. **Worker** — add a new `case 'ACTION_NAME':` block in the message handler in [`assets/js/pdf_worker.js`](assets/js/pdf_worker.js), calling the Python function via `pyodide.globals.get('process_<name>')`.
+3. **Worker** — add a new `else if (action === 'ACTION_NAME')` branch in the message handler in [`assets/js/pdf_worker.js`](assets/js/pdf_worker.js), calling the Python function via `pyodide.globals.get('process_<name>')`.
 
 4. **UI** — add a tab and drop zone in [`index.html`](index.html). Post a message to the worker with the new action name.
 
@@ -171,8 +172,10 @@ pytest tests/ -v --tb=short
 
 The GitHub Actions workflow ([`.github/workflows/static.yml`](.github/workflows/static.yml)) runs on every push:
 
-1. **Test job** — installs dependencies, runs `pytest tests/ -v --tb=short`.
+1. **Test job** — installs pinned dependencies from `requirements.txt`, runs `pytest tests/ -v --tb=short`, then re-runs `generate_pages.py` and fails the build if it produces any diff (catches the SEO landing pages drifting out of sync with the generator script).
 2. **Deploy job** (main branch only, after tests pass) — stamps the commit SHA and date into `index.html` (build version, feedback token) and `sw.js` (cache name), then uploads to GitHub Pages.
+
+Both jobs have a 10-minute timeout so a hung step (e.g. a stalled `pip install`) fails fast instead of burning CI minutes.
 
 ---
 
@@ -182,6 +185,7 @@ Issues and pull requests are welcome.
 
 - Keep all PDF processing in pure Python inside `core/pdf_engine.py` — it must run inside Pyodide with no native extensions.
 - Run `pytest tests/` before opening a PR.
+- If you change `generate_pages.py` or any tool metadata it reads, re-run it and commit the regenerated landing pages — CI fails the build if they're out of sync.
 - The CI pipeline will run tests automatically on every push.
 
 ---

@@ -15,6 +15,7 @@ permissions:
 jobs:
   test:
     runs-on: ubuntu-latest
+    timeout-minutes: 10
     steps:
       - uses: actions/checkout@v4
 
@@ -22,18 +23,22 @@ jobs:
         uses: actions/setup-python@v5
         with:
           python-version: '3.11'
-
-      - name: Cache pip packages
-        uses: actions/cache@v4
-        with:
-          path: ~/.cache/pip
-          key: pip-${{ hashFiles('**/requirements*.txt') }}-pypdf-cryptography-Pillow-reportlab
+          cache: 'pip'
 
       - name: Install dependencies
-        run: pip install pypdf cryptography Pillow reportlab pytest
+        run: pip install -r requirements.txt
 
       - name: Run tests with verbose output
         run: python -m pytest tests/ -v --tb=short
+
+      - name: Verify SEO landing pages are in sync with generate_pages.py
+        run: |
+          python3 generate_pages.py
+          if ! git diff --exit-code; then
+            echo "::error::generate_pages.py output does not match the committed landing pages." \
+                 "Run 'python3 generate_pages.py' locally, review the diff, and commit the result."
+            exit 1
+          fi
 
   deploy:
     needs: test
@@ -42,6 +47,7 @@ jobs:
       name: github-pages
       url: ${{ steps.deployment.outputs.page_url }}
     runs-on: ubuntu-latest
+    timeout-minutes: 10
     steps:
       - name: Checkout
         uses: actions/checkout@v4

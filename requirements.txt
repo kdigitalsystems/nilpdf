@@ -1,0 +1,11 @@
+# Pins for the native CI test job (tests/test_engine.py), run with plain CPython.
+# This is independent of the Pyodide/WebAssembly runtime used in production —
+# assets/js/pdf_worker.js installs the same package names via micropip inside
+# Pyodide, which resolves versions from Pyodide's own package index (currently
+# unpinned there; pinning requires confirming exact versions Pyodide v0.25.0
+# actually bundles before changing that file).
+pypdf==6.11.0
+cryptography==47.0.0
+Pillow==10.4.0
+reportlab==4.5.1
+pytest==9.0.3
