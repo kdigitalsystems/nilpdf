@@ -446,6 +446,38 @@ TOOLS = [
             ('merge-pdf', 'Merge PDF'),
         ],
     },
+    {
+        'slug': 'redact-pdf',
+        'tool_id': 'redact',
+        'title': 'Redact PDF Online Free — NilPDF',
+        'h1': 'Redact PDF',
+        'tagline': 'Black out sensitive areas and add text notes to a PDF — free and private.',
+        'description': 'Free online PDF redaction tool. Black out sensitive text or images and add custom notes. No uploads — runs entirely in your browser.',
+        'keywords': 'redact pdf, black out pdf, censor pdf, pdf redaction tool free',
+        'bullets': [
+            'Click and drag to black out any area on a page',
+            'Add custom text notes anywhere on a page',
+            'Works across multi-page documents',
+            'No uploads — your file never leaves your device',
+        ],
+        'body_text': 'NilPDF Redact lets you permanently black out sensitive text, numbers, or images and add custom text notes directly on a PDF page — all rendered and applied locally in your browser. Draw a box over anything you want hidden, or click to drop a note, then download the edited PDF. Nothing is ever uploaded to a server.',
+        'how_to_name': 'How to redact a PDF',
+        'how_to_steps': [
+            ('Open NilPDF Redact', 'Visit nilpdf.com and select the Redact tool.'),
+            ('Upload your PDF', 'Drop your PDF or click Browse.'),
+            ('Mark areas', 'Switch to Redact mode and drag boxes over sensitive content, or switch to Text mode to add notes.'),
+            ('Apply', 'Click "Apply & Download" — your edited PDF downloads automatically.'),
+        ],
+        'faq': [
+            ('Is redacting a PDF really free?', 'Yes — completely free, unlimited use, no account required.'),
+            ('Are my PDF files safe when I redact them?', 'Yes. Your files never leave your device. Everything runs in your browser using WebAssembly. NilPDF has no backend server.'),
+            ('Does redaction actually remove the underlying content?', "The black box is drawn permanently over the page, hiding the content visually. If the original PDF has a selectable text layer underneath, that text can still be extracted by copying it or parsing the file. For guaranteed removal, convert the redacted PDF to images first (use NilPDF's PDF to Images tool, then Images to PDF) before sharing it."),
+        ],
+        'related': [
+            ('remove-pdf-metadata', 'Remove Metadata'),
+            ('watermark-pdf', 'Watermark PDF'),
+        ],
+    },
 ]
 
 GA_SNIPPET = '''    <!-- Google tag (gtag.js) -->
@@ -559,7 +591,7 @@ PAGE_TEMPLATE = '''<!DOCTYPE html>
 {related_items}
         </nav>
         <footer>
-            <p>Part of <a href="https://nilpdf.com/">NilPDF</a> — 14 free PDF tools, zero uploads.</p>
+            <p>Part of <a href="https://nilpdf.com/">NilPDF</a> — 15 free PDF tools, zero uploads.</p>
         </footer>
     </div>
 </body>

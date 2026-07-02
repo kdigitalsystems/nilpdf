@@ -486,3 +486,67 @@ def process_repair(js_buf, status_id="", password=""):
     out = io.BytesIO()
     writer.write(out)
     return out.getvalue()
+
+
+def process_edit(js_buf, edits, status_id="", password=""):
+    """Apply redaction boxes and free-form text annotations to specific pages.
+
+    `edits` is a list of dicts, each shaped like one of:
+      {"page": int, "type": "redact", "x": float, "y": float, "width": float, "height": float}
+      {"page": int, "type": "text", "x": float, "y": float, "text": str, "size": float}
+    Coordinates are PDF points with the origin at the bottom-left of the page
+    (reportlab's coordinate system) — the caller is responsible for converting
+    from canvas/screen pixel coordinates before sending.
+    """
+    try:
+        from reportlab.pdfgen import canvas as rl_canvas
+        from reportlab.lib.colors import black
+    except ImportError:
+        raise ImportError("Edit requires reportlab. Please reload the page.")
+
+    reader = _open_reader(_ensure_py(js_buf), password)
+    writer = PdfWriter()
+    writer.append_pages_from_reader(reader)
+    total = len(writer.pages)
+
+    edits_by_page = {}
+    for edit in _ensure_py(edits):
+        edit = dict(edit)
+        page_idx = int(edit.get("page", 0))
+        edits_by_page.setdefault(page_idx, []).append(edit)
+
+    for i in range(total):
+        page_edits = edits_by_page.get(i)
+        if page_edits:
+            page = writer.pages[i]
+            w = float(page.mediabox.width)
+            h = float(page.mediabox.height)
+
+            overlay_buf = io.BytesIO()
+            c = rl_canvas.Canvas(overlay_buf, pagesize=(w, h))
+            for edit in page_edits:
+                if edit.get("type") == "redact":
+                    c.setFillColor(black)
+                    c.rect(float(edit.get("x", 0)), float(edit.get("y", 0)),
+                           float(edit.get("width", 0)), float(edit.get("height", 0)),
+                           stroke=0, fill=1)
+                elif edit.get("type") == "text":
+                    size = float(edit.get("size") or 12)
+                    c.setFillColor(black)
+                    c.setFont("Helvetica", size)
+                    c.drawString(float(edit.get("x", 0)), float(edit.get("y", 0)), str(edit.get("text", "")))
+            c.save()
+            overlay_buf.seek(0)
+
+            overlay_page = PdfReader(overlay_buf).pages[0]
+            try:
+                page.merge_page(overlay_page, over=True)
+            except TypeError:
+                page.merge_page(overlay_page)  # older pypdf without `over` param
+
+        _post_progress(status_id, int((i + 1) / total * 90), f"Editing page {i + 1} of {total}...")
+
+    _stamp_producer(writer)
+    out = io.BytesIO()
+    writer.write(out)
+    return out.getvalue()

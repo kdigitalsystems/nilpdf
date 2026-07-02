@@ -41,6 +41,7 @@ The first visit installs the Python runtime (~10 MB); subsequent visits load in 
 | **Page Numbers** | Stamp page numbers in any of six positions |
 | **Repair** | Recover pages from corrupted or truncated PDFs |
 | **Inspect** | View metadata and page information |
+| **Redact** | Black out sensitive areas and add text notes to a PDF |
 
 All tools support password-protected PDFs.
 
@@ -83,9 +84,9 @@ Every operation runs inside a [Web Worker](https://developer.mozilla.org/en-US/d
 ```
 nilpdf/
 ├── core/
-│   └── pdf_engine.py          # All PDF processing logic (20 functions)
+│   └── pdf_engine.py          # All PDF processing logic (21 functions)
 ├── tests/
-│   └── test_engine.py         # Unit tests (14 test classes)
+│   └── test_engine.py         # Unit tests (15 test classes)
 ├── assets/
 │   ├── css/main.css
 │   ├── js/pdf_worker.js       # Web Worker: boots Pyodide, dispatches actions

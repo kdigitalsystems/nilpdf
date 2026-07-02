@@ -18,6 +18,7 @@ from core.pdf_engine import (
     process_bulk,
     process_repair,
     process_add_footer,
+    process_edit,
 )
 
 
@@ -395,6 +396,51 @@ class TestAddFooter(unittest.TestCase):
     def test_footer_wrong_password_raises(self):
         with self.assertRaises(ValueError):
             process_add_footer(make_encrypted_pdf(password="x"), password="wrong")
+
+
+# ── Edit (redaction + text overlay) ──────────────────────────────────────────
+
+class TestEdit(unittest.TestCase):
+    def test_redact_produces_valid_pdf(self):
+        edits = [{"page": 0, "type": "redact", "x": 0, "y": 0, "width": 20, "height": 20}]
+        result = process_edit(make_pdf(2), edits)
+        self.assertEqual(len(read_pdf(result).pages), 2)
+
+    def test_text_edit_produces_valid_pdf(self):
+        edits = [{"page": 0, "type": "text", "x": 10, "y": 10, "text": "Hello", "size": 14}]
+        result = process_edit(make_pdf(1), edits)
+        self.assertEqual(len(read_pdf(result).pages), 1)
+
+    def test_empty_edits_preserves_page_count(self):
+        result = process_edit(make_pdf(3), [])
+        self.assertEqual(len(read_pdf(result).pages), 3)
+
+    def test_targets_only_specified_page(self):
+        edits = [{"page": 2, "type": "redact", "x": 0, "y": 0, "width": 10, "height": 10}]
+        result = process_edit(make_pdf(3), edits)
+        self.assertEqual(len(read_pdf(result).pages), 3)
+
+    def test_multiple_edits_same_page(self):
+        edits = [
+            {"page": 0, "type": "redact", "x": 0, "y": 0, "width": 10, "height": 10},
+            {"page": 0, "type": "text", "x": 20, "y": 20, "text": "Note", "size": 10},
+        ]
+        result = process_edit(make_pdf(1), edits)
+        self.assertEqual(len(read_pdf(result).pages), 1)
+
+    def test_stamps_producer(self):
+        result = process_edit(make_pdf(1), [])
+        self.assertIn("NilPDF", producer_of(result))
+
+    def test_wrong_password_raises(self):
+        with self.assertRaises(ValueError):
+            process_edit(make_encrypted_pdf(password="x"), [], password="wrong")
+
+    def test_correct_password_works(self):
+        enc = make_encrypted_pdf(num_pages=2, password="secret")
+        edits = [{"page": 1, "type": "text", "x": 5, "y": 5, "text": "X"}]
+        result = process_edit(enc, edits, password="secret")
+        self.assertEqual(len(read_pdf(result).pages), 2)
 
 
 if __name__ == "__main__":

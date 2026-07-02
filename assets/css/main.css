@@ -314,6 +314,111 @@ button {
     border: 2px dashed var(--accent);
 }
 
+/* ── Redact tool: toolbar, page canvas, overlay edits ── */
+.redact-toolbar {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    margin-bottom: 0.5rem;
+    flex-wrap: wrap;
+}
+
+.redact-mode-btn {
+    padding: 0.45rem 0.9rem;
+    border-radius: 7px;
+    border: 1px solid var(--border);
+    background: var(--card-bg);
+    color: var(--text-main);
+    font-size: 0.85rem;
+    cursor: pointer;
+}
+
+.redact-mode-btn.active {
+    background: var(--accent);
+    color: #fff;
+    border-color: var(--accent);
+}
+
+.redact-toolbar-sep {
+    width: 1px;
+    height: 20px;
+    background: var(--border);
+    margin: 0 0.25rem;
+}
+
+.redact-page-indicator {
+    font-size: 0.85rem;
+    color: var(--text-muted);
+    min-width: 90px;
+    text-align: center;
+}
+
+.redact-hint {
+    font-size: 0.8rem;
+    color: var(--text-muted);
+    margin-bottom: 0.75rem;
+}
+
+.redact-canvas-wrap {
+    position: relative;
+    display: inline-block;
+    max-width: 100%;
+    max-height: 60vh;
+    overflow: auto;
+    margin-bottom: 0.75rem;
+    border: 1px solid var(--border);
+    border-radius: 8px;
+}
+
+.redact-canvas-wrap canvas {
+    display: block;
+}
+
+.redact-overlay {
+    position: absolute;
+    top: 0;
+    left: 0;
+    cursor: crosshair;
+}
+
+.redact-box {
+    position: absolute;
+    background: rgba(0, 0, 0, 0.92);
+    border: 1px solid #000;
+}
+
+.redact-box-drawing {
+    background: rgba(0, 0, 0, 0.45);
+    border: 1px dashed #000;
+}
+
+.redact-text-box {
+    position: absolute;
+    color: #000;
+    font-family: Helvetica, Arial, sans-serif;
+    white-space: nowrap;
+    line-height: 1;
+    background: rgba(255, 255, 255, 0.65);
+    padding: 1px 3px;
+    border: 1px dashed var(--accent);
+}
+
+.redact-item-remove {
+    position: absolute;
+    top: -9px;
+    right: -9px;
+    width: 16px;
+    height: 16px;
+    border-radius: 50%;
+    background: #ef4444;
+    color: #fff;
+    border: none;
+    font-size: 11px;
+    line-height: 16px;
+    cursor: pointer;
+    padding: 0;
+}
+
 /* ── Sortable merge file list items ── */
 .file-list-item {
     display: flex;
@@ -1780,16 +1885,6 @@ body {
     justify-content: center;
     margin: 0 auto 1.25rem;
 }
-.modal-issue-link {
-    display: inline-block;
-    color: var(--accent);
-    font-size: 0.875rem;
-    font-weight: 600;
-    text-decoration: none;
-    margin-top: 0.75rem;
-}
-.modal-issue-link:hover { text-decoration: underline; }
-
 /* Spinner */
 @keyframes modal-spin {
     from { transform: rotate(0deg); }

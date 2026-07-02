@@ -23,9 +23,9 @@
     </script>
 
     <!-- SEO & Social -->
-    <meta name="description" content="NilPDF — 14 free PDF tools that run entirely in your browser. Merge, split, compress, rotate, watermark and more. Zero uploads. Zero tracking. 100% private.">
+    <meta name="description" content="NilPDF — 15 free PDF tools that run entirely in your browser. Merge, split, compress, rotate, watermark and more. Zero uploads. Zero tracking. 100% private.">
     <meta property="og:title" content="NilPDF — Free PDF Tools. Zero Uploads.">
-    <meta property="og:description" content="14 PDF tools. Your files never leave your device. Zero uploads. Zero tracking.">
+    <meta property="og:description" content="15 PDF tools. Your files never leave your device. Zero uploads. Zero tracking.">
     <meta property="og:type" content="website">
     <meta property="og:url" content="https://nilpdf.com/">
     <meta property="og:image" content="https://nilpdf.com/assets/og-image.png">
@@ -33,7 +33,7 @@
     <meta property="og:image:height" content="630">
     <meta name="twitter:card" content="summary_large_image">
     <meta name="twitter:title" content="NilPDF — Free PDF Tools. Zero Uploads.">
-    <meta name="twitter:description" content="14 PDF tools in your browser. Zero uploads. Zero tracking. 100% private.">
+    <meta name="twitter:description" content="15 PDF tools in your browser. Zero uploads. Zero tracking. 100% private.">
     <meta name="twitter:image" content="https://nilpdf.com/assets/og-image.png">
     <link rel="canonical" href="https://nilpdf.com/">
     <link rel="manifest" href="./manifest.json">
@@ -45,7 +45,7 @@
       "@type": "WebApplication",
       "name": "NilPDF",
       "url": "https://nilpdf.com/",
-      "description": "14 free PDF tools that run entirely in your browser. Merge, split, compress, rotate, watermark and more. Zero uploads. Zero tracking. 100% private.",
+      "description": "15 free PDF tools that run entirely in your browser. Merge, split, compress, rotate, watermark and more. Zero uploads. Zero tracking. 100% private.",
       "applicationCategory": "UtilitiesApplication",
       "operatingSystem": "Any (browser-based)",
       "browserRequirements": "Requires a modern browser with JavaScript enabled",
@@ -55,7 +55,8 @@
         "Merge PDFs", "Split PDF", "Compress PDF", "Remove PDF metadata",
         "Reorder pages", "Rotate pages", "Remove pages", "Extract text",
         "Convert PDF to images", "Convert images to PDF",
-        "Add watermark", "Add page numbers", "Inspect PDF metadata"
+        "Add watermark", "Add page numbers", "Inspect PDF metadata",
+        "Repair PDF", "Redact PDF"
       ]
     }
     </script>
@@ -91,10 +92,6 @@
             <span>NilPDF</span>
         </a>
         <div class="site-nav-right">
-            <a href="https://github.com/kdigitalsystems/nilpdf" target="_blank" rel="noopener" class="nav-link" title="View on GitHub">
-                <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M12 0C5.37 0 0 5.37 0 12c0 5.31 3.435 9.795 8.205 11.385.6.105.825-.255.825-.57 0-.285-.015-1.23-.015-2.235-3.015.555-3.795-.735-4.035-1.41-.135-.345-.72-1.41-1.23-1.695-.42-.225-1.02-.78-.015-.795.945-.015 1.62.87 1.845 1.23 1.08 1.815 2.805 1.305 3.495.99.105-.78.42-1.305.765-1.605-2.67-.3-5.46-1.335-5.46-5.925 0-1.305.465-2.385 1.23-3.225-.12-.3-.54-1.53.12-3.18 0 0 1.005-.315 3.3 1.23.96-.27 1.98-.405 3-.405s2.04.135 3 .405c2.295-1.56 3.3-1.23 3.3-1.23.66 1.65.24 2.88.12 3.18.765.84 1.23 1.905 1.23 3.225 0 4.605-2.805 5.625-5.475 5.925.435.375.81 1.095.81 2.22 0 1.605-.015 2.895-.015 3.3 0 .315.225.69.825.57A12.02 12.02 0 0024 12c0-6.63-5.37-12-12-12z"/></svg>
-                GitHub
-            </a>
             <button class="theme-toggle" id="theme-toggle" title="Toggle theme" aria-label="Toggle colour theme">🌓</button>
             <button class="share-btn" id="share-btn" title="Share" aria-label="Share this tool">🔗</button>
         </div>
@@ -108,10 +105,10 @@
     <section class="hero">
         <div class="hero-badge">
             <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg>
-            100% free &amp; open source
+            100% free &amp; private
         </div>
         <h1 class="hero-title">PDF tools that<br>stay in your browser</h1>
-        <p class="hero-sub">14 free tools. Zero uploads. Completely private.</p>
+        <p class="hero-sub">15 free tools. Zero uploads. Completely private.</p>
         <button class="hero-cta" onclick="document.querySelector('.tools-section').scrollIntoView({behavior:'smooth'})">
             Browse all tools
             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg>
@@ -140,8 +137,8 @@
                 <div class="feature-icon purple">
                     <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><polyline points="16 18 22 12 16 6"/><polyline points="8 6 2 12 8 18"/></svg>
                 </div>
-                <h3>Open source &amp; auditable</h3>
-                <p>MIT licensed. Every line of code is on GitHub — read it, audit it, or contribute. Nothing hidden, nothing proprietary.</p>
+                <h3>No sign-up, no install</h3>
+                <p>Just open the page and go. No account, no email, no software to install — works the moment you load it.</p>
             </div>
         </div>
     </section>
@@ -299,6 +296,16 @@
                 </div>
             </div>
 
+            <div class="tool-card" data-category="secure" onclick="openTool('redact')">
+                <div class="tool-card-icon">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="16" rx="2"/><line x1="7" y1="9" x2="13" y2="9" stroke-width="3"/><line x1="7" y1="14" x2="17" y2="14"/><line x1="7" y1="17" x2="11" y2="17"/></svg>
+                </div>
+                <div class="tool-card-body">
+                    <h3>Redact PDF</h3>
+                    <p>Black out sensitive areas and add text notes.</p>
+                </div>
+            </div>
+
         </div><!-- /tools-grid -->
     </section>
 
@@ -330,6 +337,7 @@
             <button class="tab-btn" onclick="switchTab(event, 'pagenums')">Page #s</button>
             <button class="tab-btn" onclick="switchTab(event, 'inspect')">Inspect</button>
             <button class="tab-btn" onclick="switchTab(event, 'repair')">Repair</button>
+            <button class="tab-btn" onclick="switchTab(event, 'redact')">Redact</button>
         </nav>
 
         <!-- MERGE -->
@@ -604,6 +612,37 @@
             <progress id="repair-progress" class="pdf-progress" value="0" max="100" style="display:none"></progress>
         </div>
 
+        <!-- REDACT -->
+        <div id="tool-redact" class="tool-section hidden-tool">
+            <div id="drop-zone-redact" class="file-drop" aria-label="Drop zone">
+                <svg class="drop-icon" width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
+                <p>Select a PDF to redact or annotate</p>
+                <button onclick="document.getElementById('redact-upload').click()" class="secondary-btn">Browse</button>
+                <input type="file" id="redact-upload" accept="application/pdf" hidden aria-label="Select a PDF to redact">
+            </div>
+            <input type="password" id="redact-password" class="text-input password-input" placeholder="🔒 Password (if encrypted)">
+
+            <div id="redact-workspace" style="display:none;">
+                <div class="redact-toolbar">
+                    <button type="button" id="redact-mode-redact" class="redact-mode-btn active">⬛ Redact</button>
+                    <button type="button" id="redact-mode-text" class="redact-mode-btn">🔤 Text</button>
+                    <span class="redact-toolbar-sep"></span>
+                    <button type="button" id="redact-prev-page" class="secondary-btn">‹ Prev</button>
+                    <span id="redact-page-indicator" class="redact-page-indicator">Page 1 / 1</span>
+                    <button type="button" id="redact-next-page" class="secondary-btn">Next ›</button>
+                </div>
+                <p class="redact-hint">Redact mode: click and drag to black out an area. Text mode: click to place a note.</p>
+                <p class="redact-hint">Note: this covers content visually. If the PDF has selectable text underneath, it can still be extracted by copying or parsing the file — convert to images first if you need guaranteed removal.</p>
+                <div id="redact-canvas-wrap" class="redact-canvas-wrap">
+                    <canvas id="redact-canvas"></canvas>
+                    <div id="redact-overlay" class="redact-overlay"></div>
+                </div>
+                <label class="footer-credit-label"><input type="checkbox" class="footer-credit-cb" id="redact-footer"> Add "Processed with NilPDF.com" to footer</label>
+                <button id="redact-btn" class="primary-btn">Apply &amp; Download</button>
+            </div>
+            <div id="redact-status" class="status-message" role="status" aria-live="polite" aria-atomic="true">Ready.</div>
+        </div>
+
     </div><!-- /container -->
 </div><!-- /workspace -->
 
@@ -612,7 +651,7 @@
     <div class="site-footer-inner">
         <div class="site-footer-brand">
             <strong>NilPDF</strong>
-            <p>Free PDF tools that never leave your browser. Zero uploads. Zero tracking. Open source.</p>
+            <p>Free PDF tools that never leave your browser. Zero uploads. Zero tracking.</p>
         </div>
         <div class="site-footer-tools">
             <h4>Tools</h4>
@@ -631,14 +670,11 @@
                 <a href="#inspect"   onclick="event.preventDefault(); openTool('inspect')">Inspect PDF</a>
                 <a href="#remove"    onclick="event.preventDefault(); openTool('remove')">Remove Pages</a>
                 <a href="#repair"    onclick="event.preventDefault(); openTool('repair')">Repair PDF</a>
+                <a href="#redact"    onclick="event.preventDefault(); openTool('redact')">Redact PDF</a>
             </div>
         </div>
         <div class="site-footer-links">
             <h4>About</h4>
-            <a href="https://github.com/kdigitalsystems/nilpdf" target="_blank" rel="noopener">
-                <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><path d="M12 0C5.37 0 0 5.37 0 12c0 5.31 3.435 9.795 8.205 11.385.6.105.825-.255.825-.57 0-.285-.015-1.23-.015-2.235-3.015.555-3.795-.735-4.035-1.41-.135-.345-.72-1.41-1.23-1.695-.42-.225-1.02-.78-.015-.795.945-.015 1.62.87 1.845 1.23 1.08 1.815 2.805 1.305 3.495.99.105-.78.42-1.305.765-1.605-2.67-.3-5.46-1.335-5.46-5.925 0-1.305.465-2.385 1.23-3.225-.12-.3-.54-1.53.12-3.18 0 0 1.005-.315 3.3 1.23.96-.27 1.98-.405 3-.405s2.04.135 3 .405c2.295-1.56 3.3-1.23 3.3-1.23.66 1.65.24 2.88.12 3.18.765.84 1.23 1.905 1.23 3.225 0 4.605-2.805 5.625-5.475 5.925.435.375.81 1.095.81 2.22 0 1.605-.015 2.895-.015 3.3 0 .315.225.69.825.57A12.02 12.02 0 0024 12c0-6.63-5.37-12-12-12z"/></svg>
-                GitHub
-            </a>
             <a href="https://nilpdf.com/">nilpdf.com</a>
             <a href="#" class="footer-feedback-link" onclick="event.preventDefault(); openFeedback()">
                 <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
@@ -893,9 +929,10 @@
         pagenums: { title: 'Add Page Numbers to PDF', desc: 'Stamp page numbers onto a PDF. No uploads. Zero tracking.' },
         inspect:  { title: 'Inspect PDF',             desc: 'View PDF metadata, page count, fonts and more. Zero uploads.' },
         repair:   { title: 'Repair PDF',              desc: 'Attempt to recover pages from a corrupted or truncated PDF. Runs privately in your browser.' },
+        redact:   { title: 'Redact PDF',              desc: 'Black out sensitive areas and add custom text notes to a PDF. Runs privately in your browser.' },
     };
 
-    const SINGLE_FILE_TOOLS = ['split','reorder','rotate','remove','totext','topng','watermark','pagenums','inspect','repair'];
+    const SINGLE_FILE_TOOLS = ['split','reorder','rotate','remove','totext','topng','watermark','pagenums','inspect','repair','redact'];
 
     /** Category filter **/
     function filterTools(cat) {
@@ -917,9 +954,9 @@
         document.getElementById('site-footer').style.display = '';
         document.title = 'NilPDF — Free PDF Tools. Zero Uploads. 100% Private.';
         document.querySelector('meta[property="og:title"]').setAttribute('content', 'NilPDF — Free PDF Tools. Zero Uploads.');
-        document.querySelector('meta[property="og:description"]').setAttribute('content', '14 PDF tools. Your files never leave your device. Zero uploads. Zero tracking.');
+        document.querySelector('meta[property="og:description"]').setAttribute('content', '15 PDF tools. Your files never leave your device. Zero uploads. Zero tracking.');
         document.querySelector('meta[name="twitter:title"]').setAttribute('content', 'NilPDF — Free PDF Tools. Zero Uploads.');
-        document.querySelector('meta[name="twitter:description"]').setAttribute('content', '14 PDF tools in your browser. Zero uploads. Zero tracking. 100% private.');
+        document.querySelector('meta[name="twitter:description"]').setAttribute('content', '15 PDF tools in your browser. Zero uploads. Zero tracking. 100% private.');
     }
 
     // DOM-only: show workspace for a tool (no history change)
@@ -1831,6 +1868,198 @@
         });
     };
 
+    /** ════ REDACT ═══════════════════════════════════════════════════════════ */
+    const redactInput = document.getElementById('redact-upload');
+    let redactPdfDoc = null, redactCurrentPage = 0, redactTotalPages = 0;
+    let redactPageEdits = {};   // { pageIndex: [{ id, type, x, y, width, height, text, size }] } — PDF points, bottom-left origin
+    let redactIdCounter = 0;
+    let redactMode = 'redact'; // 'redact' | 'text'
+    let redactFile = null;
+    const REDACT_SCALE = 1.5;
+
+    function setRedactMode(mode) {
+        redactMode = mode;
+        document.getElementById('redact-mode-redact').classList.toggle('active', mode === 'redact');
+        document.getElementById('redact-mode-text').classList.toggle('active', mode === 'text');
+    }
+    document.getElementById('redact-mode-redact').onclick = () => setRedactMode('redact');
+    document.getElementById('redact-mode-text').onclick = () => setRedactMode('text');
+
+    redactInput.onchange = async () => {
+        const f = redactInput.files[0];
+        if (!f) return;
+        lastLoadedFile = f; lastLoadedTool = 'redact';
+        redactFile = f;
+        redactPageEdits = {};
+        redactCurrentPage = 0;
+        updateStatus('redact-status', `Loading ${f.name}...`, '');
+        try {
+            redactPdfDoc = await pdfjsLib.getDocument(await f.arrayBuffer()).promise;
+            redactTotalPages = redactPdfDoc.numPages;
+            document.getElementById('redact-workspace').style.display = '';
+            await renderRedactPage();
+            updateStatus('redact-status', `${f.name} — ${redactTotalPages} page(s)`, 'text-green');
+        } catch (err) {
+            document.getElementById('redact-workspace').style.display = 'none';
+            updateStatus('redact-status', `Could not read "${f.name}" — ${err.message || 'invalid or encrypted PDF'}`, 'text-red');
+        }
+    };
+    bindSimpleDrop('drop-zone-redact', redactInput);
+
+    async function renderRedactPage() {
+        const page = await redactPdfDoc.getPage(redactCurrentPage + 1);
+        const viewport = page.getViewport({ scale: REDACT_SCALE });
+        const canvas = document.getElementById('redact-canvas');
+        canvas.width = viewport.width;
+        canvas.height = viewport.height;
+        await page.render({ canvasContext: canvas.getContext('2d'), viewport }).promise;
+        document.getElementById('redact-page-indicator').textContent = `Page ${redactCurrentPage + 1} / ${redactTotalPages}`;
+        document.getElementById('redact-prev-page').disabled = redactCurrentPage === 0;
+        document.getElementById('redact-next-page').disabled = redactCurrentPage === redactTotalPages - 1;
+        renderRedactOverlay();
+    }
+
+    function renderRedactOverlay() {
+        const overlay = document.getElementById('redact-overlay');
+        const canvas  = document.getElementById('redact-canvas');
+        overlay.style.width  = canvas.width + 'px';
+        overlay.style.height = canvas.height + 'px';
+        overlay.innerHTML = '';
+        const items = redactPageEdits[redactCurrentPage] || [];
+        items.forEach(item => {
+            const el = document.createElement('div');
+            if (item.type === 'redact') {
+                el.className = 'redact-box';
+                el.style.left   = (item.x * REDACT_SCALE) + 'px';
+                el.style.top    = (canvas.height - (item.y + item.height) * REDACT_SCALE) + 'px';
+                el.style.width  = (item.width * REDACT_SCALE) + 'px';
+                el.style.height = (item.height * REDACT_SCALE) + 'px';
+            } else {
+                el.className = 'redact-text-box';
+                el.style.left = (item.x * REDACT_SCALE) + 'px';
+                el.style.top  = (canvas.height - (item.y + item.size) * REDACT_SCALE) + 'px';
+                el.style.fontSize = (item.size * REDACT_SCALE) + 'px';
+                el.textContent = item.text;
+            }
+            const rm = document.createElement('button');
+            rm.type = 'button';
+            rm.className = 'redact-item-remove';
+            rm.setAttribute('aria-label', 'Remove');
+            rm.textContent = '×';
+            rm.onclick = e => { e.stopPropagation(); removeRedactItem(item.id); };
+            el.appendChild(rm);
+            overlay.appendChild(el);
+        });
+    }
+
+    function removeRedactItem(id) {
+        const items = redactPageEdits[redactCurrentPage] || [];
+        redactPageEdits[redactCurrentPage] = items.filter(i => i.id !== id);
+        renderRedactOverlay();
+    }
+
+    function addRedactBox(pxLeft, pxTop, pxWidth, pxHeight) {
+        const canvas = document.getElementById('redact-canvas');
+        const x = pxLeft / REDACT_SCALE;
+        const width  = pxWidth  / REDACT_SCALE;
+        const height = pxHeight / REDACT_SCALE;
+        const y = (canvas.height - pxTop - pxHeight) / REDACT_SCALE;
+        const items = redactPageEdits[redactCurrentPage] || (redactPageEdits[redactCurrentPage] = []);
+        items.push({ id: ++redactIdCounter, type: 'redact', x, y, width, height });
+        renderRedactOverlay();
+    }
+
+    function addRedactText(px, py, text) {
+        const canvas = document.getElementById('redact-canvas');
+        const size = 14;
+        const x = px / REDACT_SCALE;
+        const y = (canvas.height - py) / REDACT_SCALE - size;
+        const items = redactPageEdits[redactCurrentPage] || (redactPageEdits[redactCurrentPage] = []);
+        items.push({ id: ++redactIdCounter, type: 'text', x, y, text, size });
+        renderRedactOverlay();
+    }
+
+    document.getElementById('redact-prev-page').onclick = () => {
+        if (redactCurrentPage > 0) { redactCurrentPage--; renderRedactPage(); }
+    };
+    document.getElementById('redact-next-page').onclick = () => {
+        if (redactCurrentPage < redactTotalPages - 1) { redactCurrentPage++; renderRedactPage(); }
+    };
+
+    (function bindRedactCanvasEvents() {
+        const overlay = document.getElementById('redact-overlay');
+        let dragStart = null, dragEl = null;
+
+        function pointerPos(e) {
+            const rect = overlay.getBoundingClientRect();
+            return { px: e.clientX - rect.left, py: e.clientY - rect.top };
+        }
+        function onMouseMove(e) {
+            if (!dragStart || !dragEl) return;
+            const { px, py } = pointerPos(e);
+            dragEl.style.left   = Math.min(px, dragStart.px) + 'px';
+            dragEl.style.top    = Math.min(py, dragStart.py) + 'px';
+            dragEl.style.width  = Math.abs(px - dragStart.px) + 'px';
+            dragEl.style.height = Math.abs(py - dragStart.py) + 'px';
+        }
+        function onMouseUp() {
+            window.removeEventListener('mousemove', onMouseMove);
+            window.removeEventListener('mouseup', onMouseUp);
+            if (!dragStart || !dragEl) return;
+            const left = parseFloat(dragEl.style.left) || 0;
+            const top  = parseFloat(dragEl.style.top) || 0;
+            const w    = parseFloat(dragEl.style.width) || 0;
+            const h    = parseFloat(dragEl.style.height) || 0;
+            dragEl.remove();
+            dragStart = null; dragEl = null;
+            if (w > 3 && h > 3) addRedactBox(left, top, w, h);
+        }
+
+        overlay.addEventListener('mousedown', e => {
+            if (e.target !== overlay) return;
+            const { px, py } = pointerPos(e);
+            if (redactMode === 'redact') {
+                dragStart = { px, py };
+                dragEl = document.createElement('div');
+                dragEl.className = 'redact-box redact-box-drawing';
+                dragEl.style.left = px + 'px'; dragEl.style.top = py + 'px';
+                dragEl.style.width = '0px'; dragEl.style.height = '0px';
+                overlay.appendChild(dragEl);
+                window.addEventListener('mousemove', onMouseMove);
+                window.addEventListener('mouseup', onMouseUp);
+            } else {
+                const text = prompt('Text to add on this page:');
+                if (text && text.trim()) addRedactText(px, py, text.trim());
+            }
+        });
+    })();
+
+    document.getElementById('redact-btn').onclick = async () => {
+        if (!redactFile) { updateStatus('redact-status', 'Select a PDF first.', 'text-red'); return; }
+        const allEdits = [];
+        Object.keys(redactPageEdits).forEach(pageIdx => {
+            (redactPageEdits[pageIdx] || []).forEach(item => {
+                if (item.type === 'redact') {
+                    allEdits.push({ page: parseInt(pageIdx), type: 'redact', x: item.x, y: item.y, width: item.width, height: item.height });
+                } else {
+                    allEdits.push({ page: parseInt(pageIdx), type: 'text', x: item.x, y: item.y, text: item.text, size: item.size });
+                }
+            });
+        });
+        if (!allEdits.length) { updateStatus('redact-status', 'Add at least one redaction box or text note first.', 'text-red'); return; }
+        const check = validateFileSizes([redactFile]);
+        if (!check.ok) { updateStatus('redact-status', check.msg, 'text-red'); return; }
+        if (check.warn) updateStatus('redact-status', check.warn, '');
+        const password = document.getElementById('redact-password').value;
+        const buffer   = await toUint8(redactFile);
+        pendingDownload = stem(redactFile.name) + '_redacted.pdf';
+        runWhenReady('redact-status', () => {
+            pendingFooter = document.getElementById('redact-footer')?.checked ?? false;
+            updateStatus('redact-status', 'Applying edits...', '');
+            worker.postMessage({ id: 'redact-status', action: 'EDIT', payload: { buffer, edits: allEdits, password } }, [buffer.buffer]);
+        });
+    };
+
     /** ════ TOAST + PROCESSED-FILES COUNTER ══════════════════════════════════ */
     function showToast(msg) {
         const t = document.createElement('div');
@@ -1866,7 +2095,7 @@
         const title = meta ? `NilPDF — ${meta.title}` : 'NilPDF — Free PDF Tools';
         const text  = meta
             ? `${meta.title} — free, no uploads, runs in your browser: ${url}`
-            : 'NilPDF: 14 free PDF tools that run entirely in your browser. Zero uploads. 100% private: https://nilpdf.com/';
+            : 'NilPDF: 15 free PDF tools that run entirely in your browser. Zero uploads. 100% private: https://nilpdf.com/';
         return { title, text, url };
     }
 
@@ -1908,7 +2137,7 @@
         // Escape closes any open overlay regardless of focused element
         if (e.key === 'Escape') {
             document.getElementById('shortcuts-modal').style.display = 'none';
-            if (!_feedbackModal.hidden) closeFeedback();
+            if (!document.getElementById('feedback-modal').hidden) closeFeedback();
             return;
         }
         if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA' || e.target.tagName === 'SELECT') return;
@@ -1924,7 +2153,7 @@
         }
         const num = parseInt(e.key);
         if (!isNaN(num)) {
-            const TOOL_NAMES = ['merge','compress','anonymize','split','reorder','rotate','remove','totext','topng','topdf','watermark','pagenums','inspect','repair'];
+            const TOOL_NAMES = ['merge','compress','anonymize','split','reorder','rotate','remove','totext','topng','topdf','watermark','pagenums','inspect','repair','redact'];
             const idx = num === 0 ? 9 : num - 1;
             const toolId = TOOL_NAMES[idx];
             if (toolId) openTool(toolId);
@@ -1933,7 +2162,7 @@
 
     /** ════ HASH ROUTING (init) ═══════════════════════════════════════════════ */
     (function initHash() {
-        const TOOL_NAMES = ['merge','compress','anonymize','split','reorder','rotate','remove','totext','topng','topdf','watermark','pagenums','inspect','repair'];
+        const TOOL_NAMES = ['merge','compress','anonymize','split','reorder','rotate','remove','totext','topng','topdf','watermark','pagenums','inspect','repair','redact'];
         const hash = location.hash.replace('#', '');
         if (TOOL_NAMES.includes(hash)) {
             // Use replaceState so the initial load doesn't add a spurious history entry
@@ -1949,7 +2178,6 @@
     const _GH_REPO     = 'kdigitalsystems/nilpdf';
     const _GH_TOKEN    = '__GH_FEEDBACK_TOKEN__'; // replaced at deploy time by static.yml
     const _TYPE_LABELS = { bug: 'Bug report', feature: 'Feature request', general: 'General feedback' };
-    const _feedbackModal = document.getElementById('feedback-modal');
 
     function openFeedback() {
         document.getElementById('feedback-form-state').hidden    = false;
@@ -1961,13 +2189,13 @@
         document.getElementById('feedback-submit').disabled = false;
         document.getElementById('feedback-submit-text').hidden    = false;
         document.getElementById('feedback-submit-spinner').hidden = true;
-        _feedbackModal.hidden = false;
+        document.getElementById('feedback-modal').hidden = false;
         document.body.style.overflow = 'hidden';
         requestAnimationFrame(() => document.getElementById('feedback-type').focus());
     }
 
     function closeFeedback() {
-        _feedbackModal.hidden = true;
+        document.getElementById('feedback-modal').hidden = true;
         document.body.style.overflow = '';
     }
 
@@ -2027,18 +2255,8 @@
                 const txt = await res.text().catch(() => '');
                 throw new Error(txt || `GitHub API ${res.status}`);
             }
-            const issue = await res.json();
-
             document.getElementById('feedback-form-state').hidden    = true;
             document.getElementById('feedback-success-state').hidden = false;
-            const issueLink = document.getElementById('feedback-issue-link');
-            if (issue.html_url) {
-                issueLink.href   = issue.html_url;
-                issueLink.hidden = false;
-            } else {
-                issueLink.removeAttribute('href');
-                issueLink.hidden = true;
-            }
         } catch (_err) {
             errDiv.textContent = 'Could not send feedback — please try again in a moment.';
             errDiv.hidden      = false;
@@ -2048,8 +2266,8 @@
         }
     }
 
-    _feedbackModal.addEventListener('click', function (e) {
-        if (e.target === this) closeFeedback();
+    document.addEventListener('click', function (e) {
+        if (e.target.id === 'feedback-modal') closeFeedback();
     });
 
 </script>
@@ -2121,9 +2339,6 @@
                 </div>
                 <h2 class="modal-title">Thanks for your feedback!</h2>
                 <p class="modal-subtitle" style="margin-top:0.5rem">Your message has been received. We'll look into it soon.</p>
-                <a id="feedback-issue-link" target="_blank" rel="noopener noreferrer" class="modal-issue-link" hidden>
-                    View issue on GitHub →
-                </a>
                 <div class="form-actions form-actions--centered">
                     <button type="button" class="modal-btn-primary" onclick="closeFeedback()">Done</button>
                 </div>
