@@ -665,7 +665,7 @@
             <input type="password" id="fillform-password" class="text-input password-input" placeholder="🔒 Password (if encrypted)">
 
             <div id="fillform-workspace" style="display:none;">
-                <div class="redact-toolbar">
+                <div id="fillform-pager" class="redact-toolbar">
                     <button type="button" id="fillform-prev-page" class="secondary-btn">‹ Prev</button>
                     <span id="fillform-page-indicator" class="redact-page-indicator">Page 1 / 1</span>
                     <button type="button" id="fillform-next-page" class="secondary-btn">Next ›</button>
@@ -2134,7 +2134,7 @@
     let fillformFieldsByPage = {};  // { pageIndex: [{ fieldName, fieldType, rect, exportValue, options, multiLine, radioButton }] }
     let fillformValues = {};        // { fieldName: value } — persists across page navigation
     let fillformFile = null;
-    const FILLFORM_SCALE = 1.5;
+    let fillformScale = 1.5;
 
     fillformInput.onchange = async () => {
         const f = fillformInput.files[0];
@@ -2186,11 +2186,16 @@
 
     async function renderFillFormPage() {
         const page = await fillformPdfDoc.getPage(fillformCurrentPage + 1);
-        const viewport = page.getViewport({ scale: FILLFORM_SCALE });
+        const unscaled = page.getViewport({ scale: 1 });
+        const availWidth = document.getElementById('fillform-canvas-wrap').parentElement.clientWidth;
+        fillformScale = availWidth > 0 ? Math.min(availWidth / unscaled.width, 2.5) : 1.5;
+        const viewport = page.getViewport({ scale: fillformScale });
         const canvas = document.getElementById('fillform-canvas');
         canvas.width = viewport.width;
         canvas.height = viewport.height;
         await page.render({ canvasContext: canvas.getContext('2d'), viewport, annotationMode: 0 }).promise;
+        const pager = document.getElementById('fillform-pager');
+        pager.style.display = fillformTotalPages > 1 ? '' : 'none';
         document.getElementById('fillform-page-indicator').textContent = `Page ${fillformCurrentPage + 1} / ${fillformTotalPages}`;
         document.getElementById('fillform-prev-page').disabled = fillformCurrentPage === 0;
         document.getElementById('fillform-next-page').disabled = fillformCurrentPage === fillformTotalPages - 1;
@@ -2208,10 +2213,10 @@
         fields.forEach(field => {
             if (field.hidden) return;
             const [x1, y1, x2, y2] = field.rect;
-            const left   = x1 * FILLFORM_SCALE;
-            const top    = canvas.height - y2 * FILLFORM_SCALE;
-            const width  = (x2 - x1) * FILLFORM_SCALE;
-            const height = (y2 - y1) * FILLFORM_SCALE;
+            const left   = x1 * fillformScale;
+            const top    = canvas.height - y2 * fillformScale;
+            const width  = (x2 - x1) * fillformScale;
+            const height = (y2 - y1) * fillformScale;
             let el;
 
             if (field.fieldType === 'Btn' && field.radioButton) {
@@ -2249,6 +2254,10 @@
                 el.className = 'fillform-field';
                 el.value = fillformValues[field.fieldName] || '';
                 el.oninput = () => { fillformValues[field.fieldName] = el.value; };
+            }
+
+            if (el.tagName !== 'INPUT' || (el.type !== 'checkbox' && el.type !== 'radio')) {
+                el.style.fontSize = Math.max(9, Math.min(height * 0.6, 11 * fillformScale)) + 'px';
             }
 
             if (field.readOnly) {
