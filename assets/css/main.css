@@ -419,6 +419,37 @@ button {
     padding: 0;
 }
 
+.fillform-overlay {
+    position: absolute;
+    top: 0;
+    left: 0;
+    pointer-events: none;
+}
+
+.fillform-field {
+    position: absolute;
+    pointer-events: auto;
+    box-sizing: border-box;
+    border: 1.5px solid var(--accent);
+    background: rgba(255, 255, 255, 0.85);
+    border-radius: 3px;
+    font-family: Helvetica, Arial, sans-serif;
+    padding: 0 2px;
+}
+
+.fillform-field[type="checkbox"],
+.fillform-field[type="radio"] {
+    background: #fff;
+    padding: 0;
+}
+
+.fillform-field:disabled,
+.fillform-field:read-only {
+    border-color: var(--border);
+    background: rgba(0, 0, 0, 0.08);
+    cursor: not-allowed;
+}
+
 /* ── Sortable merge file list items ── */
 .file-list-item {
     display: flex;

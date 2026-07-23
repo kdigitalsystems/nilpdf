@@ -550,3 +550,46 @@ def process_edit(js_buf, edits, status_id="", password=""):
     out = io.BytesIO()
     writer.write(out)
     return out.getvalue()
+
+
+def process_fill_form(js_buf, field_values, flatten=False, status_id="", password=""):
+    """Fill AcroForm field values and optionally flatten to a non-interactive PDF.
+
+    `field_values` maps field name (/T) to the value to set: a plain string for
+    text/choice fields, or the "on" export value (e.g. "/Yes") for checkboxes
+    and radio buttons. When `flatten` is True the filled appearance is baked
+    into each page's content stream and the interactive widgets/AcroForm are
+    removed entirely, so the result is no longer editable as a form.
+    """
+    from pypdf.generic import NameObject, ArrayObject
+
+    reader = _open_reader(_ensure_py(js_buf), password)
+    writer = PdfWriter()
+    writer.append(reader)
+
+    if "/AcroForm" not in writer._root_object:
+        raise ValueError("This PDF has no fillable form fields.")
+
+    _post_progress(status_id, 20, "Filling form fields...")
+    values = dict(_ensure_py(field_values) or {})
+    try:
+        writer.update_page_form_field_values(None, values, auto_regenerate=not flatten, flatten=bool(flatten))
+    except Exception as exc:
+        raise ValueError(f"Could not fill form fields: {exc}")
+
+    if flatten:
+        _post_progress(status_id, 70, "Flattening form...")
+        for page in writer.pages:
+            if "/Annots" in page:
+                kept = [a for a in page["/Annots"] if a.get_object().get("/Subtype") != "/Widget"]
+                if kept:
+                    page[NameObject("/Annots")] = ArrayObject(kept)
+                else:
+                    del page["/Annots"]
+        writer._root_object.pop("/AcroForm", None)
+
+    _post_progress(status_id, 95, "Writing output...")
+    _stamp_producer(writer)
+    out = io.BytesIO()
+    writer.write(out)
+    return out.getvalue()

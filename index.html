@@ -306,6 +306,16 @@
                 </div>
             </div>
 
+            <div class="tool-card" data-category="edit" onclick="openTool('fillform')">
+                <div class="tool-card-icon">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2"/><line x1="7" y1="8" x2="17" y2="8"/><line x1="7" y1="12" x2="13" y2="12"/><path d="M7 16h2l7-7-2-2-7 7v2z"/></svg>
+                </div>
+                <div class="tool-card-body">
+                    <h3>Fill PDF Forms</h3>
+                    <p>Fill in form fields and optionally flatten them.</p>
+                </div>
+            </div>
+
         </div><!-- /tools-grid -->
     </section>
 
@@ -338,6 +348,7 @@
             <button class="tab-btn" onclick="switchTab(event, 'inspect')">Inspect</button>
             <button class="tab-btn" onclick="switchTab(event, 'repair')">Repair</button>
             <button class="tab-btn" onclick="switchTab(event, 'redact')">Redact</button>
+            <button class="tab-btn" onclick="switchTab(event, 'fillform')">Fill Forms</button>
         </nav>
 
         <!-- MERGE -->
@@ -643,6 +654,34 @@
             <div id="redact-status" class="status-message" role="status" aria-live="polite" aria-atomic="true">Ready.</div>
         </div>
 
+        <!-- FILL FORM -->
+        <div id="tool-fillform" class="tool-section hidden-tool">
+            <div id="drop-zone-fillform" class="file-drop" aria-label="Drop zone">
+                <svg class="drop-icon" width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
+                <p>Select a PDF form to fill in</p>
+                <button onclick="document.getElementById('fillform-upload').click()" class="secondary-btn">Browse</button>
+                <input type="file" id="fillform-upload" accept="application/pdf" hidden aria-label="Select a PDF form to fill">
+            </div>
+            <input type="password" id="fillform-password" class="text-input password-input" placeholder="🔒 Password (if encrypted)">
+
+            <div id="fillform-workspace" style="display:none;">
+                <div class="redact-toolbar">
+                    <button type="button" id="fillform-prev-page" class="secondary-btn">‹ Prev</button>
+                    <span id="fillform-page-indicator" class="redact-page-indicator">Page 1 / 1</span>
+                    <button type="button" id="fillform-next-page" class="secondary-btn">Next ›</button>
+                </div>
+                <p class="redact-hint">Fill in the highlighted fields directly on the page, then apply.</p>
+                <div id="fillform-canvas-wrap" class="redact-canvas-wrap">
+                    <canvas id="fillform-canvas"></canvas>
+                    <div id="fillform-overlay" class="redact-overlay"></div>
+                </div>
+                <label class="footer-credit-label"><input type="checkbox" id="fillform-flatten"> Flatten form (bakes in values, makes fields non-editable)</label>
+                <label class="footer-credit-label"><input type="checkbox" class="footer-credit-cb" id="fillform-footer"> Add "Processed with NilPDF.com" to footer</label>
+                <button id="fillform-btn" class="primary-btn">Apply &amp; Download</button>
+            </div>
+            <div id="fillform-status" class="status-message" role="status" aria-live="polite" aria-atomic="true">Ready.</div>
+        </div>
+
     </div><!-- /container -->
 </div><!-- /workspace -->
 
@@ -930,9 +969,10 @@
         inspect:  { title: 'Inspect PDF',             desc: 'View PDF metadata, page count, fonts and more. Zero uploads.' },
         repair:   { title: 'Repair PDF',              desc: 'Attempt to recover pages from a corrupted or truncated PDF. Runs privately in your browser.' },
         redact:   { title: 'Redact PDF',              desc: 'Black out sensitive areas and add custom text notes to a PDF. Runs privately in your browser.' },
+        fillform: { title: 'Fill PDF Forms',          desc: 'Fill in PDF form fields and optionally flatten them. Runs privately in your browser.' },
     };
 
-    const SINGLE_FILE_TOOLS = ['split','reorder','rotate','remove','totext','topng','watermark','pagenums','inspect','repair','redact'];
+    const SINGLE_FILE_TOOLS = ['split','reorder','rotate','remove','totext','topng','watermark','pagenums','inspect','repair','redact','fillform'];
 
     /** Category filter **/
     function filterTools(cat) {
@@ -1256,11 +1296,17 @@
         document.getElementById('range-preview').textContent = '';
         updateStatus('split-status', `Loading ${f.name}...`, '');
         try {
-            const pdf = await pdfjsLib.getDocument(await f.arrayBuffer()).promise;
+            const password = document.getElementById('split-password').value;
+            const pdf = await pdfjsLib.getDocument({ data: await f.arrayBuffer(), password: password || undefined }).promise;
             splitTotalPages = pdf.numPages;
             updateStatus('split-status', `${f.name} — ${splitTotalPages} page(s)`, 'text-green');
             validateSplitRange();
-        } catch (err) { updateStatus('split-status', `Could not read "${f.name}" — ${err.message || 'invalid or encrypted PDF'}`, 'text-red'); }
+        } catch (err) {
+            const msg = err.name === 'PasswordException'
+                ? 'Incorrect or missing password.'
+                : `Could not read "${f.name}" — ${err.message || 'invalid PDF'}`;
+            updateStatus('split-status', msg, 'text-red');
+        }
     };
     bindSimpleDrop('drop-zone-split', sInput);
 
@@ -1345,9 +1391,15 @@
         updateStatus('reorder-status', 'Generating previews...', '');
         let pdf;
         try {
-            pdf = await pdfjsLib.getDocument(await file.arrayBuffer()).promise;
+            const password = document.getElementById('reorder-password').value;
+            pdf = await pdfjsLib.getDocument({ data: await file.arrayBuffer(), password: password || undefined }).promise;
         } catch (err) {
-            updateStatus('reorder-status', `Could not read "${file.name}" — ${err.message || 'invalid or encrypted PDF'}`, 'text-red');
+            if (err.name === 'PasswordException') {
+                document.getElementById('reorder-password').style.display = 'block';
+                updateStatus('reorder-status', 'Incorrect or missing password. Enter it above and re-select the file.', 'text-red');
+            } else {
+                updateStatus('reorder-status', `Could not read "${file.name}" — ${err.message || 'invalid PDF'}`, 'text-red');
+            }
             return;
         }
         for (let i = 1; i <= pdf.numPages; i++) {
@@ -1397,11 +1449,17 @@
         rotateTotalPages = 0;
         updateStatus('rotate-status', `Loading ${f.name}...`, '');
         try {
-            const pdf = await pdfjsLib.getDocument(await f.arrayBuffer()).promise;
+            const password = document.getElementById('rotate-password').value;
+            const pdf = await pdfjsLib.getDocument({ data: await f.arrayBuffer(), password: password || undefined }).promise;
             rotateTotalPages = pdf.numPages;
             updateStatus('rotate-status', `${f.name} — ${rotateTotalPages} page(s)`, 'text-green');
             validateRotateRange();
-        } catch (err) { updateStatus('rotate-status', `Could not read "${f.name}" — ${err.message || 'invalid or encrypted PDF'}`, 'text-red'); }
+        } catch (err) {
+            const msg = err.name === 'PasswordException'
+                ? 'Incorrect or missing password.'
+                : `Could not read "${f.name}" — ${err.message || 'invalid PDF'}`;
+            updateStatus('rotate-status', msg, 'text-red');
+        }
     };
     bindSimpleDrop('drop-zone-rotate', rotateInput);
     document.getElementById('rotate-pages').addEventListener('input', validateRotateRange);
@@ -1455,11 +1513,17 @@
         removeTotalPages = 0;
         updateStatus('remove-status', `Loading ${f.name}...`, '');
         try {
-            const pdf = await pdfjsLib.getDocument(await f.arrayBuffer()).promise;
+            const password = document.getElementById('remove-password').value;
+            const pdf = await pdfjsLib.getDocument({ data: await f.arrayBuffer(), password: password || undefined }).promise;
             removeTotalPages = pdf.numPages;
             updateStatus('remove-status', `${f.name} — ${removeTotalPages} page(s)`, 'text-green');
             validateRemoveRange();
-        } catch (err) { updateStatus('remove-status', `Could not read "${f.name}" — ${err.message || 'invalid or encrypted PDF'}`, 'text-red'); }
+        } catch (err) {
+            const msg = err.name === 'PasswordException'
+                ? 'Incorrect or missing password.'
+                : `Could not read "${f.name}" — ${err.message || 'invalid PDF'}`;
+            updateStatus('remove-status', msg, 'text-red');
+        }
     };
     bindSimpleDrop('drop-zone-remove', removeInput);
     document.getElementById('remove-pages').addEventListener('input', validateRemoveRange);
@@ -1894,14 +1958,18 @@
         redactCurrentPage = 0;
         updateStatus('redact-status', `Loading ${f.name}...`, '');
         try {
-            redactPdfDoc = await pdfjsLib.getDocument(await f.arrayBuffer()).promise;
+            const password = document.getElementById('redact-password').value;
+            redactPdfDoc = await pdfjsLib.getDocument({ data: await f.arrayBuffer(), password: password || undefined }).promise;
             redactTotalPages = redactPdfDoc.numPages;
             document.getElementById('redact-workspace').style.display = '';
             await renderRedactPage();
             updateStatus('redact-status', `${f.name} — ${redactTotalPages} page(s)`, 'text-green');
         } catch (err) {
             document.getElementById('redact-workspace').style.display = 'none';
-            updateStatus('redact-status', `Could not read "${f.name}" — ${err.message || 'invalid or encrypted PDF'}`, 'text-red');
+            const msg = err.name === 'PasswordException'
+                ? 'Incorrect or missing password.'
+                : `Could not read "${f.name}" — ${err.message || 'invalid PDF'}`;
+            updateStatus('redact-status', msg, 'text-red');
         }
     };
     bindSimpleDrop('drop-zone-redact', redactInput);
@@ -2060,6 +2128,168 @@
         });
     };
 
+    /** ════ FILL FORM ═══════════════════════════════════════════════════════ */
+    const fillformInput = document.getElementById('fillform-upload');
+    let fillformPdfDoc = null, fillformCurrentPage = 0, fillformTotalPages = 0;
+    let fillformFieldsByPage = {};  // { pageIndex: [{ fieldName, fieldType, rect, exportValue, options, multiLine, radioButton }] }
+    let fillformValues = {};        // { fieldName: value } — persists across page navigation
+    let fillformFile = null;
+    const FILLFORM_SCALE = 1.5;
+
+    fillformInput.onchange = async () => {
+        const f = fillformInput.files[0];
+        if (!f) return;
+        lastLoadedFile = f; lastLoadedTool = 'fillform';
+        fillformFile = f;
+        fillformFieldsByPage = {};
+        fillformValues = {};
+        fillformCurrentPage = 0;
+        document.getElementById('fillform-workspace').style.display = 'none';
+        const password = document.getElementById('fillform-password').value;
+        updateStatus('fillform-status', `Loading ${f.name}...`, '');
+        try {
+            const buf = await f.arrayBuffer();
+            fillformPdfDoc = await pdfjsLib.getDocument({ data: buf, password: password || undefined }).promise;
+            fillformTotalPages = fillformPdfDoc.numPages;
+
+            let fieldCount = 0;
+            for (let i = 0; i < fillformTotalPages; i++) {
+                const page = await fillformPdfDoc.getPage(i + 1);
+                const annots = await page.getAnnotations({ intent: 'display' });
+                const fields = annots.filter(a => a.subtype === 'Widget' && a.fieldName && a.fieldType && a.fieldType !== 'Sig');
+                fillformFieldsByPage[i] = fields;
+                fields.forEach(field => {
+                    fieldCount++;
+                    if (!(field.fieldName in fillformValues)) {
+                        fillformValues[field.fieldName] = field.fieldValue || '';
+                    }
+                });
+            }
+
+            if (fieldCount === 0) {
+                updateStatus('fillform-status', `"${f.name}" has no fillable form fields.`, 'text-red');
+                return;
+            }
+
+            document.getElementById('fillform-workspace').style.display = '';
+            await renderFillFormPage();
+            updateStatus('fillform-status', `${f.name} — ${fieldCount} field(s) across ${fillformTotalPages} page(s)`, 'text-green');
+        } catch (err) {
+            document.getElementById('fillform-workspace').style.display = 'none';
+            const msg = err.name === 'PasswordException'
+                ? 'Incorrect or missing password.'
+                : `Could not read "${f.name}" — ${err.message || 'invalid PDF'}`;
+            updateStatus('fillform-status', msg, 'text-red');
+        }
+    };
+    bindSimpleDrop('drop-zone-fillform', fillformInput);
+
+    async function renderFillFormPage() {
+        const page = await fillformPdfDoc.getPage(fillformCurrentPage + 1);
+        const viewport = page.getViewport({ scale: FILLFORM_SCALE });
+        const canvas = document.getElementById('fillform-canvas');
+        canvas.width = viewport.width;
+        canvas.height = viewport.height;
+        await page.render({ canvasContext: canvas.getContext('2d'), viewport, annotationMode: 0 }).promise;
+        document.getElementById('fillform-page-indicator').textContent = `Page ${fillformCurrentPage + 1} / ${fillformTotalPages}`;
+        document.getElementById('fillform-prev-page').disabled = fillformCurrentPage === 0;
+        document.getElementById('fillform-next-page').disabled = fillformCurrentPage === fillformTotalPages - 1;
+        renderFillFormOverlay();
+    }
+
+    function renderFillFormOverlay() {
+        const overlay = document.getElementById('fillform-overlay');
+        const canvas  = document.getElementById('fillform-canvas');
+        overlay.style.width  = canvas.width + 'px';
+        overlay.style.height = canvas.height + 'px';
+        overlay.innerHTML = '';
+        const fields = fillformFieldsByPage[fillformCurrentPage] || [];
+
+        fields.forEach(field => {
+            if (field.hidden) return;
+            const [x1, y1, x2, y2] = field.rect;
+            const left   = x1 * FILLFORM_SCALE;
+            const top    = canvas.height - y2 * FILLFORM_SCALE;
+            const width  = (x2 - x1) * FILLFORM_SCALE;
+            const height = (y2 - y1) * FILLFORM_SCALE;
+            let el;
+
+            if (field.fieldType === 'Btn' && field.radioButton) {
+                el = document.createElement('input');
+                el.type = 'radio';
+                el.name = field.fieldName;
+                el.className = 'fillform-field';
+                el.checked = fillformValues[field.fieldName] === field.exportValue;
+                el.onchange = () => { fillformValues[field.fieldName] = field.exportValue; };
+            } else if (field.fieldType === 'Btn') {
+                el = document.createElement('input');
+                el.type = 'checkbox';
+                el.className = 'fillform-field';
+                el.checked = fillformValues[field.fieldName] === field.exportValue;
+                el.onchange = () => { fillformValues[field.fieldName] = el.checked ? field.exportValue : '/Off'; };
+            } else if (field.fieldType === 'Ch') {
+                el = document.createElement('select');
+                el.className = 'fillform-field';
+                (field.options || []).forEach(opt => {
+                    const o = document.createElement('option');
+                    o.value = opt.exportValue;
+                    o.textContent = opt.displayValue;
+                    el.appendChild(o);
+                });
+                el.value = fillformValues[field.fieldName] || '';
+                el.onchange = () => { fillformValues[field.fieldName] = el.value; };
+            } else if (field.multiLine) {
+                el = document.createElement('textarea');
+                el.className = 'fillform-field';
+                el.value = fillformValues[field.fieldName] || '';
+                el.oninput = () => { fillformValues[field.fieldName] = el.value; };
+            } else {
+                el = document.createElement('input');
+                el.type = 'text';
+                el.className = 'fillform-field';
+                el.value = fillformValues[field.fieldName] || '';
+                el.oninput = () => { fillformValues[field.fieldName] = el.value; };
+            }
+
+            if (field.readOnly) {
+                if (el.tagName === 'TEXTAREA' || (el.tagName === 'INPUT' && el.type === 'text')) {
+                    el.readOnly = true;
+                } else {
+                    el.disabled = true;
+                }
+            }
+
+            el.style.left   = left + 'px';
+            el.style.top    = top + 'px';
+            el.style.width  = width + 'px';
+            el.style.height = height + 'px';
+            overlay.appendChild(el);
+        });
+    }
+
+    document.getElementById('fillform-prev-page').onclick = () => {
+        if (fillformCurrentPage > 0) { fillformCurrentPage--; renderFillFormPage(); }
+    };
+    document.getElementById('fillform-next-page').onclick = () => {
+        if (fillformCurrentPage < fillformTotalPages - 1) { fillformCurrentPage++; renderFillFormPage(); }
+    };
+
+    document.getElementById('fillform-btn').onclick = async () => {
+        if (!fillformFile) { updateStatus('fillform-status', 'Select a PDF first.', 'text-red'); return; }
+        const check = validateFileSizes([fillformFile]);
+        if (!check.ok) { updateStatus('fillform-status', check.msg, 'text-red'); return; }
+        if (check.warn) updateStatus('fillform-status', check.warn, '');
+        const password = document.getElementById('fillform-password').value;
+        const flatten  = document.getElementById('fillform-flatten').checked;
+        const buffer   = await toUint8(fillformFile);
+        pendingDownload = stem(fillformFile.name) + (flatten ? '_filled_flat.pdf' : '_filled.pdf');
+        runWhenReady('fillform-status', () => {
+            pendingFooter = document.getElementById('fillform-footer')?.checked ?? false;
+            updateStatus('fillform-status', 'Filling form...', '');
+            worker.postMessage({ id: 'fillform-status', action: 'FILL_FORM', payload: { buffer, fields: fillformValues, flatten, password } }, [buffer.buffer]);
+        });
+    };
+
     /** ════ TOAST + PROCESSED-FILES COUNTER ══════════════════════════════════ */
     function showToast(msg) {
         const t = document.createElement('div');
@@ -2153,7 +2383,7 @@
         }
         const num = parseInt(e.key);
         if (!isNaN(num)) {
-            const TOOL_NAMES = ['merge','compress','anonymize','split','reorder','rotate','remove','totext','topng','topdf','watermark','pagenums','inspect','repair','redact'];
+            const TOOL_NAMES = ['merge','compress','anonymize','split','reorder','rotate','remove','totext','topng','topdf','watermark','pagenums','inspect','repair','redact','fillform'];
             const idx = num === 0 ? 9 : num - 1;
             const toolId = TOOL_NAMES[idx];
             if (toolId) openTool(toolId);
@@ -2162,7 +2392,7 @@
 
     /** ════ HASH ROUTING (init) ═══════════════════════════════════════════════ */
     (function initHash() {
-        const TOOL_NAMES = ['merge','compress','anonymize','split','reorder','rotate','remove','totext','topng','topdf','watermark','pagenums','inspect','repair','redact'];
+        const TOOL_NAMES = ['merge','compress','anonymize','split','reorder','rotate','remove','totext','topng','topdf','watermark','pagenums','inspect','repair','redact','fillform'];
         const hash = location.hash.replace('#', '');
         if (TOOL_NAMES.includes(hash)) {
             // Use replaceState so the initial load doesn't add a spurious history entry
