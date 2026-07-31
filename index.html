@@ -92,6 +92,7 @@
             <span>NilPDF</span>
         </a>
         <div class="site-nav-right">
+            <a href="https://nilpdf.com/privacy/" class="nav-link">Privacy</a>
             <button class="theme-toggle" id="theme-toggle" title="Toggle theme" aria-label="Toggle colour theme">🌓</button>
             <button class="share-btn" id="share-btn" title="Share" aria-label="Share this tool">🔗</button>
         </div>
@@ -114,6 +115,17 @@
             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg>
         </button>
         <p id="counter-display" class="counter-display"></p>
+    </section>
+
+    <!-- Popular tools -->
+    <section class="popular-tools">
+        <p class="popular-tools-title">Popular tools</p>
+        <div class="popular-tools-row">
+            <button class="popular-tool-btn" onclick="openTool('merge')">Merge PDF</button>
+            <button class="popular-tool-btn" onclick="openTool('compress')">Compress PDF</button>
+            <button class="popular-tool-btn" onclick="openTool('split')">Split PDF</button>
+            <button class="popular-tool-btn" onclick="openTool('anonymize')">Remove Metadata</button>
+        </div>
     </section>
 
     <!-- Features band -->
@@ -146,6 +158,10 @@
     <!-- Tool grid -->
     <section class="tools-section">
         <p class="tools-section-title">All tools</p>
+        <div class="tool-search-wrap">
+            <svg class="tool-search-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+            <input type="search" id="tool-search" class="tool-search-input" placeholder="Search tools…" aria-label="Search tools" oninput="searchTools(this.value)">
+        </div>
         <div class="category-nav">
             <button class="cat-btn active" data-cat="all"      onclick="filterTools('all')">All</button>
             <button class="cat-btn"        data-cat="organize" onclick="filterTools('organize')">Organize</button>
@@ -154,9 +170,10 @@
             <button class="cat-btn"        data-cat="secure"   onclick="filterTools('secure')">Secure</button>
             <button class="cat-btn"        data-cat="inspect"  onclick="filterTools('inspect')">Inspect</button>
         </div>
+        <p id="tool-search-empty" class="tool-search-empty" hidden>No tools match your search.</p>
         <div class="tools-grid">
 
-            <div class="tool-card" data-category="organize" onclick="openTool('merge')">
+            <div class="tool-card" data-category="organize" onclick="openTool('merge')" role="button" tabindex="0">
                 <div class="tool-card-icon">
                     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="7" width="12" height="14" rx="2"/><rect x="9" y="3" width="12" height="14" rx="2"/><path d="M9 13l3 3-3 3"/></svg>
                 </div>
@@ -166,27 +183,27 @@
                 </div>
             </div>
 
-            <div class="tool-card" data-category="edit" onclick="openTool('compress')">
+            <div class="tool-card" data-category="edit" onclick="openTool('compress')" role="button" tabindex="0">
                 <div class="tool-card-icon">
                     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M8 3H5a2 2 0 00-2 2v3m18 0V5a2 2 0 00-2-2h-3M3 16v3a2 2 0 002 2h3m8 0h3a2 2 0 002-2v-3"/><path d="M12 8v8m-4-4l4 4 4-4"/></svg>
                 </div>
                 <div class="tool-card-body">
                     <h3>Compress PDF</h3>
-                    <p>Reduce file size without quality loss.</p>
+                    <p>Optimize structure and images to reduce file size.</p>
                 </div>
             </div>
 
-            <div class="tool-card" data-category="secure" onclick="openTool('anonymize')">
+            <div class="tool-card" data-category="secure" onclick="openTool('anonymize')" role="button" tabindex="0">
                 <div class="tool-card-icon">
                     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2L4 6v5c0 4.4 3.4 8.5 8 9.5 4.6-1 8-5.1 8-9.5V6l-8-4z"/><path d="M9 12l2 2 4-4"/></svg>
                 </div>
                 <div class="tool-card-body">
-                    <h3>Scrub Metadata</h3>
+                    <h3>Remove Metadata</h3>
                     <p>Strip all hidden metadata for privacy.</p>
                 </div>
             </div>
 
-            <div class="tool-card" data-category="organize" onclick="openTool('split')">
+            <div class="tool-card" data-category="organize" onclick="openTool('split')" role="button" tabindex="0">
                 <div class="tool-card-icon">
                     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="3" x2="12" y2="21"/><rect x="2" y="5" width="8" height="14" rx="1"/><rect x="14" y="5" width="8" height="14" rx="1"/></svg>
                 </div>
@@ -196,7 +213,7 @@
                 </div>
             </div>
 
-            <div class="tool-card" data-category="organize" onclick="openTool('reorder')">
+            <div class="tool-card" data-category="organize" onclick="openTool('reorder')" role="button" tabindex="0">
                 <div class="tool-card-icon">
                     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/><path d="M8 3l-4 3 4 3"/><path d="M16 15l4 3-4 3"/></svg>
                 </div>
@@ -206,7 +223,7 @@
                 </div>
             </div>
 
-            <div class="tool-card" data-category="organize" onclick="openTool('rotate')">
+            <div class="tool-card" data-category="organize" onclick="openTool('rotate')" role="button" tabindex="0">
                 <div class="tool-card-icon">
                     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M1 4v6h6"/><path d="M3.51 15a9 9 0 102.13-9.36L1 10"/></svg>
                 </div>
@@ -216,7 +233,7 @@
                 </div>
             </div>
 
-            <div class="tool-card" data-category="organize" onclick="openTool('remove')">
+            <div class="tool-card" data-category="organize" onclick="openTool('remove')" role="button" tabindex="0">
                 <div class="tool-card-icon">
                     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="9" y1="13" x2="15" y2="13"/></svg>
                 </div>
@@ -226,7 +243,7 @@
                 </div>
             </div>
 
-            <div class="tool-card" data-category="convert" onclick="openTool('totext')">
+            <div class="tool-card" data-category="convert" onclick="openTool('totext')" role="button" tabindex="0">
                 <div class="tool-card-icon">
                     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><line x1="10" y1="9" x2="8" y2="9"/></svg>
                 </div>
@@ -236,7 +253,7 @@
                 </div>
             </div>
 
-            <div class="tool-card" data-category="convert" onclick="openTool('topng')">
+            <div class="tool-card" data-category="convert" onclick="openTool('topng')" role="button" tabindex="0">
                 <div class="tool-card-icon">
                     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg>
                 </div>
@@ -246,7 +263,7 @@
                 </div>
             </div>
 
-            <div class="tool-card" data-category="convert" onclick="openTool('topdf')">
+            <div class="tool-card" data-category="convert" onclick="openTool('topdf')" role="button" tabindex="0">
                 <div class="tool-card-icon">
                     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="12" height="12" rx="1"/><circle cx="7.5" cy="7.5" r="1"/><polyline points="3 12 7 8 11 12"/><path d="M19 8v8m0 0l-3-3m3 3l3-3"/><path d="M15 4h4a2 2 0 012 2v4"/></svg>
                 </div>
@@ -256,7 +273,7 @@
                 </div>
             </div>
 
-            <div class="tool-card" data-category="edit" onclick="openTool('watermark')">
+            <div class="tool-card" data-category="edit" onclick="openTool('watermark')" role="button" tabindex="0">
                 <div class="tool-card-icon">
                     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22v-5"/><path d="M9 8V2"/><path d="M15 8V2"/><rect x="5" y="8" width="14" height="9" rx="1"/><path d="M9 22h6"/></svg>
                 </div>
@@ -266,7 +283,7 @@
                 </div>
             </div>
 
-            <div class="tool-card" data-category="edit" onclick="openTool('pagenums')">
+            <div class="tool-card" data-category="edit" onclick="openTool('pagenums')" role="button" tabindex="0">
                 <div class="tool-card-icon">
                     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><line x1="4" y1="9" x2="20" y2="9"/><line x1="4" y1="15" x2="20" y2="15"/><line x1="10" y1="3" x2="8" y2="21"/><line x1="16" y1="3" x2="14" y2="21"/></svg>
                 </div>
@@ -276,7 +293,7 @@
                 </div>
             </div>
 
-            <div class="tool-card" data-category="inspect" onclick="openTool('inspect')">
+            <div class="tool-card" data-category="inspect" onclick="openTool('inspect')" role="button" tabindex="0">
                 <div class="tool-card-icon">
                     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
                 </div>
@@ -286,7 +303,7 @@
                 </div>
             </div>
 
-            <div class="tool-card" data-category="inspect" onclick="openTool('repair')">
+            <div class="tool-card" data-category="inspect" onclick="openTool('repair')" role="button" tabindex="0">
                 <div class="tool-card-icon">
                     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M14.7 6.3a1 1 0 000 1.4l1.6 1.6a1 1 0 001.4 0l3.77-3.77a6 6 0 01-7.94 7.94l-6.91 6.91a2.12 2.12 0 01-3-3l6.91-6.91a6 6 0 017.94-7.94l-3.76 3.76z"/></svg>
                 </div>
@@ -296,7 +313,7 @@
                 </div>
             </div>
 
-            <div class="tool-card" data-category="secure" onclick="openTool('redact')">
+            <div class="tool-card" data-category="secure" onclick="openTool('redact')" role="button" tabindex="0">
                 <div class="tool-card-icon">
                     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="16" rx="2"/><line x1="7" y1="9" x2="13" y2="9" stroke-width="3"/><line x1="7" y1="14" x2="17" y2="14"/><line x1="7" y1="17" x2="11" y2="17"/></svg>
                 </div>
@@ -306,7 +323,7 @@
                 </div>
             </div>
 
-            <div class="tool-card" data-category="edit" onclick="openTool('fillform')">
+            <div class="tool-card" data-category="edit" onclick="openTool('fillform')" role="button" tabindex="0">
                 <div class="tool-card-icon">
                     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2"/><line x1="7" y1="8" x2="17" y2="8"/><line x1="7" y1="12" x2="13" y2="12"/><path d="M7 16h2l7-7-2-2-7 7v2z"/></svg>
                 </div>
@@ -319,6 +336,59 @@
         </div><!-- /tools-grid -->
     </section>
 
+    <!-- Trust section -->
+    <section class="trust-section">
+        <p class="trust-section-title">Why trust NilPDF</p>
+        <div class="trust-grid">
+            <a href="https://nilpdf.com/security/#verify" class="trust-item">
+                <div class="trust-item-icon">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+                </div>
+                <h3>Verify it yourself</h3>
+                <p>Open your browser's network tab while using any tool — you'll see no file ever leaves your device.</p>
+            </a>
+            <a href="https://nilpdf.com/privacy/" class="trust-item">
+                <div class="trust-item-icon">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
+                </div>
+                <h3>Read the Privacy Policy</h3>
+                <p>A plain-language explanation of exactly what NilPDF does and doesn't collect.</p>
+            </a>
+            <a href="https://nilpdf.com/about/" class="trust-item">
+                <div class="trust-item-icon">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2L4 6v5c0 4.4 3.4 8.5 8 9.5 4.6-1 8-5.1 8-9.5V6l-8-4z"/><path d="M9 12l2 2 4-4"/></svg>
+                </div>
+                <h3>Learn how it's built</h3>
+                <p>NilPDF runs a real PDF engine compiled to WebAssembly, entirely client-side. No server processing, ever.</p>
+            </a>
+        </div>
+    </section>
+
+    <!-- FAQ -->
+    <section class="faq-section">
+        <p class="faq-section-title">Frequently asked questions</p>
+        <details class="faq-item">
+            <summary>Is NilPDF really free?</summary>
+            <p>Yes. Every tool is free to use, with no account, no usage limits, and no paywalled features.</p>
+        </details>
+        <details class="faq-item">
+            <summary>Do my files get uploaded anywhere?</summary>
+            <p>No. All processing happens locally in your browser using a PDF engine compiled to WebAssembly. Your files are never sent to a server.</p>
+        </details>
+        <details class="faq-item">
+            <summary>Is there a file size limit?</summary>
+            <p>There's no hard limit enforced by NilPDF, but very large files are constrained by your device's available memory since everything runs in your browser. See the <a href="https://nilpdf.com/browser-compatibility/">browser compatibility page</a> for details.</p>
+        </details>
+        <details class="faq-item">
+            <summary>Do I need to install anything?</summary>
+            <p>No. NilPDF runs entirely in the browser tab you're on right now — no extension, app, or sign-up required.</p>
+        </details>
+        <details class="faq-item">
+            <summary>What happens if I close the tab while a file is processing?</summary>
+            <p>Processing stops immediately, and since nothing is ever uploaded, no partial file exists anywhere. Just reopen the tool and try again.</p>
+        </details>
+    </section>
+
 </div><!-- /landing -->
 
 <!-- ══ WORKSPACE ══════════════════════════════════════════════════════════ -->
@@ -329,26 +399,30 @@
             All tools
         </button>
         <h1 id="workspace-title" class="workspace-title"></h1>
+        <a href="https://nilpdf.com/security/#verify" class="local-indicator" title="This tool processes files locally in your browser — nothing is uploaded. Click to learn how to verify this yourself.">
+            <span class="local-indicator-dot" aria-hidden="true"></span>
+            Local processing active
+        </a>
     </div>
 
     <div class="container">
         <nav class="tabs">
-            <button class="tab-btn active" onclick="switchTab(event, 'merge')">Merge</button>
-            <button class="tab-btn" onclick="switchTab(event, 'compress')">Squeeze</button>
-            <button class="tab-btn" onclick="switchTab(event, 'anonymize')">Scrub</button>
-            <button class="tab-btn" onclick="switchTab(event, 'split')">Split</button>
-            <button class="tab-btn" onclick="switchTab(event, 'reorder')">Order</button>
-            <button class="tab-btn" onclick="switchTab(event, 'rotate')">Rotate</button>
-            <button class="tab-btn" onclick="switchTab(event, 'remove')">Remove</button>
-            <button class="tab-btn" onclick="switchTab(event, 'totext')">To Text</button>
-            <button class="tab-btn" onclick="switchTab(event, 'topng')">To Images</button>
-            <button class="tab-btn" onclick="switchTab(event, 'topdf')">From Images</button>
-            <button class="tab-btn" onclick="switchTab(event, 'watermark')">Watermark</button>
-            <button class="tab-btn" onclick="switchTab(event, 'pagenums')">Page #s</button>
-            <button class="tab-btn" onclick="switchTab(event, 'inspect')">Inspect</button>
-            <button class="tab-btn" onclick="switchTab(event, 'repair')">Repair</button>
-            <button class="tab-btn" onclick="switchTab(event, 'redact')">Redact</button>
-            <button class="tab-btn" onclick="switchTab(event, 'fillform')">Fill Forms</button>
+            <button class="tab-btn active" onclick="switchTab(event, 'merge')">Merge PDF</button>
+            <button class="tab-btn" onclick="switchTab(event, 'compress')">Compress PDF</button>
+            <button class="tab-btn" onclick="switchTab(event, 'anonymize')">Remove Metadata</button>
+            <button class="tab-btn" onclick="switchTab(event, 'split')">Split PDF</button>
+            <button class="tab-btn" onclick="switchTab(event, 'reorder')">Reorder Pages</button>
+            <button class="tab-btn" onclick="switchTab(event, 'rotate')">Rotate Pages</button>
+            <button class="tab-btn" onclick="switchTab(event, 'remove')">Remove Pages</button>
+            <button class="tab-btn" onclick="switchTab(event, 'totext')">PDF to Text</button>
+            <button class="tab-btn" onclick="switchTab(event, 'topng')">PDF to Images</button>
+            <button class="tab-btn" onclick="switchTab(event, 'topdf')">Images to PDF</button>
+            <button class="tab-btn" onclick="switchTab(event, 'watermark')">Add Watermark</button>
+            <button class="tab-btn" onclick="switchTab(event, 'pagenums')">Add Page Numbers</button>
+            <button class="tab-btn" onclick="switchTab(event, 'inspect')">Inspect PDF</button>
+            <button class="tab-btn" onclick="switchTab(event, 'repair')">Repair PDF</button>
+            <button class="tab-btn" onclick="switchTab(event, 'redact')">Redact PDF</button>
+            <button class="tab-btn" onclick="switchTab(event, 'fillform')">Fill PDF Forms</button>
         </nav>
 
         <!-- MERGE -->
@@ -361,7 +435,9 @@
             </div>
             <ul id="file-list" class="file-list"></ul>
             <input type="password" id="merge-password" class="text-input password-input" placeholder="🔒 Password (if encrypted)">
-            <label class="footer-credit-label"><input type="checkbox" class="footer-credit-cb" id="merge-footer"> Add "Processed with NilPDF.com" to footer</label>
+            <details class="advanced-options"><summary>Advanced options</summary>
+                <label class="footer-credit-label"><input type="checkbox" class="footer-credit-cb" id="merge-footer"> Add optional NilPDF credit</label>
+            </details>
             <button id="merge-btn" class="primary-btn" disabled>Merge Files</button>
             <div id="status" class="status-message" role="status" aria-live="polite" aria-atomic="true"></div>
         </div>
@@ -376,9 +452,11 @@
             </div>
             <ul id="compress-list" class="file-list"></ul>
             <input type="password" id="compress-password" class="text-input password-input" placeholder="🔒 Password (if encrypted)">
-            <label class="footer-credit-label"><input type="checkbox" class="footer-credit-cb" id="compress-footer"> Add "Processed with NilPDF.com" to footer</label>
+            <details class="advanced-options"><summary>Advanced options</summary>
+                <label class="footer-credit-label"><input type="checkbox" class="footer-credit-cb" id="compress-footer"> Add optional NilPDF credit</label>
+            </details>
             <button id="compress-btn" class="primary-btn">Optimize Size</button>
-            <div id="compress-status" class="status-message" role="status" aria-live="polite" aria-atomic="true">Ready.</div>
+            <div id="compress-status" class="status-message" role="status" aria-live="polite" aria-atomic="true">Waiting for a PDF.</div>
             <progress id="compress-progress" class="pdf-progress" value="0" max="100" style="display:none"></progress>
         </div>
 
@@ -394,7 +472,7 @@
             <ul id="anonymize-list" class="file-list"></ul>
             <input type="password" id="anonymize-password" class="text-input password-input" placeholder="🔒 Password (if encrypted)">
             <button id="anonymize-btn" class="primary-btn">Strip Identifiers</button>
-            <div id="anonymize-status" class="status-message" role="status" aria-live="polite" aria-atomic="true">Ready.</div>
+            <div id="anonymize-status" class="status-message" role="status" aria-live="polite" aria-atomic="true">Waiting for a PDF.</div>
             <progress id="anonymize-progress" class="pdf-progress" value="0" max="100" style="display:none"></progress>
         </div>
 
@@ -420,9 +498,11 @@
                 <span id="split-help" class="split-help">All selected pages combined into one PDF.</span>
             </div>
             <input type="password" id="split-password" class="text-input password-input" placeholder="🔒 Password (if encrypted)">
-            <label class="footer-credit-label"><input type="checkbox" class="footer-credit-cb" id="split-footer"> Add "Processed with NilPDF.com" to footer</label>
+            <details class="advanced-options"><summary>Advanced options</summary>
+                <label class="footer-credit-label"><input type="checkbox" class="footer-credit-cb" id="split-footer"> Add optional NilPDF credit</label>
+            </details>
             <button id="split-btn" class="primary-btn">Extract Pages</button>
-            <div id="split-status" class="status-message" role="status" aria-live="polite" aria-atomic="true">Ready.</div>
+            <div id="split-status" class="status-message" role="status" aria-live="polite" aria-atomic="true">Waiting for a PDF.</div>
         </div>
 
         <!-- REORDER -->
@@ -435,9 +515,11 @@
             </div>
             <div id="thumbnail-grid" class="thumbnail-grid"></div>
             <input type="password" id="reorder-password" class="text-input password-input" placeholder="🔒 Password (if encrypted)" style="display:none;">
-            <label class="footer-credit-label" style="display:none;" id="reorder-footer-label"><input type="checkbox" class="footer-credit-cb" id="reorder-footer"> Add "Processed with NilPDF.com" to footer</label>
+            <details class="advanced-options" style="display:none;" id="reorder-footer-label"><summary>Advanced options</summary>
+                <label class="footer-credit-label"><input type="checkbox" class="footer-credit-cb" id="reorder-footer"> Add optional NilPDF credit</label>
+            </details>
             <button id="reorder-btn" class="primary-btn" style="display:none;">Save Reordered PDF</button>
-            <div id="reorder-status" class="status-message" role="status" aria-live="polite" aria-atomic="true">Ready.</div>
+            <div id="reorder-status" class="status-message" role="status" aria-live="polite" aria-atomic="true">Waiting for a PDF.</div>
         </div>
 
         <!-- ROTATE -->
@@ -449,6 +531,11 @@
                 <button onclick="document.getElementById('rotate-upload').click()" class="secondary-btn">Browse</button>
                 <input type="file" id="rotate-upload" accept="application/pdf" hidden aria-label="Select a PDF to rotate">
             </div>
+            <div class="thumb-select-toolbar" id="rotate-thumb-toolbar" style="display:none;">
+                <span class="thumb-select-hint">Click pages to choose which to rotate — none selected rotates all.</span>
+                <button type="button" class="link-btn" onclick="document.getElementById('rotate-pages').value=''; validateRotateRange();">Rotate all pages</button>
+            </div>
+            <div id="rotate-thumbnail-grid" class="thumbnail-grid"></div>
             <div class="input-group">
                 <label>Pages to rotate (blank = rotate all):</label>
                 <input type="text" id="rotate-pages" placeholder="e.g. 1, 3-5 or leave blank" class="text-input">
@@ -463,9 +550,11 @@
                 </select>
             </div>
             <input type="password" id="rotate-password" class="text-input password-input" placeholder="🔒 Password (if encrypted)">
-            <label class="footer-credit-label"><input type="checkbox" class="footer-credit-cb" id="rotate-footer"> Add "Processed with NilPDF.com" to footer</label>
+            <details class="advanced-options"><summary>Advanced options</summary>
+                <label class="footer-credit-label"><input type="checkbox" class="footer-credit-cb" id="rotate-footer"> Add optional NilPDF credit</label>
+            </details>
             <button id="rotate-btn" class="primary-btn">Rotate Pages</button>
-            <div id="rotate-status" class="status-message" role="status" aria-live="polite" aria-atomic="true">Ready.</div>
+            <div id="rotate-status" class="status-message" role="status" aria-live="polite" aria-atomic="true">Waiting for a PDF.</div>
         </div>
 
         <!-- REMOVE PAGES -->
@@ -477,15 +566,22 @@
                 <button onclick="document.getElementById('remove-upload').click()" class="secondary-btn">Browse</button>
                 <input type="file" id="remove-upload" accept="application/pdf" hidden aria-label="Select a PDF to remove pages from">
             </div>
+            <div class="thumb-select-toolbar" id="remove-thumb-toolbar" style="display:none;">
+                <span class="thumb-select-hint">Click pages to mark them for removal.</span>
+                <button type="button" class="link-btn" onclick="document.getElementById('remove-pages').value=''; validateRemoveRange();">Clear selection</button>
+            </div>
+            <div id="remove-thumbnail-grid" class="thumbnail-grid"></div>
             <div class="input-group">
                 <label>Pages to remove (e.g. 1, 3-5):</label>
                 <input type="text" id="remove-pages" placeholder="1, 3-5" class="text-input">
                 <span id="remove-preview" class="range-preview"></span>
             </div>
             <input type="password" id="remove-password" class="text-input password-input" placeholder="🔒 Password (if encrypted)">
-            <label class="footer-credit-label"><input type="checkbox" class="footer-credit-cb" id="remove-footer"> Add "Processed with NilPDF.com" to footer</label>
+            <details class="advanced-options"><summary>Advanced options</summary>
+                <label class="footer-credit-label"><input type="checkbox" class="footer-credit-cb" id="remove-footer"> Add optional NilPDF credit</label>
+            </details>
             <button id="remove-btn" class="primary-btn">Remove Pages</button>
-            <div id="remove-status" class="status-message" role="status" aria-live="polite" aria-atomic="true">Ready.</div>
+            <div id="remove-status" class="status-message" role="status" aria-live="polite" aria-atomic="true">Waiting for a PDF.</div>
         </div>
 
         <!-- PDF TO TEXT -->
@@ -499,7 +595,7 @@
             </div>
             <input type="password" id="totext-password" class="text-input password-input" placeholder="🔒 Password (if encrypted)">
             <button id="totext-btn" class="primary-btn">Extract Text</button>
-            <div id="totext-status" class="status-message" role="status" aria-live="polite" aria-atomic="true">Ready.</div>
+            <div id="totext-status" class="status-message" role="status" aria-live="polite" aria-atomic="true">Waiting for a PDF.</div>
             <div id="totext-preview-area" style="display:none;">
                 <textarea id="totext-preview" class="totext-preview" readonly placeholder="Extracted text appears here…"></textarea>
                 <button id="totext-copy-btn" class="secondary-btn" style="width:100%;margin-top:0.5rem;">Copy to Clipboard</button>
@@ -523,7 +619,7 @@
                 </select>
             </div>
             <button id="topng-btn" class="primary-btn">Convert to Images</button>
-            <div id="topng-status" class="status-message" role="status" aria-live="polite" aria-atomic="true">Ready.</div>
+            <div id="topng-status" class="status-message" role="status" aria-live="polite" aria-atomic="true">Waiting for a PDF.</div>
         </div>
 
         <!-- IMAGES TO PDF -->
@@ -537,7 +633,7 @@
             </div>
             <ul id="topdf-list" class="file-list"></ul>
             <button id="topdf-btn" class="primary-btn">Create PDF</button>
-            <div id="topdf-status" class="status-message" role="status" aria-live="polite" aria-atomic="true">Ready.</div>
+            <div id="topdf-status" class="status-message" role="status" aria-live="polite" aria-atomic="true">Waiting for images.</div>
         </div>
 
         <!-- WATERMARK -->
@@ -558,9 +654,8 @@
                 <input type="range" id="watermark-opacity" min="10" max="80" value="30" class="range-slider">
             </div>
             <input type="password" id="watermark-password" class="text-input password-input" placeholder="🔒 Password (if encrypted)">
-            <label class="footer-credit-label"><input type="checkbox" class="footer-credit-cb" id="watermark-footer"> Add "Processed with NilPDF.com" to footer</label>
             <button id="watermark-btn" class="primary-btn">Apply Watermark</button>
-            <div id="watermark-status" class="status-message" role="status" aria-live="polite" aria-atomic="true">Ready.</div>
+            <div id="watermark-status" class="status-message" role="status" aria-live="polite" aria-atomic="true">Waiting for a PDF.</div>
         </div>
 
         <!-- PAGE NUMBERS -->
@@ -588,9 +683,8 @@
                 <input type="number" id="pagenums-start" value="1" min="1" class="text-input num-input">
             </div>
             <input type="password" id="pagenums-password" class="text-input password-input" placeholder="🔒 Password (if encrypted)">
-            <label class="footer-credit-label"><input type="checkbox" class="footer-credit-cb" id="pagenums-footer"> Add "Processed with NilPDF.com" to footer</label>
             <button id="pagenums-btn" class="primary-btn">Add Page Numbers</button>
-            <div id="pagenums-status" class="status-message" role="status" aria-live="polite" aria-atomic="true">Ready.</div>
+            <div id="pagenums-status" class="status-message" role="status" aria-live="polite" aria-atomic="true">Waiting for a PDF.</div>
         </div>
 
         <!-- INSPECT -->
@@ -605,7 +699,7 @@
             <input type="password" id="inspect-password" class="text-input password-input" placeholder="🔒 Password (if encrypted)">
             <button id="inspect-btn" class="primary-btn">Inspect PDF</button>
             <div id="inspect-results" class="inspect-results"></div>
-            <div id="inspect-status" class="status-message" role="status" aria-live="polite" aria-atomic="true">Ready.</div>
+            <div id="inspect-status" class="status-message" role="status" aria-live="polite" aria-atomic="true">Waiting for a PDF.</div>
         </div>
 
         <!-- REPAIR -->
@@ -619,7 +713,7 @@
             </div>
             <input type="password" id="repair-password" class="text-input password-input" placeholder="🔒 Password (if encrypted)">
             <button id="repair-btn" class="primary-btn">Recover PDF</button>
-            <div id="repair-status" class="status-message" role="status" aria-live="polite" aria-atomic="true">Ready.</div>
+            <div id="repair-status" class="status-message" role="status" aria-live="polite" aria-atomic="true">Waiting for a PDF.</div>
             <progress id="repair-progress" class="pdf-progress" value="0" max="100" style="display:none"></progress>
         </div>
 
@@ -648,10 +742,12 @@
                     <canvas id="redact-canvas"></canvas>
                     <div id="redact-overlay" class="redact-overlay"></div>
                 </div>
-                <label class="footer-credit-label"><input type="checkbox" class="footer-credit-cb" id="redact-footer"> Add "Processed with NilPDF.com" to footer</label>
+                <details class="advanced-options"><summary>Advanced options</summary>
+                    <label class="footer-credit-label"><input type="checkbox" class="footer-credit-cb" id="redact-footer"> Add optional NilPDF credit</label>
+                </details>
                 <button id="redact-btn" class="primary-btn">Apply &amp; Download</button>
             </div>
-            <div id="redact-status" class="status-message" role="status" aria-live="polite" aria-atomic="true">Ready.</div>
+            <div id="redact-status" class="status-message" role="status" aria-live="polite" aria-atomic="true">Waiting for a PDF.</div>
         </div>
 
         <!-- FILL FORM -->
@@ -676,10 +772,12 @@
                     <div id="fillform-overlay" class="redact-overlay"></div>
                 </div>
                 <label class="footer-credit-label"><input type="checkbox" id="fillform-flatten"> Flatten form (bakes in values, makes fields non-editable)</label>
-                <label class="footer-credit-label"><input type="checkbox" class="footer-credit-cb" id="fillform-footer"> Add "Processed with NilPDF.com" to footer</label>
+                <details class="advanced-options"><summary>Advanced options</summary>
+                    <label class="footer-credit-label"><input type="checkbox" class="footer-credit-cb" id="fillform-footer"> Add optional NilPDF credit</label>
+                </details>
                 <button id="fillform-btn" class="primary-btn">Apply &amp; Download</button>
             </div>
-            <div id="fillform-status" class="status-message" role="status" aria-live="polite" aria-atomic="true">Ready.</div>
+            <div id="fillform-status" class="status-message" role="status" aria-live="polite" aria-atomic="true">Waiting for a PDF.</div>
         </div>
 
     </div><!-- /container -->
@@ -699,7 +797,7 @@
                 <a href="#totext"    onclick="event.preventDefault(); openTool('totext')">PDF to Text</a>
                 <a href="#compress"  onclick="event.preventDefault(); openTool('compress')">Compress</a>
                 <a href="#topng"     onclick="event.preventDefault(); openTool('topng')">PDF to Images</a>
-                <a href="#anonymize" onclick="event.preventDefault(); openTool('anonymize')">Scrub Metadata</a>
+                <a href="#anonymize" onclick="event.preventDefault(); openTool('anonymize')">Remove Metadata</a>
                 <a href="#topdf"     onclick="event.preventDefault(); openTool('topdf')">Images to PDF</a>
                 <a href="#split"     onclick="event.preventDefault(); openTool('split')">Split PDF</a>
                 <a href="#watermark" onclick="event.preventDefault(); openTool('watermark')">Watermark</a>
@@ -710,11 +808,16 @@
                 <a href="#remove"    onclick="event.preventDefault(); openTool('remove')">Remove Pages</a>
                 <a href="#repair"    onclick="event.preventDefault(); openTool('repair')">Repair PDF</a>
                 <a href="#redact"    onclick="event.preventDefault(); openTool('redact')">Redact PDF</a>
+                <a href="#fillform"  onclick="event.preventDefault(); openTool('fillform')">Fill PDF Forms</a>
             </div>
         </div>
         <div class="site-footer-links">
             <h4>About</h4>
-            <a href="https://nilpdf.com/">nilpdf.com</a>
+            <a href="https://nilpdf.com/about/">About</a>
+            <a href="https://nilpdf.com/privacy/">Privacy</a>
+            <a href="https://nilpdf.com/security/">Security</a>
+            <a href="https://nilpdf.com/terms/">Terms</a>
+            <a href="https://nilpdf.com/browser-compatibility/">Browser Compatibility</a>
             <a href="#" class="footer-feedback-link" onclick="event.preventDefault(); openFeedback()">
                 <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
                 Send feedback
@@ -765,6 +868,7 @@
     let isReady = false;
     let pendingAction = null;
     let pendingCompressInfo = null;
+    const pendingStats = {}; // { [statusId]: parsed __STATS__ payload from the last processing run }
     let pendingDownload = null;
     let pendingFooter = false;
     let lastLoadedFile = null;
@@ -841,7 +945,7 @@
                     el.textContent.startsWith('Installing') ||
                     el.textContent.startsWith('Checking') ||
                     el.textContent.startsWith('Packages')) {
-                    el.textContent = 'Ready.';
+                    el.textContent = 'Waiting for a PDF.';
                     el.className = 'status-message';
                 }
             });
@@ -855,6 +959,10 @@
             }
 
         } else if (type === 'PROGRESS') {
+            if (e.data.msg.startsWith('__STATS__:')) {
+                try { pendingStats[e.data.id] = JSON.parse(e.data.msg.slice('__STATS__:'.length)); } catch (_) {}
+                return;
+            }
             updateStatus(e.data.id, e.data.msg, "");
             const progBar = document.getElementById(e.data.id.replace('-status', '-progress'));
             if (progBar) {
@@ -919,24 +1027,60 @@
                 const now  = result.byteLength;
                 const pct  = ((orig - now) / orig * 100).toFixed(1);
                 const fmt  = n => (n / 1048576).toFixed(2) + ' MB';
-                updateStatus(id, pct > 0
-                    ? `Done: ${fmt(orig)} → ${fmt(now)} (${pct}% smaller)`
-                    : `Done: ${fmt(orig)} → ${fmt(now)} (already optimised)`, "text-green");
+                const secs = pendingCompressInfo.startedAt
+                    ? ((performance.now() - pendingCompressInfo.startedAt) / 1000).toFixed(1) + 's'
+                    : '';
+                let msg;
+                if (pct > 0) {
+                    msg = `Done — ${fmt(orig)} → ${fmt(now)} (${pct}% smaller)${secs ? ', ' + secs : ''}`;
+                } else if (now > orig) {
+                    msg = `Done — this PDF was already optimized; the result (${fmt(now)}) was not smaller than the original (${fmt(orig)}).`;
+                } else {
+                    msg = `Done — ${fmt(orig)} → ${fmt(now)} (already optimized, no further reduction possible)${secs ? ', ' + secs : ''}`;
+                }
+                updateStatus(id, msg, "text-green");
+            } else if (id === 'repair-status' && pendingStats[id]) {
+                const s = pendingStats[id];
+                const warnings = s.skipped > 0 ? `, ${s.skipped} page(s) could not be recovered` : '';
+                updateStatus(id, `Done — recovered ${s.recovered} of ${s.total} page(s)${warnings}. Please check the downloaded file opens correctly before relying on it.`, "text-green");
+            } else if (id === 'anonymize-status' && pendingStats[id]) {
+                const s = pendingStats[id];
+                updateStatus(id, `Done — removed ${s.removedCount} metadata field(s): ${s.removedFields.join(', ') || 'none found'}.`, "text-green");
             } else {
                 updateStatus(id, "Done! File downloaded.", "text-green");
             }
+            delete pendingStats[id];
             pendingCompressInfo = null;
             const doneBar = document.getElementById(id.replace('-status', '-progress'));
             if (doneBar) { doneBar.style.display = 'none'; doneBar.value = 0; }
 
         } else if (type === 'ERROR') {
-            updateStatus(id, "Error: " + error, "text-red");
+            updateStatus(id, formatProcessingError(error), "text-red");
             pendingFooter = false;
             pendingCompressInfo = null;
             const errBar = document.getElementById(id.replace('-status', '-progress'));
             if (errBar) { errBar.style.display = 'none'; errBar.value = 0; }
         }
     };
+
+    /** Turn a raw engine error message into a specific, actionable one where possible. */
+    function formatProcessingError(raw) {
+        const msg = String(raw || '');
+        const lower = msg.toLowerCase();
+        if (lower.includes('password') || lower.includes('decrypt')) {
+            return 'This PDF is password protected, or the password entered was incorrect. Enter the correct document password and try again.';
+        }
+        if (lower.includes('memory') || lower.includes('allocation failed') || lower.includes('out of memory')) {
+            return 'Your browser ran out of memory while processing this document. Try closing other tabs, using a smaller file, or processing fewer pages at a time.';
+        }
+        if (lower.includes('no pages') || lower.includes('contains no pages')) {
+            return "This PDF doesn't contain any pages NilPDF could read. Choose another file or try the Repair PDF tool.";
+        }
+        if (lower.includes('not a valid pdf') || lower.includes('could not read') || lower.includes('invalid pdf') || lower.includes('eof') || lower.includes("doesn't appear")) {
+            return 'This file does not appear to be a valid PDF. Choose another file, or try the Repair PDF tool if it was partially downloaded or corrupted.';
+        }
+        return `Something went wrong while processing this file: ${msg}. If this keeps happening, please report it using the feedback button.`;
+    }
 
     function setAllStatus(msg, cls) {
         document.querySelectorAll('.status-message').forEach(el => {
@@ -954,9 +1098,9 @@
 
     /** 3. NAVIGATION **/
     const TOOL_META = {
-        merge:    { title: 'Merge PDFs',              desc: 'Combine multiple PDF files into one. Runs privately in your browser — zero uploads.' },
-        compress: { title: 'Compress PDF',            desc: 'Reduce PDF file size without quality loss. No uploads. Runs entirely in your browser.' },
-        anonymize:{ title: 'Scrub PDF Metadata',      desc: 'Strip all hidden metadata from a PDF privately. Zero uploads. Zero tracking.' },
+        merge:    { title: 'Merge PDF',               desc: 'Combine multiple PDF files into one. Runs privately in your browser — zero uploads.' },
+        compress: { title: 'Compress PDF',            desc: 'Optimize PDF structure and embedded resources to reduce file size. Results vary by document.' },
+        anonymize:{ title: 'Remove Metadata',         desc: 'Strip all hidden metadata from a PDF privately. Zero uploads. Zero tracking.' },
         split:    { title: 'Split PDF',               desc: 'Extract specific pages from a PDF. Runs locally in your browser. No uploads.' },
         reorder:  { title: 'Reorder PDF Pages',       desc: 'Drag and drop to reorder pages in any PDF. No uploads. 100% private.' },
         rotate:   { title: 'Rotate PDF Pages',        desc: 'Rotate any pages in a PDF. Runs entirely in your browser.' },
@@ -964,7 +1108,7 @@
         totext:   { title: 'PDF to Text',             desc: 'Extract all text from a PDF privately. Zero uploads. Runs in your browser.' },
         topng:    { title: 'PDF to Images',           desc: 'Convert PDF pages to PNG images. Runs locally. No uploads.' },
         topdf:    { title: 'Images to PDF',           desc: 'Combine images into a PDF file. No uploads. 100% private.' },
-        watermark:{ title: 'Watermark PDF',           desc: 'Add a custom text watermark to any PDF. Runs in your browser.' },
+        watermark:{ title: 'Add Watermark',           desc: 'Add a custom text watermark to any PDF. Runs in your browser.' },
         pagenums: { title: 'Add Page Numbers to PDF', desc: 'Stamp page numbers onto a PDF. No uploads. Zero tracking.' },
         inspect:  { title: 'Inspect PDF',             desc: 'View PDF metadata, page count, fonts and more. Zero uploads.' },
         repair:   { title: 'Repair PDF',              desc: 'Attempt to recover pages from a corrupted or truncated PDF. Runs privately in your browser.' },
@@ -975,14 +1119,43 @@
     const SINGLE_FILE_TOOLS = ['split','reorder','rotate','remove','totext','topng','watermark','pagenums','inspect','repair','redact','fillform'];
 
     /** Category filter **/
+    let _activeCategory = 'all';
+    let _searchTerm = '';
+
     function filterTools(cat) {
-        document.querySelectorAll('.tool-card').forEach(card => {
-            card.style.display = (cat === 'all' || card.dataset.category === cat) ? '' : 'none';
-        });
+        _activeCategory = cat;
         document.querySelectorAll('.cat-btn').forEach(btn => {
             btn.classList.toggle('active', btn.dataset.cat === cat);
         });
+        applyToolFilters();
     }
+
+    function searchTools(term) {
+        _searchTerm = term.trim().toLowerCase();
+        applyToolFilters();
+    }
+
+    function applyToolFilters() {
+        let visibleCount = 0;
+        document.querySelectorAll('.tool-card').forEach(card => {
+            const matchesCategory = _activeCategory === 'all' || card.dataset.category === _activeCategory;
+            const text = card.textContent.toLowerCase();
+            const matchesSearch = !_searchTerm || text.includes(_searchTerm);
+            const visible = matchesCategory && matchesSearch;
+            card.style.display = visible ? '' : 'none';
+            if (visible) visibleCount++;
+        });
+        document.getElementById('tool-search-empty').hidden = visibleCount > 0;
+    }
+
+    document.querySelectorAll('.tool-card').forEach(card => {
+        card.addEventListener('keydown', e => {
+            if (e.key === 'Enter' || e.key === ' ') {
+                e.preventDefault();
+                card.click();
+            }
+        });
+    });
 
     /** ── Navigation helpers ── **/
     let _skipTabHistory = false;   // prevents switchTab overwriting pushState
@@ -1119,6 +1292,67 @@
         return indices;
     }
 
+    /** Compress a sorted array of 0-based page indices into a "1, 3-5" 1-based range string. */
+    function indicesToRangeString(indices) {
+        const sorted = [...new Set(indices)].sort((a, b) => a - b);
+        if (!sorted.length) return '';
+        const parts = [];
+        let start = sorted[0], prev = sorted[0];
+        for (let i = 1; i <= sorted.length; i++) {
+            const cur = sorted[i];
+            if (cur === prev + 1) { prev = cur; continue; }
+            parts.push(start === prev ? `${start + 1}` : `${start + 1}-${prev + 1}`);
+            start = prev = cur;
+        }
+        return parts.join(', ');
+    }
+
+    /** Render page thumbnails for a pdf.js document into `grid`. onWrapperCreated(wrapper, index)
+     *  fires right after each wrapper is appended, before its canvas finishes rendering.
+     *  isStale() is checked before each page so a superseded render can bail out early. */
+    async function renderThumbnailGrid(grid, pdf, { onWrapperCreated, isStale } = {}) {
+        grid.innerHTML = '';
+        for (let i = 1; i <= pdf.numPages; i++) {
+            if (isStale && isStale()) return;
+            const page = await pdf.getPage(i);
+            const viewport = page.getViewport({ scale: 0.3 });
+            const wrapper = document.createElement('div');
+            wrapper.className = 'thumbnail-item'; wrapper.dataset.index = i - 1;
+            const canvas = document.createElement('canvas');
+            canvas.width = viewport.width; canvas.height = viewport.height;
+            wrapper.appendChild(canvas);
+            const badge = document.createElement('span');
+            badge.className = 'page-badge'; badge.innerText = i;
+            wrapper.appendChild(badge);
+            grid.appendChild(wrapper);
+            if (onWrapperCreated) onWrapperCreated(wrapper, i - 1);
+            await page.render({ canvasContext: canvas.getContext('2d'), viewport }).promise;
+        }
+    }
+
+    /** Toggle .className on each thumbnail whose index is in `indices` (null = all). */
+    function highlightThumbnails(grid, indices, className = 'selected') {
+        if (!grid) return;
+        Array.from(grid.children).forEach(el => {
+            const idx = parseInt(el.dataset.index);
+            const on = indices === null || indices.includes(idx);
+            el.classList.toggle(className, on);
+            el.setAttribute('aria-checked', on ? 'true' : 'false');
+        });
+    }
+
+    /** Make a thumbnail grid clickable/keyboard-operable, calling onToggle(index) per activation. */
+    function makeThumbnailsSelectable(wrapper, idx, onToggle) {
+        wrapper.classList.add('selectable');
+        wrapper.setAttribute('role', 'checkbox');
+        wrapper.setAttribute('tabindex', '0');
+        wrapper.setAttribute('aria-checked', 'false');
+        wrapper.addEventListener('click', () => onToggle(idx));
+        wrapper.addEventListener('keydown', e => {
+            if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); onToggle(idx); }
+        });
+    }
+
     function parsePageRange(rangeStr) {
         const indices = [];
         rangeStr.replace(/\s/g, '').split(',').forEach(p => indices.push(...parseRangePart(p)));
@@ -1239,10 +1473,10 @@
         const single = files.length === 1;
         const origSize = files[0].size; const fname = files[0].name; const fcount = files.length;
         runWhenReady('compress-status', () => {
-            updateStatus('compress-status', `Squeezing ${fcount} file(s)...`, '');
+            updateStatus('compress-status', `Compressing ${fcount} file(s)...`, '');
             if (single) {
                 pendingFooter = document.getElementById('compress-footer')?.checked ?? false;
-                pendingCompressInfo = { origSize, isBulk: false };
+                pendingCompressInfo = { origSize, isBulk: false, startedAt: performance.now() };
                 pendingDownload = stem(fname) + '_compressed.pdf';
                 worker.postMessage({ id: 'compress-status', action: 'COMPRESS', payload: { buffer: buffers[0], password } }, [buffers[0].buffer]);
             } else {
@@ -1275,7 +1509,7 @@
             pendingFooter = false;
             updateStatus('anonymize-status', `Scrubbing ${fcount} file(s)...`, '');
             if (single) {
-                pendingDownload = stem(fname) + '_scrubbed.pdf';
+                pendingDownload = stem(fname) + '_metadata_removed.pdf';
                 worker.postMessage({ id: 'anonymize-status', action: 'ANONYMIZE', payload: { buffer: buffers[0], password } }, [buffers[0].buffer]);
             } else {
                 pendingDownload = 'scrubbed_batch.zip';
@@ -1303,7 +1537,7 @@
             validateSplitRange();
         } catch (err) {
             const msg = err.name === 'PasswordException'
-                ? 'Incorrect or missing password.'
+                ? 'This PDF is password protected, or the password entered was incorrect. Enter the correct document password and try again.'
                 : `Could not read "${f.name}" — ${err.message || 'invalid PDF'}`;
             updateStatus('split-status', msg, 'text-red');
         }
@@ -1402,24 +1636,11 @@
             }
             return;
         }
-        for (let i = 1; i <= pdf.numPages; i++) {
-            if (reorderVersion !== myVersion) return;
-            const page     = await pdf.getPage(i);
-            const viewport = page.getViewport({ scale: 0.3 });
-            const wrapper  = document.createElement('div');
-            wrapper.className = 'thumbnail-item'; wrapper.dataset.index = i - 1;
-            const canvas  = document.createElement('canvas');
-            canvas.width  = viewport.width; canvas.height = viewport.height;
-            wrapper.appendChild(canvas);
-            const badge   = document.createElement('span');
-            badge.className = 'page-badge'; badge.innerText = i;
-            wrapper.appendChild(badge);
-            grid.appendChild(wrapper);
-            await page.render({ canvasContext: canvas.getContext('2d'), viewport }).promise;
-        }
+        await renderThumbnailGrid(grid, pdf, { isStale: () => reorderVersion !== myVersion });
+        if (reorderVersion !== myVersion) return;
         document.getElementById('reorder-btn').style.display   = 'block';
         document.getElementById('reorder-password').style.display = 'block';
-        document.getElementById('reorder-footer-label').style.display = 'flex';
+        document.getElementById('reorder-footer-label').style.display = 'block';
         updateStatus('reorder-status', 'Drag to rearrange, then save.', 'text-green');
         if (sortable) sortable.destroy();
         sortable = new Sortable(grid, { animation: 150 });
@@ -1440,41 +1661,66 @@
 
     /** ════ ROTATE ═══════════════════════════════════════════════════════════ */
     const rotateInput = document.getElementById('rotate-upload');
-    let rotateTotalPages = 0;
+    let rotateTotalPages = 0, rotateThumbVersion = 0;
 
     rotateInput.onchange = async () => {
         const f = rotateInput.files[0];
         if (!f) return;
         lastLoadedFile = f; lastLoadedTool = 'rotate';
         rotateTotalPages = 0;
+        const myVersion = ++rotateThumbVersion;
+        const grid = document.getElementById('rotate-thumbnail-grid');
+        grid.innerHTML = '';
+        document.getElementById('rotate-thumb-toolbar').style.display = 'none';
         updateStatus('rotate-status', `Loading ${f.name}...`, '');
         try {
             const password = document.getElementById('rotate-password').value;
             const pdf = await pdfjsLib.getDocument({ data: await f.arrayBuffer(), password: password || undefined }).promise;
             rotateTotalPages = pdf.numPages;
             updateStatus('rotate-status', `${f.name} — ${rotateTotalPages} page(s)`, 'text-green');
+            await renderThumbnailGrid(grid, pdf, {
+                isStale: () => rotateThumbVersion !== myVersion,
+                onWrapperCreated: (wrapper, idx) => makeThumbnailsSelectable(wrapper, idx, toggleRotateThumbnail)
+            });
+            if (rotateThumbVersion !== myVersion) return;
+            document.getElementById('rotate-thumb-toolbar').style.display = 'flex';
             validateRotateRange();
         } catch (err) {
             const msg = err.name === 'PasswordException'
-                ? 'Incorrect or missing password.'
+                ? 'This PDF is password protected, or the password entered was incorrect. Enter the correct document password and try again.'
                 : `Could not read "${f.name}" — ${err.message || 'invalid PDF'}`;
             updateStatus('rotate-status', msg, 'text-red');
         }
     };
     bindSimpleDrop('drop-zone-rotate', rotateInput);
     document.getElementById('rotate-pages').addEventListener('input', validateRotateRange);
+    document.getElementById('rotate-degrees').addEventListener('change', validateRotateRange);
+
+    function toggleRotateThumbnail(idx) {
+        const current = document.getElementById('rotate-pages').value.trim();
+        const indices = current ? parsePageRange(current) : [];
+        const pos = indices.indexOf(idx);
+        if (pos === -1) indices.push(idx); else indices.splice(pos, 1);
+        document.getElementById('rotate-pages').value = indicesToRangeString(indices);
+        validateRotateRange();
+    }
 
     function validateRotateRange() {
         const range   = document.getElementById('rotate-pages').value.trim();
         const preview = document.getElementById('rotate-preview');
+        const grid    = document.getElementById('rotate-thumbnail-grid');
+        const degrees = parseInt(document.getElementById('rotate-degrees').value) || 0;
         if (!rotateTotalPages) { preview.textContent = ''; return; }
         if (!range) {
-            preview.textContent = `✓ All ${rotateTotalPages} pages will be rotated`;
-            preview.className   = 'range-preview text-green';
+            preview.textContent = `No pages selected — leave blank to rotate all ${rotateTotalPages}, or click pages below to rotate only those`;
+            preview.className   = 'range-preview';
+            highlightThumbnails(grid, []);
+            applyRotationPreview(grid, [], degrees);
             return;
         }
         const indices = parsePageRange(range);
         const invalid = indices.filter(i => i < 0 || i >= rotateTotalPages);
+        const valid   = indices.filter(i => i >= 0 && i < rotateTotalPages);
         if (invalid.length) {
             preview.textContent = `⚠ Page(s) ${invalid.map(i => i + 1).join(', ')} out of range (1–${rotateTotalPages})`;
             preview.className   = 'range-preview text-red';
@@ -1482,6 +1728,18 @@
             preview.textContent = `✓ Rotating ${indices.length} page(s)`;
             preview.className   = 'range-preview text-green';
         }
+        highlightThumbnails(grid, valid);
+        applyRotationPreview(grid, valid, degrees);
+    }
+
+    function applyRotationPreview(grid, indices, degrees) {
+        if (!grid) return;
+        Array.from(grid.children).forEach(el => {
+            const idx = parseInt(el.dataset.index);
+            const on = indices === null || indices.includes(idx);
+            const canvas = el.querySelector('canvas');
+            if (canvas) canvas.style.transform = on ? `rotate(${degrees}deg)` : '';
+        });
     }
 
     document.getElementById('rotate-btn').onclick = async () => {
@@ -1504,23 +1762,33 @@
 
     /** ════ REMOVE PAGES ═════════════════════════════════════════════════════ */
     const removeInput = document.getElementById('remove-upload');
-    let removeTotalPages = 0;
+    let removeTotalPages = 0, removeThumbVersion = 0;
 
     removeInput.onchange = async () => {
         const f = removeInput.files[0];
         if (!f) return;
         lastLoadedFile = f; lastLoadedTool = 'remove';
         removeTotalPages = 0;
+        const myVersion = ++removeThumbVersion;
+        const grid = document.getElementById('remove-thumbnail-grid');
+        grid.innerHTML = '';
+        document.getElementById('remove-thumb-toolbar').style.display = 'none';
         updateStatus('remove-status', `Loading ${f.name}...`, '');
         try {
             const password = document.getElementById('remove-password').value;
             const pdf = await pdfjsLib.getDocument({ data: await f.arrayBuffer(), password: password || undefined }).promise;
             removeTotalPages = pdf.numPages;
             updateStatus('remove-status', `${f.name} — ${removeTotalPages} page(s)`, 'text-green');
+            await renderThumbnailGrid(grid, pdf, {
+                isStale: () => removeThumbVersion !== myVersion,
+                onWrapperCreated: (wrapper, idx) => makeThumbnailsSelectable(wrapper, idx, toggleRemoveThumbnail)
+            });
+            if (removeThumbVersion !== myVersion) return;
+            document.getElementById('remove-thumb-toolbar').style.display = 'flex';
             validateRemoveRange();
         } catch (err) {
             const msg = err.name === 'PasswordException'
-                ? 'Incorrect or missing password.'
+                ? 'This PDF is password protected, or the password entered was incorrect. Enter the correct document password and try again.'
                 : `Could not read "${f.name}" — ${err.message || 'invalid PDF'}`;
             updateStatus('remove-status', msg, 'text-red');
         }
@@ -1528,12 +1796,27 @@
     bindSimpleDrop('drop-zone-remove', removeInput);
     document.getElementById('remove-pages').addEventListener('input', validateRemoveRange);
 
+    function toggleRemoveThumbnail(idx) {
+        const current = document.getElementById('remove-pages').value.trim();
+        const indices = current ? parsePageRange(current) : [];
+        const pos = indices.indexOf(idx);
+        if (pos === -1) indices.push(idx); else indices.splice(pos, 1);
+        document.getElementById('remove-pages').value = indicesToRangeString(indices);
+        validateRemoveRange();
+    }
+
     function validateRemoveRange() {
         const range   = document.getElementById('remove-pages').value.trim();
         const preview = document.getElementById('remove-preview');
-        if (!range || !removeTotalPages) { preview.textContent = ''; return; }
+        const grid    = document.getElementById('remove-thumbnail-grid');
+        if (!range || !removeTotalPages) {
+            preview.textContent = '';
+            highlightThumbnails(grid, [], 'marked-remove');
+            return;
+        }
         const indices = parsePageRange(range);
         const invalid = indices.filter(i => i < 0 || i >= removeTotalPages);
+        const valid   = indices.filter(i => i >= 0 && i < removeTotalPages);
         if (invalid.length) {
             preview.textContent = `⚠ Page(s) ${invalid.map(i => i + 1).join(', ')} out of range`;
             preview.className   = 'range-preview text-red';
@@ -1547,6 +1830,7 @@
                 preview.className   = 'range-preview text-green';
             }
         }
+        highlightThumbnails(grid, valid, 'marked-remove');
     }
 
     document.getElementById('remove-btn').onclick = async () => {
@@ -1659,7 +1943,7 @@
                 updateStatus('topng-status', `Done! ${numPages} images in ZIP.`, 'text-green');
             }
         } catch (err) {
-            updateStatus('topng-status', 'Error: ' + err.message, 'text-red');
+            updateStatus('topng-status', formatProcessingError(err.message), 'text-red');
         }
     };
 
@@ -1750,7 +2034,7 @@
             }
             updateStatus('topdf-status', `Done! PDF with ${added} page(s) downloaded.`, 'text-green');
         } catch (err) {
-            updateStatus('topdf-status', 'Error: ' + err.message, 'text-red');
+            updateStatus('topdf-status', formatProcessingError(err.message), 'text-red');
         }
     };
 
@@ -1902,8 +2186,8 @@
             updateStatus('inspect-status', `Done — ${pdf.numPages} page(s) inspected.`, 'text-green');
         } catch (err) {
             const msg = err.name === 'PasswordException'
-                ? 'Incorrect or missing password.'
-                : 'Error: ' + err.message;
+                ? 'This PDF is password protected, or the password entered was incorrect. Enter the correct document password and try again.'
+                : formatProcessingError(err.message);
             updateStatus('inspect-status', msg, 'text-red');
         }
     };
@@ -1967,7 +2251,7 @@
         } catch (err) {
             document.getElementById('redact-workspace').style.display = 'none';
             const msg = err.name === 'PasswordException'
-                ? 'Incorrect or missing password.'
+                ? 'This PDF is password protected, or the password entered was incorrect. Enter the correct document password and try again.'
                 : `Could not read "${f.name}" — ${err.message || 'invalid PDF'}`;
             updateStatus('redact-status', msg, 'text-red');
         }
@@ -2177,7 +2461,7 @@
         } catch (err) {
             document.getElementById('fillform-workspace').style.display = 'none';
             const msg = err.name === 'PasswordException'
-                ? 'Incorrect or missing password.'
+                ? 'This PDF is password protected, or the password entered was incorrect. Enter the correct document password and try again.'
                 : `Could not read "${f.name}" — ${err.message || 'invalid PDF'}`;
             updateStatus('fillform-status', msg, 'text-red');
         }
@@ -2379,7 +2663,9 @@
             if (!document.getElementById('feedback-modal').hidden) closeFeedback();
             return;
         }
-        if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA' || e.target.tagName === 'SELECT') return;
+        const typingTags = ['INPUT', 'TEXTAREA', 'SELECT'];
+        if (typingTags.includes(e.target.tagName) || e.target.isContentEditable) return;
+        if (e.target.closest('[role="dialog"], .modal-overlay, dialog')) return;
         const modal = document.getElementById('shortcuts-modal');
         if (e.key === '?' || e.key === '/') {
             modal.style.display = modal.style.display === 'flex' ? 'none' : 'flex';
@@ -2514,7 +2800,7 @@
 <!-- Floating feedback button — visible on all pages -->
 <button type="button" class="feedback-fab" onclick="openFeedback()" title="Send feedback or report a bug">
     <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
-    Feedback
+    <span class="feedback-fab-label">Feedback</span>
 </button>
 
 <!-- ═══════ FEEDBACK MODAL ═══════ -->

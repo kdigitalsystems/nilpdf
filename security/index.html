@@ -1,0 +1,152 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <!-- Google tag (gtag.js) -->
+    <script async src="https://www.googletagmanager.com/gtag/js?id=G-GH395FJ43L"></script>
+    <script>
+      window.dataLayer = window.dataLayer || [];
+      function gtag(){dataLayer.push(arguments);}
+      gtag('js', new Date());
+      gtag('config', 'G-GH395FJ43L');
+    </script>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Security — NilPDF</title>
+    <meta name="description" content="NilPDF's security architecture: local-only processing, what network requests the app makes, dependency handling, and how to report a vulnerability.">
+    <link rel="canonical" href="https://nilpdf.com/security/">
+    <meta property="og:title" content="Security — NilPDF">
+    <meta property="og:description" content="NilPDF's security architecture, dependency handling, and vulnerability reporting.">
+    <meta property="og:type" content="website">
+    <meta property="og:url" content="https://nilpdf.com/security/">
+    <meta property="og:image" content="https://nilpdf.com/assets/og-image.png">
+    <meta name="twitter:card" content="summary_large_image">
+    <meta name="twitter:title" content="Security — NilPDF">
+    <meta name="twitter:image" content="https://nilpdf.com/assets/og-image.png">
+    <link rel="icon" href="https://nilpdf.com/assets/icon.svg" type="image/svg+xml">
+    <style>
+        *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+        :root {
+            --bg: #f8fafc; --card: #ffffff; --text: #0f172a; --muted: #64748b;
+            --accent: #3b82f6; --border: #e2e8f0; --radius: 10px;
+        }
+        @media (prefers-color-scheme: dark) {
+            :root { --bg: #0f172a; --card: #1e293b; --text: #f8fafc; --muted: #94a3b8; --border: #334155; }
+        }
+        body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+                background: var(--bg); color: var(--text); line-height: 1.6; }
+        .container { max-width: 760px; margin: 0 auto; padding: 2rem 1.25rem 4rem; }
+        .back { font-size: 0.85rem; color: var(--accent); text-decoration: none; display: inline-block; margin-bottom: 2rem; }
+        .back:hover { text-decoration: underline; }
+        .brand { font-size: 0.9rem; font-weight: 700; color: var(--accent); letter-spacing: 0.05em;
+                  text-decoration: none; display: block; margin-bottom: 0.5rem; }
+        h1 { font-size: clamp(1.75rem, 5vw, 2.5rem); font-weight: 800; line-height: 1.2; margin-bottom: 0.5rem; }
+        .tagline { font-size: 1rem; color: var(--muted); margin-bottom: 2.5rem; }
+        h2 { font-size: 1.25rem; font-weight: 700; margin: 2.25rem 0 0.75rem; }
+        h3 { font-size: 1rem; font-weight: 700; margin: 1.25rem 0 0.4rem; }
+        p, li { font-size: 0.95rem; color: var(--text); }
+        p { margin-bottom: 0.9rem; }
+        ul, ol { margin: 0 0 1rem 1.3rem; }
+        li { margin-bottom: 0.4rem; }
+        .muted { color: var(--muted); }
+        .card { background: var(--card); border: 1px solid var(--border); border-radius: var(--radius);
+                padding: 1.25rem 1.4rem; margin-bottom: 1.25rem; }
+        .card strong { display: block; margin-bottom: 0.35rem; }
+        table { width: 100%; border-collapse: collapse; margin-bottom: 1.25rem; font-size: 0.9rem; }
+        th, td { text-align: left; padding: 0.5rem 0.75rem; border-bottom: 1px solid var(--border); }
+        th { color: var(--muted); font-weight: 600; font-size: 0.8rem; text-transform: uppercase; letter-spacing: 0.03em; }
+        a { color: var(--accent); }
+        code { background: var(--card); border: 1px solid var(--border); border-radius: 4px;
+               padding: 0.1rem 0.35rem; font-size: 0.85em; }
+        footer { font-size: 0.8rem; color: var(--muted); border-top: 1px solid var(--border);
+                 padding-top: 1.5rem; margin-top: 3rem; }
+        footer a { text-decoration: none; }
+        footer a:hover { text-decoration: underline; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <a class="back" href="https://nilpdf.com/">← Back to NilPDF</a>
+        <a class="brand" href="https://nilpdf.com/">NilPDF</a>
+        <h1>Security</h1>
+        <p class="tagline">How NilPDF is built to keep your documents on your device, and how to report a problem.</p>
+
+        <h2>Local-processing architecture</h2>
+        <p>Every PDF tool runs inside a <a href="https://developer.mozilla.org/en-US/docs/Web/API/Web_Workers_API" target="_blank" rel="noopener">Web Worker</a> in your browser, executing Python compiled to WebAssembly via <a href="https://pyodide.org" target="_blank" rel="noopener">Pyodide</a>. There is no NilPDF backend that accepts uploaded documents — the application has no server-side code capable of receiving a PDF file. This isn't a policy choice layered on top of a server that could technically receive files; the capability to upload a document simply doesn't exist in the code.</p>
+
+        <h2>What network requests NilPDF makes</h2>
+        <p>When you load nilpdf.com, your browser makes requests for:</p>
+        <ul>
+            <li>The site's own HTML, CSS, and JavaScript files, from NilPDF's hosting provider (GitHub Pages).</li>
+            <li>The pdf.js library and the Pyodide WebAssembly runtime, from public CDNs (cdnjs, jsDelivr) — the same libraries used by many other websites, not something specific to your session.</li>
+            <li>Standard web analytics requests for aggregate site-traffic statistics — these carry ordinary page-visit information, not document data.</li>
+        </ul>
+        <p>Once a tool is open and you select a file, no further network requests are made to process it — everything after that point runs locally. You can verify this yourself; see <a href="#verify">Verify local processing</a> below.</p>
+
+        <h2 id="verify">Verify local processing</h2>
+        <p>You don't have to take this on trust — you can confirm it directly in your browser:</p>
+        <ol>
+            <li>Open your browser's developer tools (F12, or Ctrl+Shift+I / Cmd+Option+I).</li>
+            <li>Go to the <strong>Network</strong> tab.</li>
+            <li>Load a NilPDF tool and select a PDF file to process.</li>
+            <li>Watch the Network tab while the tool runs. You will see no outgoing request that contains your file's bytes, filename, or extracted content — only the page's own static assets loaded once at the start.</li>
+        </ol>
+        <p class="muted">If you ever observe a request that appears to transmit file content, please report it — see Vulnerability reporting below. That would be a bug, not intended behavior.</p>
+
+        <h3>What requests to expect</h3>
+        <p>In the Network tab, once a tool is open, you should only see requests like these — none of which include your file:</p>
+        <table>
+            <tr><th>Request</th><th>Contains your file?</th></tr>
+            <tr><td>GET pdf.worker.min.js (cdnjs)</td><td>No — a fixed library file</td></tr>
+            <tr><td>GET pyodide.asm.wasm (jsDelivr)</td><td>No — a fixed runtime file</td></tr>
+            <tr><td>GET *.whl package files (jsDelivr)</td><td>No — fixed Python package files</td></tr>
+        </table>
+        <p>You should <strong>not</strong> see any <code>POST</code> or <code>PUT</code> request containing binary data around the time you select or process a file.</p>
+
+        <h3>How the data flows</h3>
+        <pre style="background:var(--card); border:1px solid var(--border); border-radius:8px; padding:1rem 1.25rem; font-size:0.85rem; overflow-x:auto; white-space:pre; margin-bottom:1rem;">Your device
+  │
+  ├─ Browser reads the PDF file you selected (stays on device)
+  │
+  ├─ Web Worker runs Pyodide (WebAssembly Python) ── all local, no network
+  │       │
+  │       └─ pypdf / reportlab / Pillow process the file in memory
+  │
+  └─ Result written to a new file → offered to you as a download
+
+Network requests (separate from the above):
+  Browser → NilPDF hosting / CDNs : page HTML/CSS/JS, pdf.js, Pyodide runtime
+  (no step above ever sends your file, filename, or extracted content anywhere)</pre>
+
+        <h2>Content Security Policy</h2>
+        <p>NilPDF currently relies on same-origin hosting plus <code>Cross-Origin-Opener-Policy: same-origin</code> and <code>Cross-Origin-Embedder-Policy: require-corp</code> headers, which are required to enable <code>SharedArrayBuffer</code> for Pyodide's WebAssembly runtime. A formal Content-Security-Policy header restricting script sources is not yet deployed; this is tracked as follow-up work.</p>
+
+        <h2>Dependencies</h2>
+        <table>
+            <tr><th>Component</th><th>Purpose</th></tr>
+            <tr><td>Pyodide</td><td>Runs the Python PDF-processing engine as WebAssembly, in-browser</td></tr>
+            <tr><td>pypdf</td><td>PDF parsing, merging, and manipulation (Python)</td></tr>
+            <tr><td>reportlab</td><td>Generating overlays (watermarks, page numbers, redaction boxes)</td></tr>
+            <tr><td>Pillow</td><td>Image handling for PDF-to-image and image-to-PDF conversions</td></tr>
+            <tr><td>pdf.js</td><td>Client-side PDF rendering and page previews</td></tr>
+        </table>
+        <p>Python dependency versions are pinned in <code>requirements.txt</code> for the project's automated test suite and updated via Dependabot. The production Pyodide runtime resolves the same package names independently through Pyodide's own package index at load time.</p>
+
+        <h2>Password-protected PDFs</h2>
+        <p>When you enter a password to open an encrypted PDF, it is used only in-browser, in memory, to decrypt the file locally for processing. The password is never transmitted anywhere. Refreshing or closing the tab clears it from memory.</p>
+
+        <h2>Known limitations</h2>
+        <ul>
+            <li>NilPDF does not encrypt data at rest on your own device — files you save remain subject to your device's own file-system security.</li>
+            <li>Very large PDFs can exhaust available browser memory, since the entire document is held in memory during processing.</li>
+            <li>A formal, independent third-party security audit has not been performed.</li>
+        </ul>
+
+        <h2>Vulnerability reporting</h2>
+        <p>If you discover a security issue, please report it through the feedback form on the site, or via the contact details on the <a href="https://nilpdf.com/about/">About page</a>. Please avoid publicly disclosing a vulnerability until it has been addressed.</p>
+
+        <footer>
+            <p>Part of <a href="https://nilpdf.com/">NilPDF</a> — a property of K Digital Systems LLC. See also: <a href="https://nilpdf.com/privacy/">Privacy</a> · <a href="https://nilpdf.com/about/">About</a>.</p>
+        </footer>
+    </div>
+</body>
+</html>

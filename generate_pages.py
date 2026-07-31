@@ -40,7 +40,7 @@ TOOLS = [
         'tool_id': 'compress',
         'title': 'Compress PDF Online Free — NilPDF',
         'h1': 'Compress PDF Online',
-        'tagline': 'Reduce PDF file size without losing quality — free and private.',
+        'tagline': 'Optimize PDF structure and embedded resources to reduce file size — free and private.',
         'description': 'Free online PDF compressor. Shrink PDF files for email or upload. No server uploads — runs entirely in your browser.',
         'keywords': 'compress pdf, reduce pdf size, shrink pdf, compress pdf free online',
         'bullets': [
@@ -52,7 +52,7 @@ TOOLS = [
         'body_text': 'NilPDF Compress shrinks PDFs by optimising image data and removing redundant cross-reference tables — all inside your browser. No account, no size limits, no waiting for a server to process your files. Simply drop your PDF, click compress, and the smaller file downloads instantly.',
         'how_to_name': 'How to compress a PDF',
         'how_to_steps': [
-            ('Open NilPDF Compress', 'Visit nilpdf.com and select the Squeeze (Compress) tool.'),
+            ('Open NilPDF Compress', 'Visit nilpdf.com and select the Compress PDF tool.'),
             ('Select your PDF', 'Drop your PDF file or click Browse.'),
             ('Compress', 'Click "Optimize Size" — the smaller PDF downloads automatically.'),
         ],
@@ -115,7 +115,7 @@ TOOLS = [
         'body_text': 'NilPDF converts each PDF page to a separate JPG or PNG image directly in your browser. Every page is rendered locally using WebAssembly — no cloud service, no upload limits, and your documents stay completely private. All images are bundled into a convenient ZIP file ready to download.',
         'how_to_name': 'How to convert PDF to images',
         'how_to_steps': [
-            ('Open NilPDF To Images', 'Visit nilpdf.com and select the "To Images" tool.'),
+            ('Open NilPDF PDF to Images', 'Visit nilpdf.com and select the PDF to Images tool.'),
             ('Upload your PDF', 'Drop your PDF or click Browse.'),
             ('Choose format', 'Select JPG or PNG from the dropdown.'),
             ('Convert', 'Click "Convert to Images" — a ZIP of all pages downloads.'),
@@ -147,7 +147,7 @@ TOOLS = [
         'body_text': 'NilPDF bundles your photos and screenshots into a single PDF locally — nothing is sent to a server. Mix JPG, PNG, and other image types freely, arrange them in the order you want, and download the result in one click. No account required, no file size limits.',
         'how_to_name': 'How to convert images to PDF',
         'how_to_steps': [
-            ('Open NilPDF From Images', 'Visit nilpdf.com and select the "From Images" tool.'),
+            ('Open NilPDF Images to PDF', 'Visit nilpdf.com and select the Images to PDF tool.'),
             ('Add images', 'Drop your JPG/PNG files or click Browse.'),
             ('Create PDF', 'Click "Create PDF" — your PDF downloads immediately.'),
         ],
@@ -210,7 +210,7 @@ TOOLS = [
         'body_text': 'NilPDF extracts all embedded text from every page of your PDF locally, with no server required. The result can be previewed instantly in the browser, copied to clipboard, or downloaded as a plain .txt file — useful for searching, editing, or repurposing document content.',
         'how_to_name': 'How to extract text from a PDF',
         'how_to_steps': [
-            ('Open NilPDF To Text', 'Visit nilpdf.com and select the "To Text" tool.'),
+            ('Open NilPDF PDF to Text', 'Visit nilpdf.com and select the PDF to Text tool.'),
             ('Upload your PDF', 'Drop your PDF or click Browse.'),
             ('Extract', 'Click "Extract Text" — preview and copy or download the result.'),
         ],
@@ -241,7 +241,7 @@ TOOLS = [
         'body_text': 'NilPDF Watermark stamps your chosen text diagonally across every page of your PDF — entirely in your browser. Adjust the font size and opacity to suit your needs, then download the watermarked file instantly. Common uses include marking drafts as CONFIDENTIAL, DRAFT, or DO NOT COPY before sharing.',
         'how_to_name': 'How to add a watermark to a PDF',
         'how_to_steps': [
-            ('Open NilPDF Watermark', 'Visit nilpdf.com and select the Watermark tool.'),
+            ('Open NilPDF Watermark', 'Visit nilpdf.com and select the Add Watermark tool.'),
             ('Upload your PDF', 'Drop your PDF or click Browse.'),
             ('Enter text', 'Type your watermark text (e.g. CONFIDENTIAL) and set opacity.'),
             ('Apply', 'Click "Apply Watermark" — your watermarked PDF downloads.'),
@@ -305,7 +305,7 @@ TOOLS = [
         'body_text': 'NilPDF Reorder shows a visual thumbnail grid of every page and lets you drag them into any order before saving. The entire operation — loading, rearranging, and exporting — happens locally inside your browser with no data sent to any server.',
         'how_to_name': 'How to reorder PDF pages',
         'how_to_steps': [
-            ('Open NilPDF Reorder', 'Visit nilpdf.com and select the Order tool.'),
+            ('Open NilPDF Reorder', 'Visit nilpdf.com and select the Reorder Pages tool.'),
             ('Upload your PDF', 'Drop your PDF or click "Load for Reordering".'),
             ('Drag pages', 'Drag the page thumbnails into the order you want.'),
             ('Save', 'Click "Save Reordered PDF" — your PDF downloads.'),
@@ -337,7 +337,7 @@ TOOLS = [
         'body_text': 'NilPDF adds clean page numbers to every page of your PDF without uploading anything. Choose from six placement positions, set a custom starting number, and download the numbered PDF in seconds. Ideal for reports, contracts, and any document that needs clear pagination.',
         'how_to_name': 'How to add page numbers to a PDF',
         'how_to_steps': [
-            ('Open NilPDF Page Numbers', 'Visit nilpdf.com and select the "Page #s" tool.'),
+            ('Open NilPDF Page Numbers', 'Visit nilpdf.com and select the Add Page Numbers tool.'),
             ('Upload your PDF', 'Drop your PDF or click Browse.'),
             ('Configure', 'Choose position and starting number.'),
             ('Apply', 'Click "Add Page Numbers" — your numbered PDF downloads.'),
@@ -369,7 +369,7 @@ TOOLS = [
         'body_text': "NilPDF Scrub erases all hidden identity data from your PDF before you share it — author name, software used, edit timestamps, and XMP fields. Everything is processed locally; your document never touches a server. A clean PDF with no identifying metadata downloads in seconds.",
         'how_to_name': 'How to remove PDF metadata',
         'how_to_steps': [
-            ('Open NilPDF Scrub', 'Visit nilpdf.com and select the Scrub tool.'),
+            ('Open NilPDF Remove Metadata', 'Visit nilpdf.com and select the Remove Metadata tool.'),
             ('Upload your PDF', 'Drop your PDF or click Browse.'),
             ('Scrub', 'Click "Strip Identifiers" — your clean PDF downloads.'),
         ],

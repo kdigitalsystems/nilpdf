@@ -223,6 +223,46 @@ class TestAnonymize(unittest.TestCase):
         with self.assertRaises(ValueError):
             process_anonymize(make_encrypted_pdf(password="x"), password="wrong")
 
+    def test_reports_removed_fields(self):
+        import core.pdf_engine as engine
+        import json
+        writer = PdfWriter()
+        writer.add_blank_page(width=72, height=72)
+        writer.add_metadata({"/Title": "Secret Report", "/Author": "Jane Doe"})
+        buf = io.BytesIO()
+        writer.write(buf)
+
+        captured = []
+        original = engine._post_progress
+        engine._post_progress = lambda status_id, pct, msg: captured.append(msg)
+        try:
+            process_anonymize(buf.getvalue(), status_id="test")
+        finally:
+            engine._post_progress = original
+
+        stats_msgs = [m for m in captured if m.startswith("__STATS__:")]
+        self.assertEqual(len(stats_msgs), 1)
+        stats = json.loads(stats_msgs[0][len("__STATS__:"):])
+        self.assertIn("Title", stats["removedFields"])
+        self.assertIn("Author", stats["removedFields"])
+        self.assertEqual(stats["removedCount"], len(stats["removedFields"]))
+
+    def test_reports_only_fields_actually_present(self):
+        import core.pdf_engine as engine
+        import json
+        captured = []
+        original = engine._post_progress
+        engine._post_progress = lambda status_id, pct, msg: captured.append(msg)
+        try:
+            process_anonymize(make_pdf(1), status_id="test")
+        finally:
+            engine._post_progress = original
+        stats_msg = next(m for m in captured if m.startswith("__STATS__:"))
+        stats = json.loads(stats_msg[len("__STATS__:"):])
+        # A freshly-written blank PDF has no Title/Author/etc, only a default Producer.
+        self.assertNotIn("Title", stats["removedFields"])
+        self.assertNotIn("Author", stats["removedFields"])
+
 
 # ── Rotate ─────────────────────────────────────────────────────────────────
 
@@ -382,7 +422,7 @@ class TestBulk(unittest.TestCase):
         buffers = [make_pdf(1)]
         result = process_bulk("COMPRESS", names, buffers)
         with zipfile.ZipFile(io.BytesIO(result)) as zf:
-            self.assertIn("report_squeezed.pdf", zf.namelist())
+            self.assertIn("report_compressed.pdf", zf.namelist())
 
 
 # ── Repair ─────────────────────────────────────────────────────────────────
@@ -404,6 +444,21 @@ class TestRepair(unittest.TestCase):
         enc = make_encrypted_pdf(num_pages=2, password="abc")
         result = process_repair(enc, password="abc")
         self.assertEqual(len(read_pdf(result).pages), 2)
+
+    def test_reports_recovered_and_skipped_counts(self):
+        import core.pdf_engine as engine
+        import json
+        captured = []
+        original = engine._post_progress
+        engine._post_progress = lambda status_id, pct, msg: captured.append(msg)
+        try:
+            process_repair(make_pdf(3), status_id="test")
+        finally:
+            engine._post_progress = original
+        stats_msgs = [m for m in captured if m.startswith("__STATS__:")]
+        self.assertEqual(len(stats_msgs), 1)
+        stats = json.loads(stats_msgs[0][len("__STATS__:"):])
+        self.assertEqual(stats, {"recovered": 3, "skipped": 0, "total": 3})
 
 
 # ── Add footer ─────────────────────────────────────────────────────────────
