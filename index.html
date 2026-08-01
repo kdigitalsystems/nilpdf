@@ -1152,6 +1152,7 @@
         card.addEventListener('keydown', e => {
             if (e.key === 'Enter' || e.key === ' ') {
                 e.preventDefault();
+                e.stopPropagation();
                 card.click();
             }
         });
@@ -1347,9 +1348,14 @@
         wrapper.setAttribute('role', 'checkbox');
         wrapper.setAttribute('tabindex', '0');
         wrapper.setAttribute('aria-checked', 'false');
+        wrapper.setAttribute('aria-label', `Page ${idx + 1}`);
         wrapper.addEventListener('click', () => onToggle(idx));
         wrapper.addEventListener('keydown', e => {
-            if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); onToggle(idx); }
+            if (e.key === 'Enter' || e.key === ' ') {
+                e.preventDefault();
+                e.stopPropagation();
+                onToggle(idx);
+            }
         });
     }
 
@@ -1527,6 +1533,7 @@
         if (!f) return;
         lastLoadedFile = f; lastLoadedTool = 'split';
         splitTotalPages = 0;
+        document.getElementById('page-range').value = '';
         document.getElementById('range-preview').textContent = '';
         updateStatus('split-status', `Loading ${f.name}...`, '');
         try {
@@ -1668,6 +1675,7 @@
         if (!f) return;
         lastLoadedFile = f; lastLoadedTool = 'rotate';
         rotateTotalPages = 0;
+        document.getElementById('rotate-pages').value = '';
         const myVersion = ++rotateThumbVersion;
         const grid = document.getElementById('rotate-thumbnail-grid');
         grid.innerHTML = '';
@@ -1769,6 +1777,7 @@
         if (!f) return;
         lastLoadedFile = f; lastLoadedTool = 'remove';
         removeTotalPages = 0;
+        document.getElementById('remove-pages').value = '';
         const myVersion = ++removeThumbVersion;
         const grid = document.getElementById('remove-thumbnail-grid');
         grid.innerHTML = '';
@@ -2672,6 +2681,7 @@
             return;
         }
         if (e.key === 'Enter') {
+            if (document.getElementById('workspace').style.display === 'none') return;
             const activeBtn = document.querySelector('.active-tool .primary-btn:not(:disabled)');
             if (activeBtn) activeBtn.click();
             return;
