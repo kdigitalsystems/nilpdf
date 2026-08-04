@@ -2355,46 +2355,52 @@
     };
 
     (function bindRedactCanvasEvents() {
+        // Pointer Events unify mouse, touch, and pen so drawing a redaction box
+        // works the same way on a phone/tablet as it does with a mouse.
         const overlay = document.getElementById('redact-overlay');
-        let dragStart = null, dragEl = null;
+        let dragStart = null, dragEl = null, dragPointerId = null;
 
         function pointerPos(e) {
             const rect = overlay.getBoundingClientRect();
             return { px: e.clientX - rect.left, py: e.clientY - rect.top };
         }
-        function onMouseMove(e) {
-            if (!dragStart || !dragEl) return;
+        function onPointerMove(e) {
+            if (dragPointerId === null || e.pointerId !== dragPointerId) return;
             const { px, py } = pointerPos(e);
             dragEl.style.left   = Math.min(px, dragStart.px) + 'px';
             dragEl.style.top    = Math.min(py, dragStart.py) + 'px';
             dragEl.style.width  = Math.abs(px - dragStart.px) + 'px';
             dragEl.style.height = Math.abs(py - dragStart.py) + 'px';
         }
-        function onMouseUp() {
-            window.removeEventListener('mousemove', onMouseMove);
-            window.removeEventListener('mouseup', onMouseUp);
-            if (!dragStart || !dragEl) return;
+        function onPointerUp(e) {
+            if (dragPointerId === null || e.pointerId !== dragPointerId) return;
+            overlay.removeEventListener('pointermove', onPointerMove);
+            overlay.removeEventListener('pointerup', onPointerUp);
+            overlay.removeEventListener('pointercancel', onPointerUp);
             const left = parseFloat(dragEl.style.left) || 0;
             const top  = parseFloat(dragEl.style.top) || 0;
             const w    = parseFloat(dragEl.style.width) || 0;
             const h    = parseFloat(dragEl.style.height) || 0;
             dragEl.remove();
-            dragStart = null; dragEl = null;
+            dragStart = null; dragEl = null; dragPointerId = null;
             if (w > 3 && h > 3) addRedactBox(left, top, w, h);
         }
 
-        overlay.addEventListener('mousedown', e => {
-            if (e.target !== overlay) return;
+        overlay.addEventListener('pointerdown', e => {
+            if (e.target !== overlay || dragPointerId !== null) return;
             const { px, py } = pointerPos(e);
             if (redactMode === 'redact') {
                 dragStart = { px, py };
+                dragPointerId = e.pointerId;
                 dragEl = document.createElement('div');
                 dragEl.className = 'redact-box redact-box-drawing';
                 dragEl.style.left = px + 'px'; dragEl.style.top = py + 'px';
                 dragEl.style.width = '0px'; dragEl.style.height = '0px';
                 overlay.appendChild(dragEl);
-                window.addEventListener('mousemove', onMouseMove);
-                window.addEventListener('mouseup', onMouseUp);
+                overlay.setPointerCapture(e.pointerId);
+                overlay.addEventListener('pointermove', onPointerMove);
+                overlay.addEventListener('pointerup', onPointerUp);
+                overlay.addEventListener('pointercancel', onPointerUp);
             } else {
                 const text = prompt('Text to add on this page:');
                 if (text && text.trim()) addRedactText(px, py, text.trim());

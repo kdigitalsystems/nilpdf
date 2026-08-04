@@ -440,6 +440,7 @@ button {
     top: 0;
     left: 0;
     cursor: crosshair;
+    touch-action: none;
 }
 
 .redact-box {
