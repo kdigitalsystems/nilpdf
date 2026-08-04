@@ -618,6 +618,7 @@
                     <option value="jpeg">JPG (smaller file size)</option>
                 </select>
             </div>
+            <input type="password" id="topng-password" class="text-input password-input" placeholder="🔒 Password (if encrypted)" style="display:none;">
             <button id="topng-btn" class="primary-btn">Convert to Images</button>
             <div id="topng-status" class="status-message" role="status" aria-live="polite" aria-atomic="true">Waiting for a PDF.</div>
         </div>
@@ -1907,9 +1908,10 @@
         const format   = document.getElementById('topng-format').value;
         const mimeType = format === 'jpeg' ? 'image/jpeg' : 'image/png';
         const ext      = format === 'jpeg' ? 'jpg' : 'png';
+        const password = document.getElementById('topng-password').value;
         updateStatus('topng-status', 'Rendering pages...', '');
         try {
-            const pdf      = await pdfjsLib.getDocument(await topngInput.files[0].arrayBuffer()).promise;
+            const pdf      = await pdfjsLib.getDocument({ data: await topngInput.files[0].arrayBuffer(), password: password || undefined }).promise;
             const numPages = pdf.numPages;
             const blobs    = [];
             for (let i = 1; i <= numPages; i++) {
@@ -1952,7 +1954,12 @@
                 updateStatus('topng-status', `Done! ${numPages} images in ZIP.`, 'text-green');
             }
         } catch (err) {
-            updateStatus('topng-status', formatProcessingError(err.message), 'text-red');
+            if (err.name === 'PasswordException') {
+                document.getElementById('topng-password').style.display = 'block';
+                updateStatus('topng-status', 'This PDF is password protected, or the password entered was incorrect. Enter the password above and try again.', 'text-red');
+            } else {
+                updateStatus('topng-status', formatProcessingError(err.message), 'text-red');
+            }
         }
     };
 
