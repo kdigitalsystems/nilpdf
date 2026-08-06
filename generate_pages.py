@@ -478,6 +478,38 @@ TOOLS = [
             ('watermark-pdf', 'Watermark PDF'),
         ],
     },
+    {
+        'slug': 'edit-pdf',
+        'tool_id': 'edit',
+        'title': 'Edit PDF Online Free — Add Text — NilPDF',
+        'h1': 'Edit PDF — Add Text',
+        'tagline': 'Click anywhere to write text onto a PDF page — free and private.',
+        'description': 'Free online PDF editor. Click anywhere on a page to add text — no uploads, runs entirely in your browser.',
+        'keywords': 'edit pdf, add text to pdf, write on pdf, pdf editor free online',
+        'bullets': [
+            'Click anywhere on a page to add a text note',
+            'Works across multi-page documents',
+            'Remove or move notes before saving',
+            'No uploads — your file never leaves your device',
+        ],
+        'body_text': 'NilPDF Edit lets you write text directly onto any page of a PDF — fill in a blank, add a comment, sign off with a note — all rendered and applied locally in your browser. Click where you want the text, type it, and it’s placed on the page. Download the edited PDF when you’re done. Nothing is ever uploaded to a server.',
+        'how_to_name': 'How to add text to a PDF',
+        'how_to_steps': [
+            ('Open NilPDF Edit', 'Visit nilpdf.com and select the Edit tool.'),
+            ('Upload your PDF', 'Drop your PDF or click Browse.'),
+            ('Add text', 'Click anywhere on the page and type the text you want to add.'),
+            ('Apply', 'Click "Apply & Download" — your edited PDF downloads automatically.'),
+        ],
+        'faq': [
+            ('Is editing a PDF really free?', 'Yes — completely free, unlimited use, no account required.'),
+            ('Are my PDF files safe when I edit them?', 'Yes. Your files never leave your device. Everything runs in your browser using WebAssembly. NilPDF has no backend server.'),
+            ('Can I edit existing text in the PDF?', "Not yet — NilPDF Edit adds new text on top of the page, it doesn't modify existing text in the document. To black out or replace existing content, use the Redact tool instead."),
+        ],
+        'related': [
+            ('redact-pdf', 'Redact PDF'),
+            ('watermark-pdf', 'Watermark PDF'),
+        ],
+    },
 ]
 
 GA_SNIPPET = '''    <!-- Google tag (gtag.js) -->
@@ -591,7 +623,7 @@ PAGE_TEMPLATE = '''<!DOCTYPE html>
 {related_items}
         </nav>
         <footer>
-            <p>Part of <a href="https://nilpdf.com/">NilPDF</a> — 15 free PDF tools, zero uploads.</p>
+            <p>Part of <a href="https://nilpdf.com/">NilPDF</a> — 16 free PDF tools, zero uploads.</p>
         </footer>
     </div>
 </body>
