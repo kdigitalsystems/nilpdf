@@ -2512,11 +2512,18 @@
             fillformPdfDoc = await pdfjsLib.getDocument({ data: buf, password: password || undefined }).promise;
             fillformTotalPages = fillformPdfDoc.numPages;
 
+            // Fetch each page's annotations concurrently (independent reads) — merging into
+            // fillformValues still happens in page order afterward, so field-value precedence
+            // ("first page a field appears on wins") is unaffected by fetch order.
+            const pagesFields = await Promise.all(
+                Array.from({ length: fillformTotalPages }, async (_, i) => {
+                    const page = await fillformPdfDoc.getPage(i + 1);
+                    const annots = await page.getAnnotations({ intent: 'display' });
+                    return annots.filter(a => a.subtype === 'Widget' && a.fieldName && a.fieldType && a.fieldType !== 'Sig');
+                })
+            );
             let fieldCount = 0;
-            for (let i = 0; i < fillformTotalPages; i++) {
-                const page = await fillformPdfDoc.getPage(i + 1);
-                const annots = await page.getAnnotations({ intent: 'display' });
-                const fields = annots.filter(a => a.subtype === 'Widget' && a.fieldName && a.fieldType && a.fieldType !== 'Sig');
+            pagesFields.forEach((fields, i) => {
                 fillformFieldsByPage[i] = fields;
                 fields.forEach(field => {
                     fieldCount++;
@@ -2524,7 +2531,7 @@
                         fillformValues[field.fieldName] = field.fieldValue || '';
                     }
                 });
-            }
+            });
 
             if (fieldCount === 0) {
                 updateStatus('fillform-status', `"${f.name}" has no fillable form fields.`, 'text-red');
