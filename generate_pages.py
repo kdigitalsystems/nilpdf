@@ -358,7 +358,7 @@ TOOLS = [
         'title': 'Remove PDF Metadata Online Free — NilPDF',
         'h1': 'Remove PDF Metadata',
         'tagline': 'Strip hidden author, title, and tracking data from any PDF — privately.',
-        'description': 'Free online PDF metadata remover. Scrub author, title, creator, and all hidden data. No uploads — runs in your browser.',
+        'description': 'Free online PDF metadata remover. Strip author, title, creator, and all hidden data. No uploads — runs in your browser.',
         'keywords': 'remove pdf metadata, strip pdf metadata, pdf anonymizer, clean pdf metadata free',
         'bullets': [
             'Removes author, title, creator, subject, and all custom fields',
@@ -366,12 +366,12 @@ TOOLS = [
             'Protects your privacy before sharing documents',
             'No uploads — metadata never sent to any server',
         ],
-        'body_text': "NilPDF Scrub erases all hidden identity data from your PDF before you share it — author name, software used, edit timestamps, and XMP fields. Everything is processed locally; your document never touches a server. A clean PDF with no identifying metadata downloads in seconds.",
+        'body_text': "NilPDF erases all hidden identity data from your PDF before you share it — author name, software used, edit timestamps, and XMP fields. Everything is processed locally; your document never touches a server. A clean PDF with no identifying metadata downloads in seconds.",
         'how_to_name': 'How to remove PDF metadata',
         'how_to_steps': [
             ('Open NilPDF Remove Metadata', 'Visit nilpdf.com and select the Remove Metadata tool.'),
             ('Upload your PDF', 'Drop your PDF or click Browse.'),
-            ('Scrub', 'Click "Strip Identifiers" — your clean PDF downloads.'),
+            ('Remove metadata', 'Click "Strip Identifiers" — your clean PDF downloads.'),
         ],
         'faq': [
             ('Is removing PDF metadata really free?', 'Yes — completely free, unlimited use, no account required.'),

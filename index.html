@@ -478,7 +478,7 @@
                 
                 <p>Drop PDFs to strip metadata</p>
                 <button onclick="document.getElementById('anonymize-upload').click()" class="secondary-btn">Browse</button>
-                <input type="file" id="anonymize-upload" accept="application/pdf" multiple hidden aria-label="Select PDF files to scrub metadata">
+                <input type="file" id="anonymize-upload" accept="application/pdf" multiple hidden aria-label="Select PDF files to remove metadata from">
             </div>
             <ul id="anonymize-list" class="file-list"></ul>
             <input type="password" id="anonymize-password" class="text-input password-input" placeholder="🔒 Password (if encrypted)">
@@ -1081,11 +1081,11 @@
                     msg = `Done — ${fmt(orig)} → ${fmt(now)} (already optimized, no further reduction possible)${secs ? ', ' + secs : ''}`;
                 }
                 updateStatus(id, msg, "text-green");
-            } else if (id === 'repair-status' && pendingStats[id]) {
+            } else if (id === 'repair-status' && pendingStats[id] && !isZip) {
                 const s = pendingStats[id];
                 const warnings = s.skipped > 0 ? `, ${s.skipped} page(s) could not be recovered` : '';
                 updateStatus(id, `Done — recovered ${s.recovered} of ${s.total} page(s)${warnings}. Please check the downloaded file opens correctly before relying on it.`, "text-green");
-            } else if (id === 'anonymize-status' && pendingStats[id]) {
+            } else if (id === 'anonymize-status' && pendingStats[id] && !isZip) {
                 const s = pendingStats[id];
                 updateStatus(id, `Done — removed ${s.removedCount} metadata field(s): ${s.removedFields.join(', ') || 'none found'}.`, "text-green");
             } else {
@@ -1311,6 +1311,7 @@
 
     /** 5. SHARED HELPERS **/
     async function toUint8(file) { return new Uint8Array(await file.arrayBuffer()); }
+    async function toUint8All(files) { return Promise.all(Array.from(files).map(toUint8)); }
 
     function checkReady(statusId) {
         if (!isReady) {
@@ -1481,8 +1482,7 @@
         if (!check.ok) { updateStatus('status', check.msg, 'text-red'); return; }
         if (check.warn) updateStatus('status', check.warn, '');
         const password = document.getElementById('merge-password').value;
-        const buffers = [];
-        for (const item of mergeFilesArray) buffers.push(await toUint8(item.file));
+        const buffers = await toUint8All(mergeFilesArray.map(item => item.file));
         const count = mergeFilesArray.length;
         pendingDownload = 'merged.pdf';
         runWhenReady('status', () => {
@@ -1517,8 +1517,7 @@
         if (check.warn) updateStatus('compress-status', check.warn, '');
         const password = document.getElementById('compress-password').value;
         const names = Array.from(files).map(f => f.name);
-        const buffers = [];
-        for (const f of files) buffers.push(await toUint8(f));
+        const buffers = await toUint8All(files);
         const single = files.length === 1;
         const origSize = files[0].size; const fname = files[0].name; const fcount = files.length;
         runWhenReady('compress-status', () => {
@@ -1550,18 +1549,17 @@
         if (check.warn) updateStatus('anonymize-status', check.warn, '');
         const password = document.getElementById('anonymize-password').value;
         const names = Array.from(files).map(f => f.name);
-        const buffers = [];
-        for (const f of files) buffers.push(await toUint8(f));
+        const buffers = await toUint8All(files);
         const single = files.length === 1;
         const fname = files[0].name; const fcount = files.length;
         runWhenReady('anonymize-status', () => {
             pendingFooter = false;
-            updateStatus('anonymize-status', `Scrubbing ${fcount} file(s)...`, '');
+            updateStatus('anonymize-status', `Removing metadata from ${fcount} file(s)...`, '');
             if (single) {
                 pendingDownload = stem(fname) + '_metadata_removed.pdf';
                 worker.postMessage({ id: 'anonymize-status', action: 'ANONYMIZE', payload: { buffer: buffers[0], password } }, [buffers[0].buffer]);
             } else {
-                pendingDownload = 'scrubbed_batch.zip';
+                pendingDownload = 'metadata_removed_batch.zip';
                 worker.postMessage({ id: 'anonymize-status', action: 'BULK_PROCESS', payload: { sub_action: 'ANONYMIZE', names, buffers, password } }, buffers.map(b => b.buffer));
             }
         });
