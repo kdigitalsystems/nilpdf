@@ -4,7 +4,7 @@
 # Pyodide, which resolves versions from Pyodide's own package index (currently
 # unpinned there; pinning requires confirming exact versions Pyodide v0.25.0
 # actually bundles before changing that file).
-pypdf==6.14.2
+pypdf==6.15.0
 cryptography==50.0.0
 Pillow==12.3.0
 reportlab==4.5.1
