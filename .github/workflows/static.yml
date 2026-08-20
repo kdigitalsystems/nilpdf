@@ -12,6 +12,15 @@ permissions:
   pages: write
   id-token: write
 
+# Serialize deploys instead of racing: GitHub Pages only allows one active
+# deployment at a time, so when several pushes land close together (e.g. a
+# burst of Dependabot merges), overlapping deploy-pages runs fail with
+# "in progress deployment" errors. cancel-in-progress: false means each
+# push still gets deployed, just queued rather than dropped.
+concurrency:
+  group: "pages-deploy"
+  cancel-in-progress: false
+
 jobs:
   test:
     runs-on: self-hosted
