@@ -10,3 +10,9 @@ updates:
     directory: "/"
     schedule:
       interval: "weekly"
+    ignore:
+      # v4/v5 fail to deploy on this repo (Pages deployment errors out every
+      # time) — confirmed by two separate CI runs on 2026-07-02. Stick with
+      # v3 until this is investigated and fixed deliberately.
+      - dependency-name: "actions/upload-pages-artifact"
+        versions: [">3"]

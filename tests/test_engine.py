@@ -19,6 +19,7 @@ from core.pdf_engine import (
     process_repair,
     process_add_footer,
     process_edit,
+    process_fill_form,
 )
 
 
@@ -54,6 +55,29 @@ def make_encrypted_pdf(num_pages=1, password="secret"):
     buf = io.BytesIO()
     writer.write(buf)
     return buf.getvalue()
+
+
+def make_form_pdf(password=None):
+    """Return bytes of a PDF with a text field and a checkbox AcroForm field."""
+    from reportlab.pdfgen import canvas as rl_canvas
+    buf = io.BytesIO()
+    c = rl_canvas.Canvas(buf)
+    form = c.acroForm
+    form.textfield(name="name_field", x=150, y=690, width=200, height=20, value="")
+    form.checkbox(name="subscribe_cb", x=200, y=645, size=15, checked=False)
+    c.showPage()
+    c.save()
+    buf.seek(0)
+
+    if not password:
+        return buf.getvalue()
+
+    writer = PdfWriter()
+    writer.append(PdfReader(buf))
+    writer.encrypt(password)
+    out = io.BytesIO()
+    writer.write(out)
+    return out.getvalue()
 
 
 def read_pdf(data):
@@ -198,6 +222,46 @@ class TestAnonymize(unittest.TestCase):
     def test_wrong_password_raises(self):
         with self.assertRaises(ValueError):
             process_anonymize(make_encrypted_pdf(password="x"), password="wrong")
+
+    def test_reports_removed_fields(self):
+        import core.pdf_engine as engine
+        import json
+        writer = PdfWriter()
+        writer.add_blank_page(width=72, height=72)
+        writer.add_metadata({"/Title": "Secret Report", "/Author": "Jane Doe"})
+        buf = io.BytesIO()
+        writer.write(buf)
+
+        captured = []
+        original = engine._post_progress
+        engine._post_progress = lambda status_id, pct, msg: captured.append(msg)
+        try:
+            process_anonymize(buf.getvalue(), status_id="test")
+        finally:
+            engine._post_progress = original
+
+        stats_msgs = [m for m in captured if m.startswith("__STATS__:")]
+        self.assertEqual(len(stats_msgs), 1)
+        stats = json.loads(stats_msgs[0][len("__STATS__:"):])
+        self.assertIn("Title", stats["removedFields"])
+        self.assertIn("Author", stats["removedFields"])
+        self.assertEqual(stats["removedCount"], len(stats["removedFields"]))
+
+    def test_reports_only_fields_actually_present(self):
+        import core.pdf_engine as engine
+        import json
+        captured = []
+        original = engine._post_progress
+        engine._post_progress = lambda status_id, pct, msg: captured.append(msg)
+        try:
+            process_anonymize(make_pdf(1), status_id="test")
+        finally:
+            engine._post_progress = original
+        stats_msg = next(m for m in captured if m.startswith("__STATS__:"))
+        stats = json.loads(stats_msg[len("__STATS__:"):])
+        # A freshly-written blank PDF has no Title/Author/etc, only a default Producer.
+        self.assertNotIn("Title", stats["removedFields"])
+        self.assertNotIn("Author", stats["removedFields"])
 
 
 # ── Rotate ─────────────────────────────────────────────────────────────────
@@ -358,7 +422,7 @@ class TestBulk(unittest.TestCase):
         buffers = [make_pdf(1)]
         result = process_bulk("COMPRESS", names, buffers)
         with zipfile.ZipFile(io.BytesIO(result)) as zf:
-            self.assertIn("report_squeezed.pdf", zf.namelist())
+            self.assertIn("report_compressed.pdf", zf.namelist())
 
 
 # ── Repair ─────────────────────────────────────────────────────────────────
@@ -380,6 +444,21 @@ class TestRepair(unittest.TestCase):
         enc = make_encrypted_pdf(num_pages=2, password="abc")
         result = process_repair(enc, password="abc")
         self.assertEqual(len(read_pdf(result).pages), 2)
+
+    def test_reports_recovered_and_skipped_counts(self):
+        import core.pdf_engine as engine
+        import json
+        captured = []
+        original = engine._post_progress
+        engine._post_progress = lambda status_id, pct, msg: captured.append(msg)
+        try:
+            process_repair(make_pdf(3), status_id="test")
+        finally:
+            engine._post_progress = original
+        stats_msgs = [m for m in captured if m.startswith("__STATS__:")]
+        self.assertEqual(len(stats_msgs), 1)
+        stats = json.loads(stats_msgs[0][len("__STATS__:"):])
+        self.assertEqual(stats, {"recovered": 3, "skipped": 0, "total": 3})
 
 
 # ── Add footer ─────────────────────────────────────────────────────────────
@@ -441,6 +520,57 @@ class TestEdit(unittest.TestCase):
         edits = [{"page": 1, "type": "text", "x": 5, "y": 5, "text": "X"}]
         result = process_edit(enc, edits, password="secret")
         self.assertEqual(len(read_pdf(result).pages), 2)
+
+
+# ── Fill Form ────────────────────────────────────────────────────────────────
+
+class TestFillForm(unittest.TestCase):
+    def test_fills_text_field_without_flatten(self):
+        result = process_fill_form(make_form_pdf(), {"name_field": "Saqib Khan"}, flatten=False)
+        fields = read_pdf(result).get_fields()
+        self.assertEqual(fields["name_field"]["/V"], "Saqib Khan")
+
+    def test_non_flatten_keeps_fields_editable(self):
+        result = process_fill_form(make_form_pdf(), {"name_field": "Saqib Khan"}, flatten=False)
+        reader = read_pdf(result)
+        self.assertIsNotNone(reader.get_fields())
+        self.assertIn("/Annots", reader.pages[0])
+
+    def test_flatten_bakes_value_into_page_text(self):
+        result = process_fill_form(make_form_pdf(), {"name_field": "Saqib Khan"}, flatten=True)
+        self.assertIn("Saqib Khan", read_pdf(result).pages[0].extract_text())
+
+    def test_flatten_removes_form_fields(self):
+        result = process_fill_form(make_form_pdf(), {"name_field": "Saqib Khan"}, flatten=True)
+        reader = read_pdf(result)
+        self.assertIsNone(reader.get_fields())
+        self.assertNotIn("/Annots", reader.pages[0])
+
+    def test_fills_checkbox(self):
+        result = process_fill_form(make_form_pdf(), {"subscribe_cb": "/Yes"}, flatten=False)
+        fields = read_pdf(result).get_fields()
+        self.assertEqual(fields["subscribe_cb"]["/V"], "/Yes")
+
+    def test_empty_field_values_preserves_page_count(self):
+        result = process_fill_form(make_form_pdf(), {}, flatten=False)
+        self.assertEqual(len(read_pdf(result).pages), 1)
+
+    def test_no_acroform_raises(self):
+        with self.assertRaises(ValueError):
+            process_fill_form(make_pdf(1), {"anything": "value"})
+
+    def test_stamps_producer(self):
+        result = process_fill_form(make_form_pdf(), {"name_field": "X"}, flatten=False)
+        self.assertIn("NilPDF", producer_of(result))
+
+    def test_wrong_password_raises(self):
+        with self.assertRaises(ValueError):
+            process_fill_form(make_form_pdf(password="secret"), {}, password="wrong")
+
+    def test_correct_password_works(self):
+        enc = make_form_pdf(password="secret")
+        result = process_fill_form(enc, {"name_field": "Saqib"}, password="secret")
+        self.assertEqual(read_pdf(result).get_fields()["name_field"]["/V"], "Saqib")
 
 
 if __name__ == "__main__":

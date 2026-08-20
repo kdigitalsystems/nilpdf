@@ -1,0 +1,119 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <!-- Google tag (gtag.js) -->
+    <script async src="https://www.googletagmanager.com/gtag/js?id=G-GH395FJ43L"></script>
+    <script>
+      window.dataLayer = window.dataLayer || [];
+      function gtag(){dataLayer.push(arguments);}
+      gtag('js', new Date());
+      gtag('config', 'G-GH395FJ43L');
+    </script>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Privacy Policy — NilPDF</title>
+    <meta name="description" content="How NilPDF handles your data: PDF files are processed locally in your browser and are never uploaded. Read the full privacy architecture.">
+    <link rel="canonical" href="https://nilpdf.com/privacy/">
+    <meta property="og:title" content="Privacy Policy — NilPDF">
+    <meta property="og:description" content="How NilPDF handles your data: PDF files are processed locally in your browser and are never uploaded.">
+    <meta property="og:type" content="website">
+    <meta property="og:url" content="https://nilpdf.com/privacy/">
+    <meta property="og:image" content="https://nilpdf.com/assets/og-image.png">
+    <meta name="twitter:card" content="summary_large_image">
+    <meta name="twitter:title" content="Privacy Policy — NilPDF">
+    <meta name="twitter:image" content="https://nilpdf.com/assets/og-image.png">
+    <link rel="icon" href="https://nilpdf.com/assets/icon.svg" type="image/svg+xml">
+    <style>
+        *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+        :root {
+            --bg: #f8fafc; --card: #ffffff; --text: #0f172a; --muted: #64748b;
+            --accent: #3b82f6; --border: #e2e8f0; --radius: 10px;
+        }
+        @media (prefers-color-scheme: dark) {
+            :root { --bg: #0f172a; --card: #1e293b; --text: #f8fafc; --muted: #94a3b8; --border: #334155; }
+        }
+        body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+                background: var(--bg); color: var(--text); line-height: 1.6; }
+        .container { max-width: 760px; margin: 0 auto; padding: 2rem 1.25rem 4rem; }
+        .back { font-size: 0.85rem; color: var(--accent); text-decoration: none; display: inline-block; margin-bottom: 2rem; }
+        .back:hover { text-decoration: underline; }
+        .brand { font-size: 0.9rem; font-weight: 700; color: var(--accent); letter-spacing: 0.05em;
+                  text-decoration: none; display: block; margin-bottom: 0.5rem; }
+        h1 { font-size: clamp(1.75rem, 5vw, 2.5rem); font-weight: 800; line-height: 1.2; margin-bottom: 0.5rem; }
+        .effective-date { font-size: 0.85rem; color: var(--muted); margin-bottom: 2.5rem; }
+        h2 { font-size: 1.25rem; font-weight: 700; margin: 2.25rem 0 0.75rem; }
+        h3 { font-size: 1rem; font-weight: 700; margin: 1.25rem 0 0.4rem; }
+        p, li { font-size: 0.95rem; color: var(--text); }
+        p { margin-bottom: 0.9rem; }
+        ul, ol { margin: 0 0 1rem 1.3rem; }
+        li { margin-bottom: 0.4rem; }
+        .muted { color: var(--muted); }
+        .card { background: var(--card); border: 1px solid var(--border); border-radius: var(--radius);
+                padding: 1.25rem 1.4rem; margin-bottom: 1.25rem; }
+        .card strong { display: block; margin-bottom: 0.35rem; }
+        a { color: var(--accent); }
+        code { background: var(--card); border: 1px solid var(--border); border-radius: 4px;
+               padding: 0.1rem 0.35rem; font-size: 0.85em; }
+        footer { font-size: 0.8rem; color: var(--muted); border-top: 1px solid var(--border);
+                 padding-top: 1.5rem; margin-top: 3rem; }
+        footer a { text-decoration: none; }
+        footer a:hover { text-decoration: underline; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <a class="back" href="https://nilpdf.com/">← Back to NilPDF</a>
+        <a class="brand" href="https://nilpdf.com/">NilPDF</a>
+        <h1>Privacy Policy</h1>
+        <p class="effective-date">Effective date: July 27, 2026</p>
+
+        <h2>The short version</h2>
+        <div class="card">
+            <strong>Your PDF files are processed locally on your device and are never uploaded to NilPDF.</strong>
+            <span class="muted">NilPDF does not receive your document contents, filenames, passwords, extracted text, or generated files. There is no server that your files are sent to — NilPDF has no backend capable of receiving them.</span>
+        </div>
+
+        <h2>How PDF processing works</h2>
+        <p>Every NilPDF tool runs entirely inside your browser using Python compiled to WebAssembly (via <a href="https://pyodide.org" target="_blank" rel="noopener">Pyodide</a>). When you select a file:</p>
+        <ol>
+            <li>Your browser reads the file directly from your device's storage into memory.</li>
+            <li>The PDF library (running as WebAssembly inside a Web Worker in your browser) processes it.</li>
+            <li>The result is written back to a file and offered to you as a download, generated by your own browser.</li>
+        </ol>
+        <p>At no point in this process does the file, its filename, its contents, or any data extracted from it travel over the network to NilPDF or to any third party. This is verifiable — see <a href="https://nilpdf.com/security/">the Security page</a> for instructions on confirming this yourself using your browser's developer tools.</p>
+
+        <h2>What NilPDF does not do</h2>
+        <ul>
+            <li>NilPDF does not upload your PDF files, images, or any file you select in a tool.</li>
+            <li>NilPDF does not intentionally transmit filenames.</li>
+            <li>NilPDF does not intentionally transmit extracted text, metadata, or any content read from your files.</li>
+            <li>NilPDF does not transmit passwords you enter to unlock encrypted PDFs — they are used only locally, in your browser's memory, to decrypt the file for local processing.</li>
+            <li>Generated output files (merged PDFs, extracted images, compressed files, etc.) are created and stay on your device; they are not uploaded anywhere.</li>
+        </ul>
+
+        <h2>Ordinary website traffic</h2>
+        <p>Visiting <strong>nilpdf.com</strong> itself works like visiting any website: your browser requests the page files (HTML, CSS, JavaScript, the WebAssembly runtime) from NilPDF's hosting provider and any third-party CDNs used to serve libraries. This is separate from PDF processing.</p>
+        <p>The hosting provider (GitHub Pages) and any content delivery networks used to serve fonts or libraries may process ordinary web request information — such as your IP address, browser type, and the page requested — as part of normal web infrastructure operation. <strong>This does not include the contents of any PDF you process</strong>, since PDF processing never leaves your browser.</p>
+        <p>This site uses standard web analytics tools to understand aggregate site traffic (for example, how many people visit a page). These tools operate on ordinary page-visit information and do not have access to file contents, filenames, passwords, or any data from documents you process — that data never leaves your browser in the first place, so there is nothing for an analytics tool to capture.</p>
+
+        <h2>Cookies and local storage</h2>
+        <p>NilPDF's own application code uses your browser's local storage only to remember a local, on-device counter of how many files you've processed and your light/dark theme preference — this data never leaves your device. Third-party scripts loaded by the page (such as web analytics) may set their own cookies according to their own policies; NilPDF does not control or read those cookies.</p>
+
+        <h2>Third-party services</h2>
+        <p>NilPDF's static site and libraries (pdf.js, Pyodide, and supporting JavaScript) are served from public CDNs (cdnjs, jsDelivr). Loading these files involves a standard request to those CDNs, the same as loading any web page's assets — it does not include your document data. The optional feedback form (if you choose to submit one) sends only the text you type to a small backend that files a GitHub issue; it is never triggered automatically and never includes file contents.</p>
+
+        <h2>Data retention</h2>
+        <p>Because your files are never transmitted to NilPDF, there is nothing for NilPDF to retain, store, or delete on your behalf. Your files exist only on your device, for as long as you keep them there.</p>
+
+        <h2>Changes to this policy</h2>
+        <p>If this policy changes, the effective date at the top of this page will be updated. Material changes will be reflected in the site's version history on request.</p>
+
+        <h2>Contact</h2>
+        <p>Questions about this policy can be sent through the feedback form available on every page of the site, or via the contact details on the <a href="https://nilpdf.com/about/">About page</a>.</p>
+
+        <footer>
+            <p>Part of <a href="https://nilpdf.com/">NilPDF</a> — a property of K Digital Systems LLC. See also: <a href="https://nilpdf.com/security/">Security</a> · <a href="https://nilpdf.com/about/">About</a>.</p>
+        </footer>
+    </div>
+</body>
+</html>

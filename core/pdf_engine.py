@@ -134,11 +134,27 @@ def process_compress(js_buf, status_id="", password=""):
     return out_stream.getvalue()
 
 
+_ANONYMIZE_FIELD_LABELS = {
+    "/Title": "Title", "/Author": "Author", "/Subject": "Subject",
+    "/Keywords": "Keywords", "/Creator": "Creator", "/Producer": "Producer",
+    "/CreationDate": "Creation date", "/ModDate": "Modification date",
+}
+
+
 def process_anonymize(js_buf, status_id="", password=""):
+    import json
     _post_progress(status_id, 5, "Reading PDF...")
     reader = _open_reader(_ensure_py(js_buf), password)
     writer = PdfWriter()
     total = max(len(reader.pages), 1)
+
+    existing = dict(reader.metadata) if reader.metadata else {}
+    removed_fields = [
+        label for field, label in _ANONYMIZE_FIELD_LABELS.items()
+        if str(existing.get(field, "") or "").strip()
+    ]
+    had_xmp = "/Metadata" in reader.trailer.get("/Root", {})
+
     for i, page in enumerate(reader.pages):
         writer.add_page(page)
         _post_progress(status_id, int(5 + (i + 1) / total * 80), f"Copying page {i + 1} of {total}...")
@@ -150,11 +166,17 @@ def process_anonymize(js_buf, status_id="", password=""):
     })
     try:
         writer._root_object.pop("/Metadata", None)
+        if had_xmp:
+            removed_fields.append("Embedded XMP metadata")
     except Exception:
         pass
     _post_progress(status_id, 96, "Writing output...")
     out_stream = io.BytesIO()
     writer.write(out_stream)
+    _post_progress(status_id, 99, "__STATS__:" + json.dumps({
+        "removedCount": len(removed_fields),
+        "removedFields": removed_fields,
+    }))
     return out_stream.getvalue()
 
 
@@ -241,10 +263,10 @@ def process_bulk(action, file_names, js_buffers, status_id="", password=""):
             _post_progress(status_id, int(i / total * 90), f"Processing {name} ({i + 1}/{total})...")
             if action == 'COMPRESS':
                 processed_bytes = process_compress(buf, status_id=status_id, password=password)
-                suffix = "_squeezed.pdf"
+                suffix = "_compressed.pdf"
             elif action == 'ANONYMIZE':
                 processed_bytes = process_anonymize(buf, status_id=status_id, password=password)
-                suffix = "_scrubbed.pdf"
+                suffix = "_metadata_removed.pdf"
             else:
                 processed_bytes = buf
                 suffix = "_processed.pdf"
@@ -485,6 +507,8 @@ def process_repair(js_buf, status_id="", password=""):
     _stamp_producer(writer)
     out = io.BytesIO()
     writer.write(out)
+    import json
+    _post_progress(status_id, 99, "__STATS__:" + json.dumps({"recovered": recovered, "skipped": skipped, "total": total}))
     return out.getvalue()
 
 
@@ -546,6 +570,49 @@ def process_edit(js_buf, edits, status_id="", password=""):
 
         _post_progress(status_id, int((i + 1) / total * 90), f"Editing page {i + 1} of {total}...")
 
+    _stamp_producer(writer)
+    out = io.BytesIO()
+    writer.write(out)
+    return out.getvalue()
+
+
+def process_fill_form(js_buf, field_values, flatten=False, status_id="", password=""):
+    """Fill AcroForm field values and optionally flatten to a non-interactive PDF.
+
+    `field_values` maps field name (/T) to the value to set: a plain string for
+    text/choice fields, or the "on" export value (e.g. "/Yes") for checkboxes
+    and radio buttons. When `flatten` is True the filled appearance is baked
+    into each page's content stream and the interactive widgets/AcroForm are
+    removed entirely, so the result is no longer editable as a form.
+    """
+    from pypdf.generic import NameObject, ArrayObject
+
+    reader = _open_reader(_ensure_py(js_buf), password)
+    writer = PdfWriter()
+    writer.append(reader)
+
+    if "/AcroForm" not in writer._root_object:
+        raise ValueError("This PDF has no fillable form fields.")
+
+    _post_progress(status_id, 20, "Filling form fields...")
+    values = dict(_ensure_py(field_values) or {})
+    try:
+        writer.update_page_form_field_values(None, values, auto_regenerate=not flatten, flatten=bool(flatten))
+    except Exception as exc:
+        raise ValueError(f"Could not fill form fields: {exc}")
+
+    if flatten:
+        _post_progress(status_id, 70, "Flattening form...")
+        for page in writer.pages:
+            if "/Annots" in page:
+                kept = [a for a in page["/Annots"] if a.get_object().get("/Subtype") != "/Widget"]
+                if kept:
+                    page[NameObject("/Annots")] = ArrayObject(kept)
+                else:
+                    del page["/Annots"]
+        writer._root_object.pop("/AcroForm", None)
+
+    _post_progress(status_id, 95, "Writing output...")
     _stamp_producer(writer)
     out = io.BytesIO()
     writer.write(out)
