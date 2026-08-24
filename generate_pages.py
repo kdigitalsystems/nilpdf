@@ -507,8 +507,55 @@ TOOLS = [
         ],
         'related': [
             ('redact-pdf', 'Redact PDF'),
-            ('watermark-pdf', 'Watermark PDF'),
+            ('fill-pdf-forms', 'Fill PDF Forms'),
         ],
+    },
+    {
+        'slug': 'fill-pdf-forms',
+        'tool_id': 'fillform',
+        'title': 'Fill PDF Forms Online Free — NilPDF',
+        'h1': 'Fill PDF Forms',
+        'tagline': 'Fill in PDF form fields directly on the page — free and private.',
+        'description': 'Free online PDF form filler. Fill in text fields, checkboxes, and radio buttons directly on the page, then optionally flatten the form. No uploads — runs entirely in your browser.',
+        'keywords': 'fill pdf form, pdf form filler, fill in pdf online free, flatten pdf form',
+        'bullets': [
+            'Detects and highlights every fillable field on the page',
+            'Fill text fields, checkboxes, and radio buttons directly on the page',
+            'Values carry across every page of a multi-page form',
+            'Optional flatten step bakes values in and locks the fields',
+            'No uploads — your form data never leaves your device',
+        ],
+        'body_text': 'NilPDF Fill Forms scans a PDF for its fillable AcroForm fields and lets you complete them directly on the rendered page, entirely inside your browser. Text fields, checkboxes, and radio buttons all work the same way they would in a desktop PDF reader. When you\'re done, download the filled PDF as-is with fields still editable, or turn on Flatten to bake your entries permanently into the page and remove the interactive fields. Nothing is ever uploaded to a server.',
+        'how_to_name': 'How to fill in a PDF form',
+        'how_to_steps': [
+            ('Open NilPDF Fill Forms', 'Visit nilpdf.com and select the Fill PDF Forms tool.'),
+            ('Upload your PDF', 'Drop your PDF or click Browse. NilPDF detects the form\'s fillable fields automatically.'),
+            ('Fill in the fields', 'Type into text fields, and check boxes or select radio buttons directly on the page.'),
+            ('Apply', 'Optionally turn on Flatten, then click "Apply & Download" — your filled PDF downloads automatically.'),
+        ],
+        'faq': [
+            ('Is filling in a PDF form really free?', 'Yes — completely free, unlimited use, no account required.'),
+            ('Are my PDF files safe when I fill them in?', 'Yes. Your files never leave your device. Everything runs in your browser using WebAssembly. NilPDF has no backend server.'),
+            ('What does "Flatten" do?', 'Flattening bakes your entered values permanently into the page content and removes the interactive form fields, so the result can no longer be edited as a form. Leave it off if you want the filled PDF to stay editable.'),
+            ('What if my PDF has no fillable fields?', 'NilPDF will tell you the file has no fillable form fields. Only PDFs with an actual AcroForm (interactive form fields) can be filled this way — a scanned or flat PDF has no fields to detect.'),
+        ],
+        'related': [
+            ('edit-pdf', 'Edit PDF'),
+            ('redact-pdf', 'Redact PDF'),
+        ],
+        'extra_json_ld': '''    <script type="application/ld+json">
+    {
+      "@context": "https://schema.org",
+      "@type": "SoftwareApplication",
+      "name": "NilPDF Fill PDF Forms",
+      "url": "https://nilpdf.com/fill-pdf-forms/",
+      "applicationCategory": "UtilitiesApplication",
+      "operatingSystem": "Any (browser-based)",
+      "browserRequirements": "Requires a modern browser with JavaScript enabled",
+      "offers": {"@type": "Offer", "price": "0", "priceCurrency": "USD"}
+    }
+    </script>
+''',
     },
 ]
 
@@ -557,7 +604,7 @@ PAGE_TEMPLATE = '''<!DOCTYPE html>
       "mainEntity": {faq_json}
     }}
     </script>
-    <style>
+{extra_json_ld}    <style>
         *, *::before, *::after {{ box-sizing: border-box; margin: 0; padding: 0; }}
         :root {{
             --bg: #f8fafc; --card: #ffffff; --text: #0f172a; --muted: #64748b;
@@ -714,6 +761,7 @@ def generate():
             faq_json=build_faq_json(tool['faq']),
             faq_items=build_faq_html(tool['faq']),
             related_items=build_related_html(tool['related']),
+            extra_json_ld=tool.get('extra_json_ld', ''),
         )
 
         out = os.path.join(dir_path, 'index.html')
