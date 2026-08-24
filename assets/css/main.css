@@ -488,8 +488,8 @@ button {
     pointer-events: none;
 }
 
-/* ── Sign PDF ─────────────────────────────────────────────────────────── */
-.sign-disclaimer {
+/* ── Notice strip: used by Sign PDF and Redact PDF for their disclaimers ── */
+.notice-strip {
     background: rgba(217, 119, 6, 0.08);
     border: 1px solid rgba(217, 119, 6, 0.3);
     border-radius: 8px;
@@ -499,7 +499,7 @@ button {
     color: var(--text-main);
     margin-bottom: 1rem;
 }
-.sign-disclaimer strong { display: block; margin-bottom: 0.2rem; }
+.notice-strip strong { display: block; margin-bottom: 0.2rem; }
 
 .sign-pad {
     border: 1px solid var(--border);

@@ -12,11 +12,11 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Redact PDF Online Free — NilPDF</title>
-    <meta name="description" content="Free online PDF redaction tool. Black out sensitive text or images and add custom notes. No uploads — runs entirely in your browser.">
-    <meta name="keywords" content="redact pdf, black out pdf, censor pdf, pdf redaction tool free">
+    <meta name="description" content="Free online PDF redaction tool. Black out sensitive text or images and add custom notes. The page is rebuilt from a flattened image, so the underlying content is actually removed, not just covered. No uploads, runs entirely in your browser.">
+    <meta name="keywords" content="redact pdf, black out pdf, censor pdf, permanent pdf redaction, secure pdf redaction free">
     <link rel="canonical" href="https://nilpdf.com/redact-pdf/">
     <meta property="og:title" content="Redact PDF — NilPDF">
-    <meta property="og:description" content="Free online PDF redaction tool. Black out sensitive text or images and add custom notes. No uploads — runs entirely in your browser.">
+    <meta property="og:description" content="Free online PDF redaction tool. Black out sensitive text or images and add custom notes. The page is rebuilt from a flattened image, so the underlying content is actually removed, not just covered. No uploads, runs entirely in your browser.">
     <meta property="og:type" content="website">
     <meta property="og:url" content="https://nilpdf.com/redact-pdf/">
     <meta property="og:image" content="https://nilpdf.com/assets/og-image.png">
@@ -29,7 +29,7 @@
       "@context": "https://schema.org",
       "@type": "HowTo",
       "name": "How to redact a PDF",
-      "description": "Free online PDF redaction tool. Black out sensitive text or images and add custom notes. No uploads — runs entirely in your browser.",
+      "description": "Free online PDF redaction tool. Black out sensitive text or images and add custom notes. The page is rebuilt from a flattened image, so the underlying content is actually removed, not just covered. No uploads, runs entirely in your browser.",
       "tool": {"@type": "HowToTool", "name": "NilPDF"},
       "step": [
       {
@@ -54,7 +54,7 @@
             "@type": "HowToStep",
             "position": 4,
             "name": "Apply",
-            "text": "Click \"Apply & Download\" — your edited PDF downloads automatically."
+            "text": "Click \"Apply & Download\". Pages with a redaction are flattened and rebuilt, then your PDF downloads automatically."
       }
 ]
     }
@@ -67,7 +67,7 @@
         {
           "@type": "Question",
           "name": "Is redacting a PDF really free?",
-          "acceptedAnswer": {"@type": "Answer", "text": "Yes — completely free, unlimited use, no account required."}
+          "acceptedAnswer": {"@type": "Answer", "text": "Yes. Completely free, unlimited use, no account required."}
         },
         {
           "@type": "Question",
@@ -77,7 +77,12 @@
         {
           "@type": "Question",
           "name": "Does redaction actually remove the underlying content?",
-          "acceptedAnswer": {"@type": "Answer", "text": "The black box is drawn permanently over the page, hiding the content visually. If the original PDF has a selectable text layer underneath, that text can still be extracted by copying it or parsing the file. For guaranteed removal, convert the redacted PDF to images first (use NilPDF's PDF to Images tool, then Images to PDF) before sharing it."}
+          "acceptedAnswer": {"@type": "Answer", "text": "Yes. Any page with a black box is re-rendered at high resolution with the box permanently baked in, then rebuilt as a brand new page containing only that image, nothing from the original page carries over. The text under a black box cannot be selected, copied, or extracted afterward."}
+        },
+        {
+          "@type": "Question",
+          "name": "Will my redacted PDF still have selectable text?",
+          "acceptedAnswer": {"@type": "Answer", "text": "Not on the pages you redact. Redacting a page flattens it into an image, so text on that page is no longer selectable or searchable. Pages you don't redact keep their original, fully selectable text."}
         }
       ]
     }
@@ -129,15 +134,16 @@
         <a class="back" href="https://nilpdf.com/">← All PDF tools</a>
         <a class="brand" href="https://nilpdf.com/">NilPDF</a>
         <h1>Redact PDF</h1>
-        <p class="tagline">Black out sensitive areas and add text notes to a PDF — free and private.</p>
+        <p class="tagline">Permanently black out sensitive areas of a PDF. Free and private.</p>
         <a class="cta" href="https://nilpdf.com/#redact">Use this tool free →</a>
         <ul class="bullets">
             <li>Click and drag to black out any area on a page</li>
             <li>Add custom text notes anywhere on a page</li>
-            <li>Works across multi-page documents</li>
-            <li>No uploads — your file never leaves your device</li>
+            <li>Pages with a redaction are rebuilt from a flattened image, so the original text is actually gone</li>
+            <li>Works across multi-page documents, untouched pages keep their original text</li>
+            <li>No uploads, your file never leaves your device</li>
         </ul>
-        <p class="body-text">NilPDF Redact lets you permanently black out sensitive text, numbers, or images and add custom text notes directly on a PDF page — all rendered and applied locally in your browser. Draw a box over anything you want hidden, or click to drop a note, then download the edited PDF. Nothing is ever uploaded to a server.</p>
+        <p class="body-text">NilPDF Redact lets you black out sensitive text, numbers, or images on a PDF page, entirely inside your browser. Any page you mark is re-rendered locally at high resolution with the black boxes (and any notes on that page) permanently baked into the image, then rebuilt as a new page with no text layer, no hidden content, and nothing left over from the original. That means a redacted page can no longer be searched, selected, or copied, the content is genuinely gone, not just covered up. Pages you don't mark are left exactly as they were. Nothing is ever uploaded to a server.</p>
         <div class="privacy-strip">
             <strong>100% private.</strong> Your files are processed entirely inside your browser using WebAssembly.
             Nothing is uploaded to any server. NilPDF has no backend — there is no server to send your files to.
@@ -146,7 +152,7 @@
             <h2>Frequently Asked Questions</h2>
             <div class="faq-item">
                 <h3>Is redacting a PDF really free?</h3>
-                <p>Yes — completely free, unlimited use, no account required.</p>
+                <p>Yes. Completely free, unlimited use, no account required.</p>
             </div>
             <div class="faq-item">
                 <h3>Are my PDF files safe when I redact them?</h3>
@@ -154,7 +160,11 @@
             </div>
             <div class="faq-item">
                 <h3>Does redaction actually remove the underlying content?</h3>
-                <p>The black box is drawn permanently over the page, hiding the content visually. If the original PDF has a selectable text layer underneath, that text can still be extracted by copying it or parsing the file. For guaranteed removal, convert the redacted PDF to images first (use NilPDF's PDF to Images tool, then Images to PDF) before sharing it.</p>
+                <p>Yes. Any page with a black box is re-rendered at high resolution with the box permanently baked in, then rebuilt as a brand new page containing only that image, nothing from the original page carries over. The text under a black box cannot be selected, copied, or extracted afterward.</p>
+            </div>
+            <div class="faq-item">
+                <h3>Will my redacted PDF still have selectable text?</h3>
+                <p>Not on the pages you redact. Redacting a page flattens it into an image, so text on that page is no longer selectable or searchable. Pages you don't redact keep their original, fully selectable text.</p>
             </div>
         </section>
         <nav class="related-tools">

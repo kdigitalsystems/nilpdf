@@ -576,6 +576,67 @@ def process_edit(js_buf, edits, status_id="", password=""):
     return out.getvalue()
 
 
+def process_redact(js_buf, page_images, status_id="", password=""):
+    """Securely rebuild the pages that were redacted, discarding everything the
+    original page carried.
+
+    `page_images` maps a page index (int, or a numeric string since it may
+    arrive as JSON) to a base64-encoded PNG: that page rendered at high
+    resolution in the browser with the redaction boxes and any notes already
+    composited into the pixels. For each page with an entry, this function
+    creates a brand new page containing only that image and nothing else. It
+    never copies the original page's text, annotations, form fields, images,
+    or any other content into the output, so nothing that was under a black
+    box can be recovered by extracting text or inspecting the file. Pages
+    without an entry are copied through unchanged.
+
+    If an image fails to decode, this raises rather than silently keeping the
+    original (unredacted) page. Falling back would defeat the purpose of a
+    redaction tool: better to fail loudly than to ship a file the user
+    believes is redacted when it is not.
+    """
+    import base64
+    try:
+        from reportlab.pdfgen import canvas as rl_canvas
+        from reportlab.lib.utils import ImageReader
+    except ImportError:
+        raise ImportError("Redact requires reportlab. Please reload the page.")
+
+    reader = _open_reader(_ensure_py(js_buf), password)
+    writer = PdfWriter()
+    total = len(reader.pages)
+
+    images = {int(k): v for k, v in dict(_ensure_py(page_images)).items()}
+
+    for i in range(total):
+        raw = images.get(i)
+        if raw is not None:
+            page = reader.pages[i]
+            w = float(page.mediabox.width)
+            h = float(page.mediabox.height)
+            raw_str = str(raw)
+            if raw_str.startswith("data:") and "," in raw_str:
+                raw_str = raw_str.split(",", 1)[1]
+            try:
+                img = ImageReader(io.BytesIO(base64.b64decode(raw_str)))
+                flat_buf = io.BytesIO()
+                c = rl_canvas.Canvas(flat_buf, pagesize=(w, h))
+                c.drawImage(img, 0, 0, width=w, height=h, preserveAspectRatio=False)
+                c.save()
+                flat_buf.seek(0)
+                writer.add_page(PdfReader(flat_buf).pages[0])
+            except Exception as e:
+                raise ValueError(f"Could not rebuild redacted page {i + 1}: {e}")
+        else:
+            writer.add_page(reader.pages[i])
+        _post_progress(status_id, int((i + 1) / total * 90), f"Rebuilding page {i + 1} of {total}...")
+
+    _stamp_producer(writer)
+    out = io.BytesIO()
+    writer.write(out)
+    return out.getvalue()
+
+
 def process_sign(js_buf, signatures, status_id="", password=""):
     """Stamp one or more signature/initial images onto specific pages, flattened
     permanently into the page content (a visual mark, not a certificate-based

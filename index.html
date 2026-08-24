@@ -320,7 +320,7 @@
                 </div>
                 <div class="tool-card-body">
                     <h3>Redact PDF</h3>
-                    <p>Black out sensitive areas and add text notes.</p>
+                    <p>Permanently black out sensitive areas, not just cover them.</p>
                 </div>
             </div>
 
@@ -743,6 +743,14 @@
 
         <!-- REDACT -->
         <div id="tool-redact" class="tool-section hidden-tool">
+            <div class="notice-strip">
+                <strong>Redacted pages are flattened into an image.</strong>
+                Any page with a black box is rebuilt from a high-resolution image of that
+                page with the box (and any notes on it) permanently baked in. The original
+                text on that page is discarded, not just covered, so it cannot be
+                selected, copied, or extracted afterward. This does mean those pages lose
+                selectable text. Pages without a redaction keep their original text as-is.
+            </div>
             <div id="drop-zone-redact" class="file-drop" aria-label="Drop zone">
                 <svg class="drop-icon" width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
                 <p>Select a PDF to redact or annotate</p>
@@ -761,7 +769,6 @@
                     <button type="button" id="redact-next-page" class="secondary-btn">Next ›</button>
                 </div>
                 <p class="redact-hint">Redact mode: click and drag to black out an area. Text mode: click to place a note.</p>
-                <p class="redact-hint">Note: this covers content visually. If the PDF has selectable text underneath, it can still be extracted by copying or parsing the file — convert to images first if you need guaranteed removal.</p>
                 <div id="redact-canvas-wrap" class="redact-canvas-wrap">
                     <canvas id="redact-canvas"></canvas>
                     <div id="redact-overlay" class="redact-overlay"></div>
@@ -805,7 +812,7 @@
 
         <!-- SIGN -->
         <div id="tool-sign" class="tool-section hidden-tool">
-            <div class="sign-disclaimer">
+            <div class="notice-strip">
                 <strong>This is a visual signature, not a digital signature.</strong>
                 It places an image of a signature onto the page. It does not create a
                 certificate-based digital signature, and NilPDF makes no guarantee that it
@@ -1249,7 +1256,7 @@
         pagenums: { title: 'Add Page Numbers to PDF', desc: 'Stamp page numbers onto a PDF. No uploads. Zero tracking.' },
         inspect:  { title: 'Inspect PDF',             desc: 'View PDF metadata, page count, fonts and more. Zero uploads.' },
         repair:   { title: 'Repair PDF',              desc: 'Attempt to recover pages from a corrupted or truncated PDF. Runs privately in your browser.' },
-        redact:   { title: 'Redact PDF',              desc: 'Black out sensitive areas and add custom text notes to a PDF. Runs privately in your browser.' },
+        redact:   { title: 'Redact PDF',              desc: 'Permanently black out sensitive areas of a PDF and add custom text notes. Runs privately in your browser.' },
         edit:     { title: 'Edit PDF',                desc: 'Click anywhere to write text onto a PDF page. Runs privately in your browser.' },
         sign:     { title: 'Sign PDF',                desc: 'Draw, type, or upload a signature and place it on any page. Runs privately in your browser.' },
         fillform: { title: 'Fill PDF Forms',          desc: 'Fill in PDF form fields and optionally flatten them. Runs privately in your browser.' },
@@ -2548,16 +2555,81 @@
             });
         })();
 
+        // High-resolution scale used only when flattening a redacted page to an
+        // image (~180 DPI), deliberately higher than the SCALE used for the
+        // interactive on-screen editor, since this is what actually ships.
+        const FLATTEN_SCALE = 2.5;
+
+        async function renderFlattenedPage(pageIdx) {
+            const page = await state.pdfDoc.getPage(pageIdx + 1);
+            const viewport = page.getViewport({ scale: FLATTEN_SCALE });
+            const canvas = document.createElement('canvas');
+            canvas.width = viewport.width;
+            canvas.height = viewport.height;
+            const ctx = canvas.getContext('2d');
+            await page.render({ canvasContext: ctx, viewport }).promise;
+
+            (state.pageEdits[pageIdx] || []).forEach(item => {
+                if (item.type === 'redact') {
+                    ctx.fillStyle = '#000';
+                    ctx.fillRect(
+                        item.x * FLATTEN_SCALE,
+                        canvas.height - (item.y + item.height) * FLATTEN_SCALE,
+                        item.width * FLATTEN_SCALE,
+                        item.height * FLATTEN_SCALE
+                    );
+                } else if (item.type === 'text') {
+                    const size = (item.size || 14) * FLATTEN_SCALE;
+                    ctx.fillStyle = '#000';
+                    ctx.font = `${size}px Helvetica, Arial, sans-serif`;
+                    ctx.textBaseline = 'alphabetic';
+                    ctx.fillText(item.text, item.x * FLATTEN_SCALE, canvas.height - item.y * FLATTEN_SCALE);
+                }
+            });
+
+            return canvas.toDataURL('image/png');
+        }
+
         el('btn').onclick = async () => {
             if (!state.file) { updateStatus(`${prefix}-status`, 'Select a PDF first.', 'text-red'); return; }
+
+            if (allowBoxes) {
+                // Secure redaction: every page with a black box is fully re-rendered
+                // at high resolution with the box (and any notes on that same page)
+                // baked into the pixels, then rebuilt server-side as an image-only
+                // page. Nothing under a black box survives into the output.
+                const redactedPages = Object.keys(state.pageEdits)
+                    .map(k => parseInt(k))
+                    .filter(idx => (state.pageEdits[idx] || []).length > 0);
+                if (!redactedPages.length) { updateStatus(`${prefix}-status`, emptyEditsMsg, 'text-red'); return; }
+                const check = validateFileSizes([state.file]);
+                if (!check.ok) { updateStatus(`${prefix}-status`, check.msg, 'text-red'); return; }
+                if (check.warn) updateStatus(`${prefix}-status`, check.warn, '');
+
+                const pageImages = {};
+                for (let i = 0; i < redactedPages.length; i++) {
+                    const pageIdx = redactedPages[i];
+                    updateStatus(`${prefix}-status`, `Flattening page ${pageIdx + 1} (${i + 1} of ${redactedPages.length})...`, '');
+                    pageImages[pageIdx] = await renderFlattenedPage(pageIdx);
+                }
+
+                const password = el('password').value;
+                const buffer = await toUint8(state.file);
+                pendingDownload = stem(state.file.name) + suffix;
+                runWhenReady(`${prefix}-status`, () => {
+                    pendingFooter = el('footer')?.checked ?? false;
+                    updateStatus(`${prefix}-status`, 'Rebuilding redacted pages...', '');
+                    worker.postMessage({ id: `${prefix}-status`, action: 'REDACT', payload: { buffer, pageImages, password } }, [buffer.buffer]);
+                });
+                return;
+            }
+
+            // Text-only tool (Edit): unchanged, a lightweight overlay merge is fine
+            // since nothing is being claimed as removed.
             const allEdits = [];
             Object.keys(state.pageEdits).forEach(pageIdx => {
                 (state.pageEdits[pageIdx] || []).forEach(item => {
-                    if (item.type === 'redact') {
-                        allEdits.push({ page: parseInt(pageIdx), type: 'redact', x: item.x, y: item.y, width: item.width, height: item.height });
-                    } else {
-                        allEdits.push({ page: parseInt(pageIdx), type: 'text', x: item.x, y: item.y, text: item.text, size: item.size });
-                    }
+                    allEdits.push({ page: parseInt(pageIdx), type: 'text', x: item.x, y: item.y, text: item.text, size: item.size });
                 });
             });
             if (!allEdits.length) { updateStatus(`${prefix}-status`, emptyEditsMsg, 'text-red'); return; }

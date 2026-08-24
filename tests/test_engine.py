@@ -19,6 +19,7 @@ from core.pdf_engine import (
     process_repair,
     process_add_footer,
     process_edit,
+    process_redact,
     process_sign,
     process_fill_form,
 )
@@ -95,6 +96,17 @@ def make_signature_png_base64():
     import base64
     from PIL import Image
     img = Image.new("RGBA", (40, 20), (0, 0, 0, 0))
+    buf = io.BytesIO()
+    img.save(buf, format="PNG")
+    return "data:image/png;base64," + base64.b64encode(buf.getvalue()).decode()
+
+
+def make_flat_page_png_base64(width=200, height=200):
+    """Return an opaque PNG standing in for a browser-rendered, already-redacted
+    page image (what renderFlattenedPage() would produce), as a base64 string."""
+    import base64
+    from PIL import Image
+    img = Image.new("RGB", (width, height), (255, 255, 255))
     buf = io.BytesIO()
     img.save(buf, format="PNG")
     return "data:image/png;base64," + base64.b64encode(buf.getvalue()).decode()
@@ -531,6 +543,76 @@ class TestEdit(unittest.TestCase):
         enc = make_encrypted_pdf(num_pages=2, password="secret")
         edits = [{"page": 1, "type": "text", "x": 5, "y": 5, "text": "X"}]
         result = process_edit(enc, edits, password="secret")
+        self.assertEqual(len(read_pdf(result).pages), 2)
+
+
+# ── Redact (secure: full-page rebuild, not a visual-only overlay) ────────────
+
+class TestRedact(unittest.TestCase):
+    def test_secret_string_not_extractable_after_redaction(self):
+        secret = "SECRET-XK47-DO-NOT-SHARE"
+        original = make_pdf_with_text(secret)
+        self.assertIn(secret, read_pdf(original).pages[0].extract_text())  # sanity: it's really there first
+
+        result = process_redact(original, {0: make_flat_page_png_base64()})
+
+        self.assertNotIn(secret, read_pdf(result).pages[0].extract_text())
+        self.assertNotIn(secret.encode(), result)  # not recoverable from the raw file bytes either
+
+    def test_redacted_page_has_no_text_layer_at_all(self):
+        original = make_pdf_with_text("Anything on this page should be gone")
+        result = process_redact(original, {0: make_flat_page_png_base64()})
+        self.assertEqual(read_pdf(result).pages[0].extract_text().strip(), "")
+
+    def test_preserves_unaffected_pages(self):
+        secret_page_0 = "KEEP-ME-VISIBLE-PAGE-0"
+        writer = PdfWriter()
+        writer.append(PdfReader(io.BytesIO(make_pdf_with_text(secret_page_0))))
+        writer.append(PdfReader(io.BytesIO(make_pdf_with_text("redact this page instead"))))
+        buf = io.BytesIO()
+        writer.write(buf)
+        original = buf.getvalue()
+
+        result = process_redact(original, {1: make_flat_page_png_base64()})
+        pages = read_pdf(result).pages
+        self.assertEqual(len(pages), 2)
+        self.assertIn(secret_page_0, pages[0].extract_text())  # untouched page keeps its real text
+        self.assertNotIn("redact this page instead", pages[1].extract_text())
+
+    def test_empty_page_images_preserves_everything(self):
+        secret = "NOTHING-SHOULD-CHANGE-HERE"
+        original = make_pdf_with_text(secret)
+        result = process_redact(original, {})
+        self.assertIn(secret, read_pdf(result).pages[0].extract_text())
+
+    def test_output_page_count_matches_input(self):
+        result = process_redact(make_pdf(3), {1: make_flat_page_png_base64()})
+        self.assertEqual(len(read_pdf(result).pages), 3)
+
+    def test_string_keys_are_accepted(self):
+        # JSON round-tripping (JS -> worker -> Python) turns numeric dict keys into strings.
+        result = process_redact(make_pdf(1), {"0": make_flat_page_png_base64()})
+        self.assertEqual(len(read_pdf(result).pages), 1)
+
+    def test_invalid_image_raises_instead_of_silently_keeping_original(self):
+        # A redaction tool must fail loudly, not fall back to shipping the unredacted
+        # page while the user believes it was removed.
+        secret = "MUST-NOT-LEAK-ON-DECODE-FAILURE"
+        original = make_pdf_with_text(secret)
+        with self.assertRaises(ValueError):
+            process_redact(original, {0: "not valid base64 image data!!"})
+
+    def test_stamps_producer(self):
+        result = process_redact(make_pdf(1), {})
+        self.assertIn("NilPDF", producer_of(result))
+
+    def test_wrong_password_raises(self):
+        with self.assertRaises(ValueError):
+            process_redact(make_encrypted_pdf(password="x"), {}, password="wrong")
+
+    def test_correct_password_works(self):
+        enc = make_encrypted_pdf(num_pages=2, password="secret")
+        result = process_redact(enc, {0: make_flat_page_png_base64()}, password="secret")
         self.assertEqual(len(read_pdf(result).pages), 2)
 
 
