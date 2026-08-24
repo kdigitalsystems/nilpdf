@@ -3408,18 +3408,22 @@
     function scorePasswordStrength(pw) {
         if (!pw) return null;
         if (pw.length < 8) return { level: 'weak', label: 'Weak', pct: 20 };
+
         let variety = 0;
         if (/[a-z]/.test(pw)) variety++;
         if (/[A-Z]/.test(pw)) variety++;
         if (/[0-9]/.test(pw)) variety++;
         if (/[^A-Za-z0-9]/.test(pw)) variety++;
         const long = pw.length >= 12;
-        if (variety <= 1) return { level: 'weak', label: 'Weak', pct: 35 };
-        if (variety === 2 && !long) return { level: 'fair', label: 'Fair', pct: 55 };
-        if (variety >= 2 && long) return variety >= 3
+
+        // variety: how many of {lower, upper, digit, symbol} appear. long: 12+ chars.
+        if (variety <= 1) return { level: 'weak',   label: 'Weak',   pct: 35 };
+        if (variety === 2) return long
+            ? { level: 'fair',   label: 'Fair',   pct: 65 }
+            : { level: 'fair',   label: 'Fair',   pct: 55 };
+        return long
             ? { level: 'strong', label: 'Strong', pct: 100 }
-            : { level: 'fair', label: 'Fair', pct: 65 };
-        return { level: 'strong', label: 'Strong', pct: 90 };
+            : { level: 'strong', label: 'Strong', pct: 90 };
     }
     const protectStrengthColors = { weak: '#dc2626', fair: '#d97706', strong: '#059669' };
     document.getElementById('protect-new-password').addEventListener('input', function () {
@@ -3461,6 +3465,7 @@
         const buffer = await toUint8(protectInput.files[0]);
         pendingDownload = stem(protectInput.files[0].name) + '_protected.pdf';
         runWhenReady('protect-status', () => {
+            pendingFooter = false; // never chain into ADD_FOOTER — it would try to reopen the newly-encrypted file with a blank password
             updateStatus('protect-status', 'Encrypting...', '');
             worker.postMessage(
                 { id: 'protect-status', action: 'PROTECT', payload: { buffer, newPassword, password: currentPassword } },

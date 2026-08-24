@@ -770,15 +770,12 @@ def process_protect(js_buf, new_password, status_id="", password=""):
         raise ValueError("Enter a password to protect this PDF.")
 
     reader = _open_reader(_ensure_py(js_buf), password)
+    _post_progress(status_id, 20, "Reading PDF...")
     writer = PdfWriter()
     writer.append_pages_from_reader(reader)
 
-    total = max(len(writer.pages), 1)
-    for i in range(total):
-        _post_progress(status_id, int((i + 1) / total * 60), f"Copying page {i + 1} of {total}...")
-
     _stamp_producer(writer)
-    _post_progress(status_id, 85, "Encrypting with AES-256...")
+    _post_progress(status_id, 60, "Encrypting with AES-256...")
     writer.encrypt(user_password=new_password, owner_password=new_password, algorithm="AES-256")
 
     out = io.BytesIO()
