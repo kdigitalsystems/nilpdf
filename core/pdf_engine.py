@@ -576,6 +576,83 @@ def process_edit(js_buf, edits, status_id="", password=""):
     return out.getvalue()
 
 
+def process_sign(js_buf, signatures, status_id="", password=""):
+    """Stamp one or more signature/initial images onto specific pages, flattened
+    permanently into the page content (a visual mark, not a certificate-based
+    digital signature).
+
+    `signatures` is a list of dicts:
+      {"page": int, "x": float, "y": float, "width": float, "height": float, "image": str}
+    `image` is a base64-encoded PNG (with or without a "data:image/png;base64,"
+    prefix); transparency is preserved. Coordinates are PDF points with the
+    origin at the bottom-left of the page. The caller converts from
+    canvas/screen pixel coordinates before sending. A signature with
+    unreadable image data is skipped rather than failing the whole document.
+    """
+    import base64
+    try:
+        from reportlab.pdfgen import canvas as rl_canvas
+        from reportlab.lib.utils import ImageReader
+    except ImportError:
+        raise ImportError("Sign requires reportlab. Please reload the page.")
+
+    reader = _open_reader(_ensure_py(js_buf), password)
+    writer = PdfWriter()
+    writer.append_pages_from_reader(reader)
+    total = len(writer.pages)
+
+    sigs_by_page = {}
+    for sig in _ensure_py(signatures):
+        sig = dict(sig)
+        page_idx = int(sig.get("page", 0))
+        sigs_by_page.setdefault(page_idx, []).append(sig)
+
+    for i in range(total):
+        page_sigs = sigs_by_page.get(i)
+        if page_sigs:
+            page = writer.pages[i]
+            w = float(page.mediabox.width)
+            h = float(page.mediabox.height)
+
+            overlay_buf = io.BytesIO()
+            c = rl_canvas.Canvas(overlay_buf, pagesize=(w, h))
+            drawn_any = False
+            for sig in page_sigs:
+                raw = str(sig.get("image", ""))
+                if raw.startswith("data:") and "," in raw:
+                    raw = raw.split(",", 1)[1]
+                try:
+                    img = ImageReader(io.BytesIO(base64.b64decode(raw)))
+                    c.drawImage(
+                        img,
+                        float(sig.get("x", 0)), float(sig.get("y", 0)),
+                        width=float(sig.get("width", 100)), height=float(sig.get("height", 40)),
+                        mask="auto", preserveAspectRatio=False,
+                    )
+                    drawn_any = True
+                except Exception:
+                    continue
+            # A reportlab canvas with no successful drawing calls emits zero
+            # pages on save() (a failed drawImage doesn't necessarily leave a
+            # blank page behind). Skip the merge entirely rather than reading
+            # pages[0] of an empty PDF.
+            if drawn_any:
+                c.save()
+                overlay_buf.seek(0)
+                overlay_page = PdfReader(overlay_buf).pages[0]
+                try:
+                    page.merge_page(overlay_page, over=True)
+                except TypeError:
+                    page.merge_page(overlay_page)  # older pypdf without `over` param
+
+        _post_progress(status_id, int((i + 1) / total * 90), f"Signing page {i + 1} of {total}...")
+
+    _stamp_producer(writer)
+    out = io.BytesIO()
+    writer.write(out)
+    return out.getvalue()
+
+
 def process_fill_form(js_buf, field_values, flatten=False, status_id="", password=""):
     """Fill AcroForm field values and optionally flatten to a non-interactive PDF.
 

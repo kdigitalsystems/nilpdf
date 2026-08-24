@@ -181,6 +181,8 @@ self.onmessage = async (event) => {
             result_py = self.pyodide.globals.get('process_repair')(payload.buffer, id, password);
         } else if (action === 'EDIT') {
             result_py = self.pyodide.globals.get('process_edit')(payload.buffer, payload.edits, id, password);
+        } else if (action === 'SIGN') {
+            result_py = self.pyodide.globals.get('process_sign')(payload.buffer, payload.signatures, id, password);
         } else if (action === 'FILL_FORM') {
             result_py = self.pyodide.globals.get('process_fill_form')(payload.buffer, payload.fields, payload.flatten, id, password);
         } else {

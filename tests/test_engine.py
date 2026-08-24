@@ -19,6 +19,7 @@ from core.pdf_engine import (
     process_repair,
     process_add_footer,
     process_edit,
+    process_sign,
     process_fill_form,
 )
 
@@ -86,6 +87,17 @@ def read_pdf(data):
 
 def producer_of(data):
     return read_pdf(data).metadata.get("/Producer", "")
+
+
+def make_signature_png_base64():
+    """Return a small transparent PNG (a signature stand-in) as a base64 string,
+    with the same 'data:image/png;base64,' prefix the browser would send."""
+    import base64
+    from PIL import Image
+    img = Image.new("RGBA", (40, 20), (0, 0, 0, 0))
+    buf = io.BytesIO()
+    img.save(buf, format="PNG")
+    return "data:image/png;base64," + base64.b64encode(buf.getvalue()).decode()
 
 
 # ── Merge ──────────────────────────────────────────────────────────────────
@@ -519,6 +531,58 @@ class TestEdit(unittest.TestCase):
         enc = make_encrypted_pdf(num_pages=2, password="secret")
         edits = [{"page": 1, "type": "text", "x": 5, "y": 5, "text": "X"}]
         result = process_edit(enc, edits, password="secret")
+        self.assertEqual(len(read_pdf(result).pages), 2)
+
+
+# ── Sign ─────────────────────────────────────────────────────────────────────
+
+class TestSign(unittest.TestCase):
+    def test_stamps_signature_produces_valid_pdf(self):
+        sigs = [{"page": 0, "x": 5, "y": 5, "width": 40, "height": 20, "image": make_signature_png_base64()}]
+        result = process_sign(make_pdf(1), sigs)
+        self.assertEqual(len(read_pdf(result).pages), 1)
+
+    def test_targets_only_specified_page(self):
+        sigs = [{"page": 2, "x": 5, "y": 5, "width": 40, "height": 20, "image": make_signature_png_base64()}]
+        result = process_sign(make_pdf(3), sigs)
+        self.assertEqual(len(read_pdf(result).pages), 3)
+
+    def test_multiple_signatures_same_page(self):
+        img = make_signature_png_base64()
+        sigs = [
+            {"page": 0, "x": 5, "y": 5, "width": 40, "height": 20, "image": img},
+            {"page": 0, "x": 50, "y": 5, "width": 40, "height": 20, "image": img},
+        ]
+        result = process_sign(make_pdf(1), sigs)
+        self.assertEqual(len(read_pdf(result).pages), 1)
+
+    def test_empty_signatures_preserves_page_count(self):
+        result = process_sign(make_pdf(3), [])
+        self.assertEqual(len(read_pdf(result).pages), 3)
+
+    def test_raw_base64_without_data_uri_prefix_works(self):
+        raw = make_signature_png_base64().split(",", 1)[1]
+        sigs = [{"page": 0, "x": 0, "y": 0, "width": 40, "height": 20, "image": raw}]
+        result = process_sign(make_pdf(1), sigs)
+        self.assertEqual(len(read_pdf(result).pages), 1)
+
+    def test_invalid_image_data_is_skipped_not_fatal(self):
+        sigs = [{"page": 0, "x": 0, "y": 0, "width": 40, "height": 20, "image": "not-valid-base64!!"}]
+        result = process_sign(make_pdf(1), sigs)
+        self.assertEqual(len(read_pdf(result).pages), 1)
+
+    def test_stamps_producer(self):
+        result = process_sign(make_pdf(1), [])
+        self.assertIn("NilPDF", producer_of(result))
+
+    def test_wrong_password_raises(self):
+        with self.assertRaises(ValueError):
+            process_sign(make_encrypted_pdf(password="x"), [], password="wrong")
+
+    def test_correct_password_works(self):
+        enc = make_encrypted_pdf(num_pages=2, password="secret")
+        sigs = [{"page": 1, "x": 5, "y": 5, "width": 40, "height": 20, "image": make_signature_png_base64()}]
+        result = process_sign(enc, sigs, password="secret")
         self.assertEqual(len(read_pdf(result).pages), 2)
 
 

@@ -557,6 +557,55 @@ TOOLS = [
     </script>
 ''',
     },
+    {
+        'slug': 'sign-pdf',
+        'tool_id': 'sign',
+        'title': 'Sign PDF Online Free — NilPDF',
+        'h1': 'Sign PDF',
+        'tagline': 'Draw, type, or upload a signature and place it on any page. Free and private.',
+        'description': 'Free online PDF signer. Draw a signature, type your name, or upload an image, then place it on any page. No uploads, runs entirely in your browser. This creates a visual signature, not a certificate-based digital signature.',
+        'keywords': 'sign pdf, pdf signature, esign pdf online free, add signature to pdf',
+        'bullets': [
+            'Draw a signature with your mouse or finger',
+            'Type your name in several signature styles',
+            'Upload a signature image instead',
+            'Place, resize, duplicate, or remove signatures on any page',
+            'No uploads, your signature never leaves your device',
+        ],
+        'body_text': 'NilPDF Sign lets you create a signature by drawing it, typing your name in a handwriting-style font, or uploading an image, then place it anywhere on any page of your PDF. Drag to reposition, drag the corner handle to resize, and use the duplicate button to reuse the same signature on other spots or pages. The result is a flattened PDF with the signature image permanently part of the page. This is a visual electronic signature, not a certificate-based digital signature, and NilPDF makes no guarantee that it meets the legal requirements for signing any particular document.',
+        'how_to_name': 'How to sign a PDF',
+        'how_to_steps': [
+            ('Open NilPDF Sign', 'Visit nilpdf.com and select the Sign PDF tool.'),
+            ('Upload your PDF', 'Drop your PDF or click Browse.'),
+            ('Create a signature', 'Draw it, type your name, or upload an image.'),
+            ('Place it on the page', 'Add it to the page, then drag to position and resize as needed.'),
+            ('Apply', 'Click "Apply & Download" and your signed PDF downloads automatically.'),
+        ],
+        'faq': [
+            ('Is signing a PDF really free?', 'Yes. Completely free, unlimited use, no account required.'),
+            ('Are my PDF files safe when I sign them?', 'Yes. Your files never leave your device. Everything runs in your browser using WebAssembly. NilPDF has no backend server.'),
+            ('Is this a legally binding digital signature?', 'No. This creates a visual signature, a picture of a signature placed on the page. It is not a certificate-based digital signature, and NilPDF makes no guarantee that it meets the legal requirements for your document. Check what your use case requires before relying on it.'),
+            ('Does NilPDF store my signature?', "Not unless you choose to. There is an optional \"remember this signature on this device\" setting that saves it in your browser's local storage for reuse. It is off by default and you can remove a saved signature at any time."),
+            ('Can I sign a password-protected PDF?', 'Yes. Enter the password when prompted and NilPDF will decrypt the file locally before you sign it.'),
+        ],
+        'related': [
+            ('edit-pdf', 'Edit PDF'),
+            ('fill-pdf-forms', 'Fill PDF Forms'),
+        ],
+        'extra_json_ld': '''    <script type="application/ld+json">
+    {
+      "@context": "https://schema.org",
+      "@type": "SoftwareApplication",
+      "name": "NilPDF Sign PDF",
+      "url": "https://nilpdf.com/sign-pdf/",
+      "applicationCategory": "UtilitiesApplication",
+      "operatingSystem": "Any (browser-based)",
+      "browserRequirements": "Requires a modern browser with JavaScript enabled",
+      "offers": {"@type": "Offer", "price": "0", "priceCurrency": "USD"}
+    }
+    </script>
+''',
+    },
 ]
 
 GA_SNIPPET = '''    <!-- Google tag (gtag.js) -->
@@ -670,7 +719,7 @@ PAGE_TEMPLATE = '''<!DOCTYPE html>
 {related_items}
         </nav>
         <footer>
-            <p>Part of <a href="https://nilpdf.com/">NilPDF</a> — 17 free PDF tools, zero uploads.</p>
+            <p>Part of <a href="https://nilpdf.com/">NilPDF</a> — 18 free PDF tools, zero uploads.</p>
         </footer>
     </div>
 </body>
