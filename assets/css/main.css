@@ -752,6 +752,68 @@ button {
 }
 .password-input::placeholder { color: var(--text-muted); }
 
+/* ── Password field with show/hide toggle (Protect PDF) ── */
+.password-field-wrap {
+    position: relative;
+}
+.password-field-wrap .text-input {
+    padding-right: 2.75rem;
+}
+.password-toggle-btn {
+    position: absolute;
+    top: 50%;
+    right: 0.5rem;
+    transform: translateY(-50%);
+    background: none;
+    border: none;
+    color: var(--text-muted);
+    padding: 0.35rem;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    border-radius: 4px;
+}
+.password-toggle-btn:hover { color: var(--text-main); background: var(--tab-bg); }
+
+.password-strength {
+    display: flex;
+    align-items: center;
+    gap: 0.6rem;
+    margin-top: 0.5rem;
+}
+.password-strength-bar {
+    flex: 1;
+    height: 4px;
+    background: var(--border);
+    border-radius: 2px;
+    overflow: hidden;
+}
+.password-strength-bar span {
+    display: block;
+    height: 100%;
+    width: 0%;
+    border-radius: 2px;
+    transition: width 0.15s ease, background-color 0.15s ease;
+}
+.password-strength-label {
+    font-family: var(--font-mono);
+    font-size: 0.7rem;
+    letter-spacing: 0.03em;
+    text-transform: uppercase;
+    color: var(--text-muted);
+    flex-shrink: 0;
+}
+.password-strength-label.strength-weak   { color: #dc2626; }
+.password-strength-label.strength-fair   { color: #d97706; }
+.password-strength-label.strength-strong { color: #059669; }
+
+.password-mismatch {
+    color: #dc2626;
+    font-size: 0.8rem;
+    margin-top: 0.4rem;
+}
+
 /* ── Range preview (Split tool) ── */
 .range-preview {
     display: block;

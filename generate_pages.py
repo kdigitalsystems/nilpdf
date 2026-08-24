@@ -476,6 +476,7 @@ TOOLS = [
             ('Will my redacted PDF still have selectable text?', "Not on the pages you redact. Redacting a page flattens it into an image, so text on that page is no longer selectable or searchable. Pages you don't redact keep their original, fully selectable text."),
         ],
         'related': [
+            ('protect-pdf', 'Protect PDF'),
             ('remove-pdf-metadata', 'Remove Metadata'),
             ('watermark-pdf', 'Watermark PDF'),
         ],
@@ -560,6 +561,54 @@ TOOLS = [
 ''',
     },
     {
+        'slug': 'protect-pdf',
+        'tool_id': 'protect',
+        'title': 'Protect PDF with a Password Online Free — NilPDF',
+        'h1': 'Protect PDF with a Password',
+        'tagline': 'Encrypt a PDF with AES-256 so only people who know the password can open it — free and private.',
+        'description': 'Free online PDF password protector. Encrypt any PDF with strong, standards-compatible AES-256 encryption. No uploads, runs entirely in your browser.',
+        'keywords': 'protect pdf, password protect pdf, encrypt pdf, add password to pdf, pdf encryption online free',
+        'bullets': [
+            'Strong, standards-compatible AES-256 encryption',
+            'Show/hide toggle and a password strength indicator',
+            'Replace the password on an already-protected PDF',
+            'Preserves the original page quality and content',
+            'No uploads, your file and password never leave your device',
+        ],
+        'body_text': 'NilPDF Protect encrypts a PDF with a password entirely inside your browser, using the same AES-256 standard supported by Adobe Acrobat and every major PDF reader. Type a password, confirm it, and the encrypted file downloads directly to you, nothing is ever sent anywhere to do it. If the PDF is already password-protected, enter the current password first and NilPDF will replace it with your new one. Because the encryption happens on your device and nothing is transmitted, logged, or retained, NilPDF has no way to recover a forgotten password, so keep it somewhere safe.',
+        'how_to_name': 'How to password protect a PDF',
+        'how_to_steps': [
+            ('Open NilPDF Protect', 'Visit nilpdf.com and select the Protect PDF tool.'),
+            ('Upload your PDF', 'Drop your PDF or click Browse. If it is already encrypted, enter its current password.'),
+            ('Set a password', 'Type a new password and confirm it — use the show/hide toggle to check it and the strength indicator as a guide.'),
+            ('Encrypt', 'Click "Protect & Download" and the encrypted PDF downloads automatically.'),
+        ],
+        'faq': [
+            ('Is protecting a PDF really free?', 'Yes. Completely free, unlimited use, no account required.'),
+            ('Are my PDF files safe when I protect them?', 'Yes. Your file and your password never leave your device. Everything runs in your browser using WebAssembly. NilPDF has no backend server, so there is nothing to upload, log, or retain.'),
+            ('What encryption does NilPDF use?', 'AES-256, the strongest standard PDF encryption method, compatible with Adobe Acrobat and other major PDF readers.'),
+            ('Can NilPDF recover my password if I forget it?', "No, and this isn't a limitation NilPDF can lift. The password is never sent anywhere or stored, so nobody, including NilPDF, can recover it. If you lose it, the file cannot be unlocked."),
+            ('Can I change the password on a PDF that is already protected?', 'Yes. Enter the current password to open it, then set a new one. The new password fully replaces the old one.'),
+        ],
+        'related': [
+            ('redact-pdf', 'Redact PDF'),
+            ('sign-pdf', 'Sign PDF'),
+        ],
+        'extra_json_ld': '''    <script type="application/ld+json">
+    {
+      "@context": "https://schema.org",
+      "@type": "SoftwareApplication",
+      "name": "NilPDF Protect PDF",
+      "url": "https://nilpdf.com/protect-pdf/",
+      "applicationCategory": "UtilitiesApplication",
+      "operatingSystem": "Any (browser-based)",
+      "browserRequirements": "Requires a modern browser with JavaScript enabled",
+      "offers": {"@type": "Offer", "price": "0", "priceCurrency": "USD"}
+    }
+    </script>
+''',
+    },
+    {
         'slug': 'sign-pdf',
         'tool_id': 'sign',
         'title': 'Sign PDF Online Free — NilPDF',
@@ -593,6 +642,7 @@ TOOLS = [
         'related': [
             ('edit-pdf', 'Edit PDF'),
             ('fill-pdf-forms', 'Fill PDF Forms'),
+            ('protect-pdf', 'Protect PDF'),
         ],
         'extra_json_ld': '''    <script type="application/ld+json">
     {
@@ -731,7 +781,7 @@ PAGE_TEMPLATE = '''<!DOCTYPE html>
 {related_items}
         </nav>
         <footer>
-            <p>Part of <a href="https://nilpdf.com/">NilPDF</a> — 18 free PDF tools, zero uploads.</p>
+            <p>Part of <a href="https://nilpdf.com/">NilPDF</a> — 19 free PDF tools, zero uploads.</p>
         </footer>
     </div>
 </body>

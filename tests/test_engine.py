@@ -22,6 +22,7 @@ from core.pdf_engine import (
     process_redact,
     process_sign,
     process_fill_form,
+    process_protect,
 )
 
 
@@ -717,6 +718,71 @@ class TestFillForm(unittest.TestCase):
         enc = make_form_pdf(password="secret")
         result = process_fill_form(enc, {"name_field": "Saqib"}, password="secret")
         self.assertEqual(read_pdf(result).get_fields()["name_field"]["/V"], "Saqib")
+
+
+# ── Protect ──────────────────────────────────────────────────────────────────
+
+class TestProtect(unittest.TestCase):
+    def test_output_is_encrypted(self):
+        result = process_protect(make_pdf(1), "correct-horse")
+        self.assertTrue(read_pdf(result).is_encrypted)
+
+    def test_opens_with_correct_password(self):
+        result = process_protect(make_pdf(2), "correct-horse")
+        reader = read_pdf(result)
+        self.assertNotEqual(reader.decrypt("correct-horse"), 0)
+        self.assertEqual(len(reader.pages), 2)
+
+    def test_fails_with_incorrect_password(self):
+        result = process_protect(make_pdf(1), "correct-horse")
+        reader = read_pdf(result)
+        self.assertEqual(reader.decrypt("wrong-guess"), 0)
+
+    def test_uses_aes_256(self):
+        result = process_protect(make_pdf(1), "correct-horse")
+        reader = read_pdf(result)
+        encrypt_dict = reader.trailer["/Encrypt"].get_object()
+        cfm = encrypt_dict["/CF"]["/StdCF"]["/CFM"]
+        self.assertEqual(cfm, "/AESV3")
+        self.assertEqual(encrypt_dict["/V"], 5)
+
+    def test_preserves_page_content(self):
+        pdf = make_pdf_with_text("Sensitive contract terms")
+        result = process_protect(pdf, "correct-horse")
+        reader = read_pdf(result)
+        reader.decrypt("correct-horse")
+        self.assertIn("Sensitive contract terms", reader.pages[0].extract_text())
+
+    def test_stamps_producer(self):
+        result = process_protect(make_pdf(1), "correct-horse")
+        reader = read_pdf(result)
+        reader.decrypt("correct-horse")
+        self.assertIn("NilPDF", reader.metadata.get("/Producer", ""))
+
+    def test_blank_new_password_raises(self):
+        with self.assertRaises(ValueError):
+            process_protect(make_pdf(1), "")
+
+    def test_whitespace_only_new_password_is_accepted_literally(self):
+        # A password of spaces is unusual but not blank — NilPDF doesn't second-guess it.
+        result = process_protect(make_pdf(1), "   ")
+        reader = read_pdf(result)
+        self.assertNotEqual(reader.decrypt("   "), 0)
+
+    def test_wrong_current_password_raises(self):
+        enc = make_encrypted_pdf(password="old-pw")
+        with self.assertRaises(ValueError):
+            process_protect(enc, "new-pw", password="wrong")
+
+    def test_replaces_protection_on_already_encrypted_pdf(self):
+        enc = make_encrypted_pdf(num_pages=2, password="old-pw")
+        result = process_protect(enc, "new-pw", password="old-pw")
+        reader = read_pdf(result)
+        # The old password no longer works, only the new one does.
+        self.assertEqual(reader.decrypt("old-pw"), 0)
+        reader2 = read_pdf(result)
+        self.assertNotEqual(reader2.decrypt("new-pw"), 0)
+        self.assertEqual(len(reader2.pages), 2)
 
 
 if __name__ == "__main__":

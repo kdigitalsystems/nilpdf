@@ -1,11 +1,11 @@
 {
     "name": "NilPDF — Free PDF Tools",
     "short_name": "NilPDF",
-    "description": "18 free PDF tools. Zero uploads. 100% private. Runs entirely in your browser.",
+    "description": "19 free PDF tools. Zero uploads. 100% private. Runs entirely in your browser.",
     "start_url": "./",
     "display": "standalone",
-    "background_color": "#f8fafc",
-    "theme_color": "#3b82f6",
+    "background_color": "#f3f2ee",
+    "theme_color": "#a8681f",
     "icons": [
         {
             "src": "./assets/icon.svg",

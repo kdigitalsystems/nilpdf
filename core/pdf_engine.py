@@ -755,3 +755,32 @@ def process_fill_form(js_buf, field_values, flatten=False, status_id="", passwor
     out = io.BytesIO()
     writer.write(out)
     return out.getvalue()
+
+
+def process_protect(js_buf, new_password, status_id="", password=""):
+    """Encrypt a PDF with AES-256, or replace an existing password with a new one.
+
+    `password` (if the source PDF is already encrypted) is used only to open
+    it; `new_password` becomes both the user and owner password on the output,
+    so anyone who can open the result can also do anything with it — NilPDF
+    isn't in the business of enforcing print/copy restrictions.
+    """
+    new_password = str(new_password or "")
+    if not new_password:
+        raise ValueError("Enter a password to protect this PDF.")
+
+    reader = _open_reader(_ensure_py(js_buf), password)
+    writer = PdfWriter()
+    writer.append_pages_from_reader(reader)
+
+    total = max(len(writer.pages), 1)
+    for i in range(total):
+        _post_progress(status_id, int((i + 1) / total * 60), f"Copying page {i + 1} of {total}...")
+
+    _stamp_producer(writer)
+    _post_progress(status_id, 85, "Encrypting with AES-256...")
+    writer.encrypt(user_password=new_password, owner_password=new_password, algorithm="AES-256")
+
+    out = io.BytesIO()
+    writer.write(out)
+    return out.getvalue()
