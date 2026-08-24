@@ -66,7 +66,7 @@
     <link rel="preconnect" href="https://cdn.jsdelivr.net">
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,500;9..144,600;9..144,700&family=Public+Sans:wght@400;500;600;700;800&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
     <link href="https://fonts.googleapis.com/css2?family=Dancing+Script&family=Caveat&family=Pacifico&family=Sacramento&display=swap" rel="stylesheet">
 
     <link rel="icon" href="./assets/icon.svg" type="image/svg+xml">
@@ -80,7 +80,7 @@
 
     <style>
         /* Use Inter if loaded, fall back to system stack */
-        body { font-family: 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; }
+        body { font-family: 'Public Sans', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; }
     </style>
 </head>
 <body>
@@ -94,8 +94,12 @@
         </a>
         <div class="site-nav-right">
             <a href="https://nilpdf.com/privacy/" class="nav-link">Privacy</a>
-            <button class="theme-toggle" id="theme-toggle" title="Toggle theme" aria-label="Toggle colour theme">🌓</button>
-            <button class="share-btn" id="share-btn" title="Share" aria-label="Share this tool">🔗</button>
+            <button class="theme-toggle" id="theme-toggle" title="Toggle theme" aria-label="Toggle colour theme">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3a9 9 0 1 0 9 9c0-.46-.04-.92-.1-1.36a5.4 5.4 0 0 1-7.54-7.54c-.44-.06-.9-.1-1.36-.1z"/></svg>
+            </button>
+            <button class="share-btn" id="share-btn" title="Share" aria-label="Share this tool">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><line x1="8.6" y1="10.6" x2="15.4" y2="6.4"/><line x1="8.6" y1="13.4" x2="15.4" y2="17.6"/></svg>
+            </button>
         </div>
     </div>
 </nav>
@@ -105,12 +109,13 @@
 
     <!-- Hero -->
     <section class="hero">
+        <div class="hero-bars" aria-hidden="true"><span></span><span></span><span></span><span></span><span></span></div>
         <div class="hero-badge">
-            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg>
-            100% free &amp; private
+            <span class="hero-badge-dot"></span>
+            ZERO UPLOADS &middot; RUNS ON YOUR DEVICE
         </div>
-        <h1 class="hero-title">PDF tools that<br>stay in your browser</h1>
-        <p class="hero-sub">18 free tools. Zero uploads. Completely private.</p>
+        <h1 class="hero-title">Eighteen ways to handle a PDF,<br>none of them <em>leave the room.</em></h1>
+        <p class="hero-sub">Merge, sign, redact, and rebuild documents entirely in your browser. No server ever sees the file, because there isn't one in the loop.</p>
         <button class="hero-cta" onclick="document.querySelector('.tools-section').scrollIntoView({behavior:'smooth'})">
             Browse all tools
             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg>
@@ -175,8 +180,11 @@
         <div class="tools-grid">
 
             <div class="tool-card" data-category="organize" onclick="openTool('merge')" role="button" tabindex="0">
-                <div class="tool-card-icon">
+                <div class="tool-card-top">
+                    <div class="tool-card-icon">
                     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="7" width="12" height="14" rx="2"/><rect x="9" y="3" width="12" height="14" rx="2"/><path d="M9 13l3 3-3 3"/></svg>
+                </div>
+                    <span class="tool-card-tag">Organize</span>
                 </div>
                 <div class="tool-card-body">
                     <h3>Merge PDFs</h3>
@@ -185,8 +193,11 @@
             </div>
 
             <div class="tool-card" data-category="edit" onclick="openTool('compress')" role="button" tabindex="0">
-                <div class="tool-card-icon">
+                <div class="tool-card-top">
+                    <div class="tool-card-icon">
                     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M8 3H5a2 2 0 00-2 2v3m18 0V5a2 2 0 00-2-2h-3M3 16v3a2 2 0 002 2h3m8 0h3a2 2 0 002-2v-3"/><path d="M12 8v8m-4-4l4 4 4-4"/></svg>
+                </div>
+                    <span class="tool-card-tag">Edit</span>
                 </div>
                 <div class="tool-card-body">
                     <h3>Compress PDF</h3>
@@ -195,8 +206,11 @@
             </div>
 
             <div class="tool-card" data-category="secure" onclick="openTool('anonymize')" role="button" tabindex="0">
-                <div class="tool-card-icon">
+                <div class="tool-card-top">
+                    <div class="tool-card-icon">
                     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2L4 6v5c0 4.4 3.4 8.5 8 9.5 4.6-1 8-5.1 8-9.5V6l-8-4z"/><path d="M9 12l2 2 4-4"/></svg>
+                </div>
+                    <span class="tool-card-tag">Secure</span>
                 </div>
                 <div class="tool-card-body">
                     <h3>Remove Metadata</h3>
@@ -205,8 +219,11 @@
             </div>
 
             <div class="tool-card" data-category="organize" onclick="openTool('split')" role="button" tabindex="0">
-                <div class="tool-card-icon">
+                <div class="tool-card-top">
+                    <div class="tool-card-icon">
                     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="3" x2="12" y2="21"/><rect x="2" y="5" width="8" height="14" rx="1"/><rect x="14" y="5" width="8" height="14" rx="1"/></svg>
+                </div>
+                    <span class="tool-card-tag">Organize</span>
                 </div>
                 <div class="tool-card-body">
                     <h3>Split PDF</h3>
@@ -215,8 +232,11 @@
             </div>
 
             <div class="tool-card" data-category="organize" onclick="openTool('reorder')" role="button" tabindex="0">
-                <div class="tool-card-icon">
+                <div class="tool-card-top">
+                    <div class="tool-card-icon">
                     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/><path d="M8 3l-4 3 4 3"/><path d="M16 15l4 3-4 3"/></svg>
+                </div>
+                    <span class="tool-card-tag">Organize</span>
                 </div>
                 <div class="tool-card-body">
                     <h3>Reorder Pages</h3>
@@ -225,8 +245,11 @@
             </div>
 
             <div class="tool-card" data-category="organize" onclick="openTool('rotate')" role="button" tabindex="0">
-                <div class="tool-card-icon">
+                <div class="tool-card-top">
+                    <div class="tool-card-icon">
                     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M1 4v6h6"/><path d="M3.51 15a9 9 0 102.13-9.36L1 10"/></svg>
+                </div>
+                    <span class="tool-card-tag">Organize</span>
                 </div>
                 <div class="tool-card-body">
                     <h3>Rotate Pages</h3>
@@ -235,8 +258,11 @@
             </div>
 
             <div class="tool-card" data-category="organize" onclick="openTool('remove')" role="button" tabindex="0">
-                <div class="tool-card-icon">
+                <div class="tool-card-top">
+                    <div class="tool-card-icon">
                     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="9" y1="13" x2="15" y2="13"/></svg>
+                </div>
+                    <span class="tool-card-tag">Organize</span>
                 </div>
                 <div class="tool-card-body">
                     <h3>Remove Pages</h3>
@@ -245,8 +271,11 @@
             </div>
 
             <div class="tool-card" data-category="convert" onclick="openTool('totext')" role="button" tabindex="0">
-                <div class="tool-card-icon">
+                <div class="tool-card-top">
+                    <div class="tool-card-icon">
                     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><line x1="10" y1="9" x2="8" y2="9"/></svg>
+                </div>
+                    <span class="tool-card-tag">Convert</span>
                 </div>
                 <div class="tool-card-body">
                     <h3>PDF to Text</h3>
@@ -255,8 +284,11 @@
             </div>
 
             <div class="tool-card" data-category="convert" onclick="openTool('topng')" role="button" tabindex="0">
-                <div class="tool-card-icon">
+                <div class="tool-card-top">
+                    <div class="tool-card-icon">
                     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg>
+                </div>
+                    <span class="tool-card-tag">Convert</span>
                 </div>
                 <div class="tool-card-body">
                     <h3>PDF to Images</h3>
@@ -265,8 +297,11 @@
             </div>
 
             <div class="tool-card" data-category="convert" onclick="openTool('topdf')" role="button" tabindex="0">
-                <div class="tool-card-icon">
+                <div class="tool-card-top">
+                    <div class="tool-card-icon">
                     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="12" height="12" rx="1"/><circle cx="7.5" cy="7.5" r="1"/><polyline points="3 12 7 8 11 12"/><path d="M19 8v8m0 0l-3-3m3 3l3-3"/><path d="M15 4h4a2 2 0 012 2v4"/></svg>
+                </div>
+                    <span class="tool-card-tag">Convert</span>
                 </div>
                 <div class="tool-card-body">
                     <h3>Images to PDF</h3>
@@ -275,8 +310,11 @@
             </div>
 
             <div class="tool-card" data-category="edit" onclick="openTool('watermark')" role="button" tabindex="0">
-                <div class="tool-card-icon">
+                <div class="tool-card-top">
+                    <div class="tool-card-icon">
                     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22v-5"/><path d="M9 8V2"/><path d="M15 8V2"/><rect x="5" y="8" width="14" height="9" rx="1"/><path d="M9 22h6"/></svg>
+                </div>
+                    <span class="tool-card-tag">Edit</span>
                 </div>
                 <div class="tool-card-body">
                     <h3>Watermark</h3>
@@ -285,8 +323,11 @@
             </div>
 
             <div class="tool-card" data-category="edit" onclick="openTool('pagenums')" role="button" tabindex="0">
-                <div class="tool-card-icon">
+                <div class="tool-card-top">
+                    <div class="tool-card-icon">
                     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><line x1="4" y1="9" x2="20" y2="9"/><line x1="4" y1="15" x2="20" y2="15"/><line x1="10" y1="3" x2="8" y2="21"/><line x1="16" y1="3" x2="14" y2="21"/></svg>
+                </div>
+                    <span class="tool-card-tag">Edit</span>
                 </div>
                 <div class="tool-card-body">
                     <h3>Page Numbers</h3>
@@ -295,8 +336,11 @@
             </div>
 
             <div class="tool-card" data-category="inspect" onclick="openTool('inspect')" role="button" tabindex="0">
-                <div class="tool-card-icon">
+                <div class="tool-card-top">
+                    <div class="tool-card-icon">
                     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+                </div>
+                    <span class="tool-card-tag">Inspect</span>
                 </div>
                 <div class="tool-card-body">
                     <h3>Inspect PDF</h3>
@@ -305,8 +349,11 @@
             </div>
 
             <div class="tool-card" data-category="inspect" onclick="openTool('repair')" role="button" tabindex="0">
-                <div class="tool-card-icon">
+                <div class="tool-card-top">
+                    <div class="tool-card-icon">
                     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M14.7 6.3a1 1 0 000 1.4l1.6 1.6a1 1 0 001.4 0l3.77-3.77a6 6 0 01-7.94 7.94l-6.91 6.91a2.12 2.12 0 01-3-3l6.91-6.91a6 6 0 017.94-7.94l-3.76 3.76z"/></svg>
+                </div>
+                    <span class="tool-card-tag">Inspect</span>
                 </div>
                 <div class="tool-card-body">
                     <h3>Repair PDF</h3>
@@ -315,8 +362,11 @@
             </div>
 
             <div class="tool-card" data-category="secure" onclick="openTool('redact')" role="button" tabindex="0">
-                <div class="tool-card-icon">
+                <div class="tool-card-top">
+                    <div class="tool-card-icon">
                     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="16" rx="2"/><line x1="7" y1="9" x2="13" y2="9" stroke-width="3"/><line x1="7" y1="14" x2="17" y2="14"/><line x1="7" y1="17" x2="11" y2="17"/></svg>
+                </div>
+                    <span class="tool-card-tag">Secure</span>
                 </div>
                 <div class="tool-card-body">
                     <h3>Redact PDF</h3>
@@ -325,8 +375,11 @@
             </div>
 
             <div class="tool-card" data-category="edit" onclick="openTool('edit')" role="button" tabindex="0">
-                <div class="tool-card-icon">
+                <div class="tool-card-top">
+                    <div class="tool-card-icon">
                     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20h9"/><path d="M16.5 3.5a2.12 2.12 0 013 3L7 19l-4 1 1-4L16.5 3.5z"/></svg>
+                </div>
+                    <span class="tool-card-tag">Edit</span>
                 </div>
                 <div class="tool-card-body">
                     <h3>Edit PDF</h3>
@@ -335,8 +388,11 @@
             </div>
 
             <div class="tool-card" data-category="edit" onclick="openTool('sign')" role="button" tabindex="0">
-                <div class="tool-card-icon">
+                <div class="tool-card-top">
+                    <div class="tool-card-icon">
                     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M3 17c2-4 4-2 6-6s3-6 5-2 3 6 6 2"/><path d="M3 21h18"/></svg>
+                </div>
+                    <span class="tool-card-tag">Edit</span>
                 </div>
                 <div class="tool-card-body">
                     <h3>Sign PDF</h3>
@@ -345,8 +401,11 @@
             </div>
 
             <div class="tool-card" data-category="edit" onclick="openTool('fillform')" role="button" tabindex="0">
-                <div class="tool-card-icon">
+                <div class="tool-card-top">
+                    <div class="tool-card-icon">
                     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2"/><line x1="7" y1="8" x2="17" y2="8"/><line x1="7" y1="12" x2="13" y2="12"/><path d="M7 16h2l7-7-2-2-7 7v2z"/></svg>
+                </div>
+                    <span class="tool-card-tag">Edit</span>
                 </div>
                 <div class="tool-card-body">
                     <h3>Fill PDF Forms</h3>
@@ -422,7 +481,7 @@
         <h1 id="workspace-title" class="workspace-title"></h1>
         <a href="https://nilpdf.com/security/#verify" class="local-indicator" title="This tool processes files locally in your browser — nothing is uploaded. Click to learn how to verify this yourself.">
             <span class="local-indicator-dot" aria-hidden="true"></span>
-            Local processing active
+            LOCAL &middot; NO NETWORK
         </a>
     </div>
 
@@ -761,8 +820,8 @@
 
             <div id="redact-workspace" style="display:none;">
                 <div class="redact-toolbar">
-                    <button type="button" id="redact-mode-redact" class="redact-mode-btn active">⬛ Redact</button>
-                    <button type="button" id="redact-mode-text" class="redact-mode-btn">🔤 Text</button>
+                    <button type="button" id="redact-mode-redact" class="redact-mode-btn active"><svg width="13" height="13" viewBox="0 0 24 24" fill="currentColor"><rect x="3" y="7" width="18" height="10" rx="1"/></svg> Redact</button>
+                    <button type="button" id="redact-mode-text" class="redact-mode-btn"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="4 7 4 4 20 4 20 7"/><line x1="9" y1="20" x2="15" y2="20"/><line x1="12" y1="4" x2="12" y2="20"/></svg> Text</button>
                     <span class="redact-toolbar-sep"></span>
                     <button type="button" id="redact-prev-page" class="secondary-btn">‹ Prev</button>
                     <span id="redact-page-indicator" class="redact-page-indicator">Page 1 / 1</span>
@@ -830,9 +889,9 @@
             <div id="sign-workspace" style="display:none;">
                 <div class="sign-pad">
                     <div class="sign-pad-tabs" role="tablist">
-                        <button type="button" class="sign-pad-tab active" id="sign-mode-draw" role="tab" aria-selected="true">✍️ Draw</button>
-                        <button type="button" class="sign-pad-tab" id="sign-mode-type" role="tab" aria-selected="false">🔤 Type</button>
-                        <button type="button" class="sign-pad-tab" id="sign-mode-upload" role="tab" aria-selected="false">🖼️ Upload</button>
+                        <button type="button" class="sign-pad-tab active" id="sign-mode-draw" role="tab" aria-selected="true"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 17c3-6 4-9 6-9s2 5 4 5 3-4 5-4 2 3 3 3"/></svg> Draw</button>
+                        <button type="button" class="sign-pad-tab" id="sign-mode-type" role="tab" aria-selected="false"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="4 7 4 4 20 4 20 7"/><line x1="9" y1="20" x2="15" y2="20"/><line x1="12" y1="4" x2="12" y2="20"/></svg> Type</button>
+                        <button type="button" class="sign-pad-tab" id="sign-mode-upload" role="tab" aria-selected="false"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg> Upload</button>
                     </div>
 
                     <div id="sign-pad-draw" class="sign-pad-panel">
@@ -2892,7 +2951,7 @@
             const canvas = el('draw-canvas');
             const ctx = canvas.getContext('2d');
             let drawing = false, lastX = 0, lastY = 0, activePointerId = null;
-            ctx.strokeStyle = '#0f172a';
+            ctx.strokeStyle = '#15181d';
             ctx.lineWidth = 2.5;
             ctx.lineCap = 'round';
             ctx.lineJoin = 'round';
@@ -2985,7 +3044,7 @@
                 const ctx = off.getContext('2d');
                 ctx.font = `${fontSize}px "${family}", cursive`;
                 ctx.textBaseline = 'middle';
-                ctx.fillStyle = '#0f172a';
+                ctx.fillStyle = '#15181d';
                 ctx.fillText(text, padding, off.height / 2);
                 return { dataUrl: off.toDataURL('image/png'), aspect: off.width / off.height };
             }
