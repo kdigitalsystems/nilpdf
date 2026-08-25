@@ -107,6 +107,86 @@ def _stamp_producer(writer):
     writer.add_metadata({'/Producer': 'NilPDF (nilpdf.com)'})
 
 
+# ── Shared page-overlay helper (used by Edit, Sign, and Fill & Sign) ───────
+
+def _draw_overlay(w, h, redacts=(), texts=(), signatures=()):
+    """Draw redaction boxes, text notes, and/or signature images onto a blank
+    page-sized reportlab canvas. Returns the resulting overlay page (from a
+    fresh PdfReader) if anything was actually drawn, or None if every item
+    was empty or failed to decode — callers should skip merging in that case
+    rather than reading pages[0] of a reportlab canvas with zero pages, which
+    is what save() produces when nothing was drawn on it.
+    """
+    import base64
+    from reportlab.pdfgen import canvas as rl_canvas
+    from reportlab.lib.colors import black
+    from reportlab.lib.utils import ImageReader
+
+    buf = io.BytesIO()
+    c = rl_canvas.Canvas(buf, pagesize=(w, h))
+    drawn_any = False
+
+    for edit in redacts:
+        c.setFillColor(black)
+        c.rect(float(edit.get("x", 0)), float(edit.get("y", 0)),
+               float(edit.get("width", 0)), float(edit.get("height", 0)),
+               stroke=0, fill=1)
+        drawn_any = True
+
+    for edit in texts:
+        size = float(edit.get("size") or 12)
+        c.setFillColor(black)
+        c.setFont("Helvetica", size)
+        c.drawString(float(edit.get("x", 0)), float(edit.get("y", 0)), str(edit.get("text", "")))
+        drawn_any = True
+
+    for sig in signatures:
+        raw = str(sig.get("image", ""))
+        if raw.startswith("data:") and "," in raw:
+            raw = raw.split(",", 1)[1]
+        try:
+            img = ImageReader(io.BytesIO(base64.b64decode(raw)))
+            c.drawImage(
+                img,
+                float(sig.get("x", 0)), float(sig.get("y", 0)),
+                width=float(sig.get("width", 100)), height=float(sig.get("height", 40)),
+                mask="auto", preserveAspectRatio=False,
+            )
+            drawn_any = True
+        except Exception:
+            continue
+
+    if not drawn_any:
+        return None
+    c.save()
+    buf.seek(0)
+    return PdfReader(buf).pages[0]
+
+
+def _merge_overlay(page, overlay_page):
+    try:
+        page.merge_page(overlay_page, over=True)
+    except TypeError:
+        page.merge_page(overlay_page)  # older pypdf without `over` param
+
+
+def _flatten_form_fields(writer):
+    """Remove the interactive AcroForm and widget annotations after their
+    filled appearances have already been baked in by
+    update_page_form_field_values(flatten=True), leaving a non-interactive PDF.
+    """
+    from pypdf.generic import NameObject, ArrayObject
+
+    for page in writer.pages:
+        if "/Annots" in page:
+            kept = [a for a in page["/Annots"] if a.get_object().get("/Subtype") != "/Widget"]
+            if kept:
+                page[NameObject("/Annots")] = ArrayObject(kept)
+            else:
+                del page["/Annots"]
+    writer._root_object.pop("/AcroForm", None)
+
+
 # ── Existing tools ─────────────────────────────────────────────────────────
 
 def process_compress(js_buf, status_id="", password=""):
@@ -523,8 +603,7 @@ def process_edit(js_buf, edits, status_id="", password=""):
     from canvas/screen pixel coordinates before sending.
     """
     try:
-        from reportlab.pdfgen import canvas as rl_canvas
-        from reportlab.lib.colors import black
+        import reportlab  # noqa: F401 — presence check only; _draw_overlay imports what it needs
     except ImportError:
         raise ImportError("Edit requires reportlab. Please reload the page.")
 
@@ -545,28 +624,11 @@ def process_edit(js_buf, edits, status_id="", password=""):
             page = writer.pages[i]
             w = float(page.mediabox.width)
             h = float(page.mediabox.height)
-
-            overlay_buf = io.BytesIO()
-            c = rl_canvas.Canvas(overlay_buf, pagesize=(w, h))
-            for edit in page_edits:
-                if edit.get("type") == "redact":
-                    c.setFillColor(black)
-                    c.rect(float(edit.get("x", 0)), float(edit.get("y", 0)),
-                           float(edit.get("width", 0)), float(edit.get("height", 0)),
-                           stroke=0, fill=1)
-                elif edit.get("type") == "text":
-                    size = float(edit.get("size") or 12)
-                    c.setFillColor(black)
-                    c.setFont("Helvetica", size)
-                    c.drawString(float(edit.get("x", 0)), float(edit.get("y", 0)), str(edit.get("text", "")))
-            c.save()
-            overlay_buf.seek(0)
-
-            overlay_page = PdfReader(overlay_buf).pages[0]
-            try:
-                page.merge_page(overlay_page, over=True)
-            except TypeError:
-                page.merge_page(overlay_page)  # older pypdf without `over` param
+            redacts = [e for e in page_edits if e.get("type") == "redact"]
+            texts = [e for e in page_edits if e.get("type") == "text"]
+            overlay_page = _draw_overlay(w, h, redacts=redacts, texts=texts)
+            if overlay_page is not None:
+                _merge_overlay(page, overlay_page)
 
         _post_progress(status_id, int((i + 1) / total * 90), f"Editing page {i + 1} of {total}...")
 
@@ -650,10 +712,8 @@ def process_sign(js_buf, signatures, status_id="", password=""):
     canvas/screen pixel coordinates before sending. A signature with
     unreadable image data is skipped rather than failing the whole document.
     """
-    import base64
     try:
-        from reportlab.pdfgen import canvas as rl_canvas
-        from reportlab.lib.utils import ImageReader
+        import reportlab  # noqa: F401 — presence check only; _draw_overlay imports what it needs
     except ImportError:
         raise ImportError("Sign requires reportlab. Please reload the page.")
 
@@ -674,37 +734,9 @@ def process_sign(js_buf, signatures, status_id="", password=""):
             page = writer.pages[i]
             w = float(page.mediabox.width)
             h = float(page.mediabox.height)
-
-            overlay_buf = io.BytesIO()
-            c = rl_canvas.Canvas(overlay_buf, pagesize=(w, h))
-            drawn_any = False
-            for sig in page_sigs:
-                raw = str(sig.get("image", ""))
-                if raw.startswith("data:") and "," in raw:
-                    raw = raw.split(",", 1)[1]
-                try:
-                    img = ImageReader(io.BytesIO(base64.b64decode(raw)))
-                    c.drawImage(
-                        img,
-                        float(sig.get("x", 0)), float(sig.get("y", 0)),
-                        width=float(sig.get("width", 100)), height=float(sig.get("height", 40)),
-                        mask="auto", preserveAspectRatio=False,
-                    )
-                    drawn_any = True
-                except Exception:
-                    continue
-            # A reportlab canvas with no successful drawing calls emits zero
-            # pages on save() (a failed drawImage doesn't necessarily leave a
-            # blank page behind). Skip the merge entirely rather than reading
-            # pages[0] of an empty PDF.
-            if drawn_any:
-                c.save()
-                overlay_buf.seek(0)
-                overlay_page = PdfReader(overlay_buf).pages[0]
-                try:
-                    page.merge_page(overlay_page, over=True)
-                except TypeError:
-                    page.merge_page(overlay_page)  # older pypdf without `over` param
+            overlay_page = _draw_overlay(w, h, signatures=page_sigs)
+            if overlay_page is not None:
+                _merge_overlay(page, overlay_page)
 
         _post_progress(status_id, int((i + 1) / total * 90), f"Signing page {i + 1} of {total}...")
 
@@ -723,8 +755,6 @@ def process_fill_form(js_buf, field_values, flatten=False, status_id="", passwor
     into each page's content stream and the interactive widgets/AcroForm are
     removed entirely, so the result is no longer editable as a form.
     """
-    from pypdf.generic import NameObject, ArrayObject
-
     reader = _open_reader(_ensure_py(js_buf), password)
     writer = PdfWriter()
     writer.append(reader)
@@ -741,14 +771,7 @@ def process_fill_form(js_buf, field_values, flatten=False, status_id="", passwor
 
     if flatten:
         _post_progress(status_id, 70, "Flattening form...")
-        for page in writer.pages:
-            if "/Annots" in page:
-                kept = [a for a in page["/Annots"] if a.get_object().get("/Subtype") != "/Widget"]
-                if kept:
-                    page[NameObject("/Annots")] = ArrayObject(kept)
-                else:
-                    del page["/Annots"]
-        writer._root_object.pop("/AcroForm", None)
+        _flatten_form_fields(writer)
 
     _post_progress(status_id, 95, "Writing output...")
     _stamp_producer(writer)
@@ -778,6 +801,75 @@ def process_protect(js_buf, new_password, status_id="", password=""):
     _post_progress(status_id, 60, "Encrypting with AES-256...")
     writer.encrypt(user_password=new_password, owner_password=new_password, algorithm="AES-256")
 
+    out = io.BytesIO()
+    writer.write(out)
+    return out.getvalue()
+
+
+def process_fill_and_sign(js_buf, field_values, edits, signatures, flatten=False, status_id="", password=""):
+    """Combine form-filling, free text notes, and signature images in one pass.
+
+    `field_values` maps AcroForm field name to value, same as process_fill_form
+    — pass an empty dict if the PDF has no fields to fill, in which case the
+    form-filling step (and its "no fillable fields" check) is skipped entirely
+    rather than treated as an error, since this tool also serves flat PDFs with
+    no form fields at all. `edits` is a list of
+    {"page","type":"text","x","y","text","size"} dicts, the same shape
+    process_edit takes. `signatures` is a list of
+    {"page","x","y","width","height","image"} dicts, the same shape
+    process_sign takes. `flatten` bakes filled field values into the page and
+    removes the interactive AcroForm, same as process_fill_form; it only
+    applies when `field_values` is non-empty. Text notes and signatures are
+    always flattened into the page content — there's no non-flattened mode
+    for those, matching process_edit and process_sign.
+    """
+    try:
+        import reportlab  # noqa: F401 — presence check only; _draw_overlay imports what it needs
+    except ImportError:
+        raise ImportError("Fill & Sign requires reportlab. Please reload the page.")
+
+    reader = _open_reader(_ensure_py(js_buf), password)
+    writer = PdfWriter()
+    writer.append(reader)
+
+    values = dict(_ensure_py(field_values) or {})
+    if values:
+        if "/AcroForm" not in writer._root_object:
+            raise ValueError("This PDF has no fillable form fields.")
+        _post_progress(status_id, 15, "Filling form fields...")
+        try:
+            writer.update_page_form_field_values(None, values, auto_regenerate=not flatten, flatten=bool(flatten))
+        except Exception as exc:
+            raise ValueError(f"Could not fill form fields: {exc}")
+
+        if flatten:
+            _flatten_form_fields(writer)
+
+    edits_by_page = {}
+    for edit in _ensure_py(edits) or []:
+        edit = dict(edit)
+        edits_by_page.setdefault(int(edit.get("page", 0)), []).append(edit)
+
+    sigs_by_page = {}
+    for sig in _ensure_py(signatures) or []:
+        sig = dict(sig)
+        sigs_by_page.setdefault(int(sig.get("page", 0)), []).append(sig)
+
+    total = len(writer.pages)
+    for i in range(total):
+        page_edits = edits_by_page.get(i) or []
+        page_sigs = sigs_by_page.get(i) or []
+        if page_edits or page_sigs:
+            page = writer.pages[i]
+            w = float(page.mediabox.width)
+            h = float(page.mediabox.height)
+            overlay_page = _draw_overlay(w, h, texts=page_edits, signatures=page_sigs)
+            if overlay_page is not None:
+                _merge_overlay(page, overlay_page)
+
+        _post_progress(status_id, int((i + 1) / total * 90), f"Applying page {i + 1} of {total}...")
+
+    _stamp_producer(writer)
     out = io.BytesIO()
     writer.write(out)
     return out.getvalue()

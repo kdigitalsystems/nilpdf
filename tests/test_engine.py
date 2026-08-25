@@ -23,6 +23,7 @@ from core.pdf_engine import (
     process_sign,
     process_fill_form,
     process_protect,
+    process_fill_and_sign,
 )
 
 
@@ -783,6 +784,77 @@ class TestProtect(unittest.TestCase):
         reader2 = read_pdf(result)
         self.assertNotEqual(reader2.decrypt("new-pw"), 0)
         self.assertEqual(len(reader2.pages), 2)
+
+
+# ── Fill & Sign ──────────────────────────────────────────────────────────────
+
+class TestFillAndSign(unittest.TestCase):
+    def test_fills_field_only(self):
+        result = process_fill_and_sign(make_form_pdf(), {"name_field": "Saqib Khan"}, [], [])
+        self.assertEqual(read_pdf(result).get_fields()["name_field"]["/V"], "Saqib Khan")
+
+    def test_adds_text_only_on_plain_pdf(self):
+        edits = [{"page": 0, "type": "text", "x": 5, "y": 5, "text": "2026-08-24", "size": 12}]
+        result = process_fill_and_sign(make_pdf(1), {}, edits, [])
+        self.assertIn("2026-08-24", read_pdf(result).pages[0].extract_text())
+
+    def test_adds_signature_only_on_plain_pdf(self):
+        sigs = [{"page": 0, "x": 5, "y": 5, "width": 40, "height": 20, "image": make_signature_png_base64()}]
+        result = process_fill_and_sign(make_pdf(1), {}, [], sigs)
+        self.assertEqual(len(read_pdf(result).pages), 1)
+
+    def test_combines_fields_text_and_signature(self):
+        edits = [{"page": 0, "type": "text", "x": 5, "y": 5, "text": "Signed on 2026-08-24", "size": 12}]
+        sigs = [{"page": 0, "x": 50, "y": 50, "width": 40, "height": 20, "image": make_signature_png_base64()}]
+        result = process_fill_and_sign(make_form_pdf(), {"name_field": "Saqib Khan"}, edits, sigs)
+        reader = read_pdf(result)
+        self.assertEqual(reader.get_fields()["name_field"]["/V"], "Saqib Khan")
+        self.assertIn("Signed on 2026-08-24", reader.pages[0].extract_text())
+
+    def test_flatten_removes_form_fields(self):
+        result = process_fill_and_sign(make_form_pdf(), {"name_field": "Saqib"}, [], [], flatten=True)
+        reader = read_pdf(result)
+        self.assertIsNone(reader.get_fields())
+        self.assertNotIn("/Annots", reader.pages[0])
+
+    def test_no_flatten_keeps_fields_editable(self):
+        result = process_fill_and_sign(make_form_pdf(), {"name_field": "Saqib"}, [], [], flatten=False)
+        reader = read_pdf(result)
+        self.assertIsNotNone(reader.get_fields())
+
+    def test_field_values_on_pdf_without_acroform_raises(self):
+        with self.assertRaises(ValueError):
+            process_fill_and_sign(make_pdf(1), {"anything": "value"}, [], [])
+
+    def test_empty_field_values_on_plain_pdf_does_not_raise(self):
+        result = process_fill_and_sign(make_pdf(2), {}, [], [])
+        self.assertEqual(len(read_pdf(result).pages), 2)
+
+    def test_targets_only_specified_page(self):
+        edits = [{"page": 2, "type": "text", "x": 5, "y": 5, "text": "note", "size": 12}]
+        result = process_fill_and_sign(make_pdf(3), {}, edits, [])
+        reader = read_pdf(result)
+        self.assertEqual(len(reader.pages), 3)
+        self.assertIn("note", reader.pages[2].extract_text())
+        self.assertNotIn("note", reader.pages[0].extract_text())
+
+    def test_invalid_signature_image_is_skipped_not_fatal(self):
+        sigs = [{"page": 0, "x": 0, "y": 0, "width": 40, "height": 20, "image": "not-valid-base64!!"}]
+        result = process_fill_and_sign(make_pdf(1), {}, [], sigs)
+        self.assertEqual(len(read_pdf(result).pages), 1)
+
+    def test_stamps_producer(self):
+        result = process_fill_and_sign(make_pdf(1), {}, [], [])
+        self.assertIn("NilPDF", producer_of(result))
+
+    def test_wrong_password_raises(self):
+        with self.assertRaises(ValueError):
+            process_fill_and_sign(make_form_pdf(password="secret"), {}, [], [], password="wrong")
+
+    def test_correct_password_works(self):
+        enc = make_form_pdf(password="secret")
+        result = process_fill_and_sign(enc, {"name_field": "Saqib"}, [], [], password="secret")
+        self.assertEqual(read_pdf(result).get_fields()["name_field"]["/V"], "Saqib")
 
 
 if __name__ == "__main__":

@@ -545,6 +545,7 @@ TOOLS = [
         'related': [
             ('edit-pdf', 'Edit PDF'),
             ('redact-pdf', 'Redact PDF'),
+            ('fill-and-sign-pdf', 'Fill & Sign PDF'),
         ],
         'extra_json_ld': '''    <script type="application/ld+json">
     {
@@ -643,6 +644,7 @@ TOOLS = [
             ('edit-pdf', 'Edit PDF'),
             ('fill-pdf-forms', 'Fill PDF Forms'),
             ('protect-pdf', 'Protect PDF'),
+            ('fill-and-sign-pdf', 'Fill & Sign PDF'),
         ],
         'extra_json_ld': '''    <script type="application/ld+json">
     {
@@ -650,6 +652,56 @@ TOOLS = [
       "@type": "SoftwareApplication",
       "name": "NilPDF Sign PDF",
       "url": "https://nilpdf.com/sign-pdf/",
+      "applicationCategory": "UtilitiesApplication",
+      "operatingSystem": "Any (browser-based)",
+      "browserRequirements": "Requires a modern browser with JavaScript enabled",
+      "offers": {"@type": "Offer", "price": "0", "priceCurrency": "USD"}
+    }
+    </script>
+''',
+    },
+    {
+        'slug': 'fill-and-sign-pdf',
+        'tool_id': 'fillsign',
+        'title': 'Fill & Sign PDF Online Free — NilPDF',
+        'h1': 'Fill & Sign PDF',
+        'tagline': 'Fill in form fields, write in blanks or dates, and sign — all in one pass. Free and private.',
+        'description': 'Free online tool to fill in a PDF, write text anywhere on the page, and sign it, all in one workspace. No uploads, runs entirely in your browser.',
+        'keywords': 'fill and sign pdf, fill in pdf and sign, pdf form fill sign online free, sign and date pdf',
+        'bullets': [
+            'Detects and fills real AcroForm fields automatically, if the PDF has them',
+            'Click anywhere to write in a blank, a date, or a note — works on any PDF',
+            'Draw, type, or upload a signature and place it on the page',
+            'Optional flatten step locks in filled form fields',
+            'No uploads — your file and signature never leave your device',
+        ],
+        'body_text': 'NilPDF Fill & Sign combines three steps that used to be three separate tools into one pass: if your PDF has real fillable fields, they\'re detected and highlighted automatically so you can type straight into them; anywhere else on the page, switch to Text mode and click to write in a blank, a date, or a note; then switch to Sign mode to draw, type, or upload a signature and drag it into place. One "Apply & Download" bakes everything in and downloads the finished PDF. Nothing is ever uploaded to a server — form detection, filling, writing, and signing all happen locally in your browser.',
+        'how_to_name': 'How to fill in and sign a PDF',
+        'how_to_steps': [
+            ('Open NilPDF Fill & Sign', 'Visit nilpdf.com and select the Fill & Sign tool.'),
+            ('Upload your PDF', 'Drop your PDF or click Browse. Fillable fields, if any, are detected automatically.'),
+            ('Fill and write', 'Type into detected fields, and use Text mode to click anywhere else and add notes or dates.'),
+            ('Sign', 'Switch to Sign mode, draw, type, or upload a signature, then drag it into position.'),
+            ('Apply', 'Click "Apply & Download" and the finished PDF downloads automatically.'),
+        ],
+        'faq': [
+            ('Is this really free?', 'Yes. Completely free, unlimited use, no account required.'),
+            ('Are my PDF files safe when I use this?', 'Yes. Your file and your signature never leave your device. Everything runs in your browser using WebAssembly. NilPDF has no backend server.'),
+            ('What if my PDF has no fillable form fields?', "That's fine — the Fields option only appears if NilPDF detects real AcroForm fields. On any other PDF you can still switch to Text mode and click anywhere to write in a blank or a date, then sign it."),
+            ('Is the signature a legally binding digital signature?', 'No. It creates a visual signature, a picture of a signature placed on the page. It is not a certificate-based digital signature, and NilPDF makes no guarantee that it meets the legal requirements for your document.'),
+            ('Can I use this on a password-protected PDF?', 'Yes. Enter the password when prompted and NilPDF will decrypt the file locally before you fill it in or sign it.'),
+        ],
+        'related': [
+            ('fill-pdf-forms', 'Fill PDF Forms'),
+            ('sign-pdf', 'Sign PDF'),
+            ('edit-pdf', 'Edit PDF'),
+        ],
+        'extra_json_ld': '''    <script type="application/ld+json">
+    {
+      "@context": "https://schema.org",
+      "@type": "SoftwareApplication",
+      "name": "NilPDF Fill & Sign PDF",
+      "url": "https://nilpdf.com/fill-and-sign-pdf/",
       "applicationCategory": "UtilitiesApplication",
       "operatingSystem": "Any (browser-based)",
       "browserRequirements": "Requires a modern browser with JavaScript enabled",
@@ -781,7 +833,7 @@ PAGE_TEMPLATE = '''<!DOCTYPE html>
 {related_items}
         </nav>
         <footer>
-            <p>Part of <a href="https://nilpdf.com/">NilPDF</a> — 19 free PDF tools, zero uploads.</p>
+            <p>Part of <a href="https://nilpdf.com/">NilPDF</a> — 20 free PDF tools, zero uploads.</p>
         </footer>
     </div>
 </body>

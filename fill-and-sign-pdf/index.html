@@ -11,17 +11,17 @@
     </script>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>PDF to Images — Convert PDF to JPG/PNG Free — NilPDF</title>
-    <meta name="description" content="Free online PDF to image converter. Export each page as JPG or PNG. No uploads — runs entirely in your browser.">
-    <meta name="keywords" content="pdf to jpg, pdf to png, pdf to image, convert pdf to jpg free">
-    <link rel="canonical" href="https://nilpdf.com/pdf-to-images/">
-    <meta property="og:title" content="PDF to Images — NilPDF">
-    <meta property="og:description" content="Free online PDF to image converter. Export each page as JPG or PNG. No uploads — runs entirely in your browser.">
+    <title>Fill & Sign PDF Online Free — NilPDF</title>
+    <meta name="description" content="Free online tool to fill in a PDF, write text anywhere on the page, and sign it, all in one workspace. No uploads, runs entirely in your browser.">
+    <meta name="keywords" content="fill and sign pdf, fill in pdf and sign, pdf form fill sign online free, sign and date pdf">
+    <link rel="canonical" href="https://nilpdf.com/fill-and-sign-pdf/">
+    <meta property="og:title" content="Fill & Sign PDF — NilPDF">
+    <meta property="og:description" content="Free online tool to fill in a PDF, write text anywhere on the page, and sign it, all in one workspace. No uploads, runs entirely in your browser.">
     <meta property="og:type" content="website">
-    <meta property="og:url" content="https://nilpdf.com/pdf-to-images/">
+    <meta property="og:url" content="https://nilpdf.com/fill-and-sign-pdf/">
     <meta property="og:image" content="https://nilpdf.com/assets/og-image.png">
     <meta name="twitter:card" content="summary_large_image">
-    <meta name="twitter:title" content="PDF to Images — NilPDF">
+    <meta name="twitter:title" content="Fill & Sign PDF — NilPDF">
     <meta name="twitter:image" content="https://nilpdf.com/assets/og-image.png">
     <link rel="icon" href="https://nilpdf.com/assets/icon.svg" type="image/svg+xml">
     <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -31,33 +31,39 @@
     {
       "@context": "https://schema.org",
       "@type": "HowTo",
-      "name": "How to convert PDF to images",
-      "description": "Free online PDF to image converter. Export each page as JPG or PNG. No uploads — runs entirely in your browser.",
+      "name": "How to fill in and sign a PDF",
+      "description": "Free online tool to fill in a PDF, write text anywhere on the page, and sign it, all in one workspace. No uploads, runs entirely in your browser.",
       "tool": {"@type": "HowToTool", "name": "NilPDF"},
       "step": [
       {
             "@type": "HowToStep",
             "position": 1,
-            "name": "Open NilPDF PDF to Images",
-            "text": "Visit nilpdf.com and select the PDF to Images tool."
+            "name": "Open NilPDF Fill & Sign",
+            "text": "Visit nilpdf.com and select the Fill & Sign tool."
       },
       {
             "@type": "HowToStep",
             "position": 2,
             "name": "Upload your PDF",
-            "text": "Drop your PDF or click Browse."
+            "text": "Drop your PDF or click Browse. Fillable fields, if any, are detected automatically."
       },
       {
             "@type": "HowToStep",
             "position": 3,
-            "name": "Choose format",
-            "text": "Select JPG or PNG from the dropdown."
+            "name": "Fill and write",
+            "text": "Type into detected fields, and use Text mode to click anywhere else and add notes or dates."
       },
       {
             "@type": "HowToStep",
             "position": 4,
-            "name": "Convert",
-            "text": "Click \"Convert to Images\" — a ZIP of all pages downloads."
+            "name": "Sign",
+            "text": "Switch to Sign mode, draw, type, or upload a signature, then drag it into position."
+      },
+      {
+            "@type": "HowToStep",
+            "position": 5,
+            "name": "Apply",
+            "text": "Click \"Apply & Download\" and the finished PDF downloads automatically."
       }
 ]
     }
@@ -69,20 +75,42 @@
       "mainEntity": [
         {
           "@type": "Question",
-          "name": "Is converting PDF to images really free?",
-          "acceptedAnswer": {"@type": "Answer", "text": "Yes — completely free, unlimited use, no account required."}
+          "name": "Is this really free?",
+          "acceptedAnswer": {"@type": "Answer", "text": "Yes. Completely free, unlimited use, no account required."}
         },
         {
           "@type": "Question",
-          "name": "Are my PDF files safe when I convert them to images?",
-          "acceptedAnswer": {"@type": "Answer", "text": "Yes. Your files never leave your device. Everything runs in your browser using WebAssembly. NilPDF has no backend server."}
+          "name": "Are my PDF files safe when I use this?",
+          "acceptedAnswer": {"@type": "Answer", "text": "Yes. Your file and your signature never leave your device. Everything runs in your browser using WebAssembly. NilPDF has no backend server."}
         },
         {
           "@type": "Question",
-          "name": "What resolution are the exported images?",
-          "acceptedAnswer": {"@type": "Answer", "text": "Pages are exported at 150 DPI by default, suitable for screen use and presentations."}
+          "name": "What if my PDF has no fillable form fields?",
+          "acceptedAnswer": {"@type": "Answer", "text": "That's fine — the Fields option only appears if NilPDF detects real AcroForm fields. On any other PDF you can still switch to Text mode and click anywhere to write in a blank or a date, then sign it."}
+        },
+        {
+          "@type": "Question",
+          "name": "Is the signature a legally binding digital signature?",
+          "acceptedAnswer": {"@type": "Answer", "text": "No. It creates a visual signature, a picture of a signature placed on the page. It is not a certificate-based digital signature, and NilPDF makes no guarantee that it meets the legal requirements for your document."}
+        },
+        {
+          "@type": "Question",
+          "name": "Can I use this on a password-protected PDF?",
+          "acceptedAnswer": {"@type": "Answer", "text": "Yes. Enter the password when prompted and NilPDF will decrypt the file locally before you fill it in or sign it."}
         }
       ]
+    }
+    </script>
+    <script type="application/ld+json">
+    {
+      "@context": "https://schema.org",
+      "@type": "SoftwareApplication",
+      "name": "NilPDF Fill & Sign PDF",
+      "url": "https://nilpdf.com/fill-and-sign-pdf/",
+      "applicationCategory": "UtilitiesApplication",
+      "operatingSystem": "Any (browser-based)",
+      "browserRequirements": "Requires a modern browser with JavaScript enabled",
+      "offers": {"@type": "Offer", "price": "0", "priceCurrency": "USD"}
     }
     </script>
     <style>
@@ -138,16 +166,17 @@
     <div class="container">
         <a class="back" href="https://nilpdf.com/">← All PDF tools</a>
         <a class="brand" href="https://nilpdf.com/">NilPDF</a>
-        <h1>PDF to Images</h1>
-        <p class="tagline">Convert every page of a PDF to JPG or PNG images — free, instant, private.</p>
-        <a class="cta" href="https://nilpdf.com/#topng">Use this tool free →</a>
+        <h1>Fill & Sign PDF</h1>
+        <p class="tagline">Fill in form fields, write in blanks or dates, and sign — all in one pass. Free and private.</p>
+        <a class="cta" href="https://nilpdf.com/#fillsign">Use this tool free →</a>
         <ul class="bullets">
-            <li>Converts every page to a separate image</li>
-            <li>Choose JPG (smaller) or PNG (lossless)</li>
-            <li>Downloads all images in a ZIP file</li>
-            <li>Runs locally — no server, no uploads</li>
+            <li>Detects and fills real AcroForm fields automatically, if the PDF has them</li>
+            <li>Click anywhere to write in a blank, a date, or a note — works on any PDF</li>
+            <li>Draw, type, or upload a signature and place it on the page</li>
+            <li>Optional flatten step locks in filled form fields</li>
+            <li>No uploads — your file and signature never leave your device</li>
         </ul>
-        <p class="body-text">NilPDF converts each PDF page to a separate JPG or PNG image directly in your browser. Every page is rendered locally using WebAssembly — no cloud service, no upload limits, and your documents stay completely private. All images are bundled into a convenient ZIP file ready to download.</p>
+        <p class="body-text">NilPDF Fill & Sign combines three steps that used to be three separate tools into one pass: if your PDF has real fillable fields, they're detected and highlighted automatically so you can type straight into them; anywhere else on the page, switch to Text mode and click to write in a blank, a date, or a note; then switch to Sign mode to draw, type, or upload a signature and drag it into place. One "Apply & Download" bakes everything in and downloads the finished PDF. Nothing is ever uploaded to a server — form detection, filling, writing, and signing all happen locally in your browser.</p>
         <div class="privacy-strip">
             <strong>100% private.</strong> Your files are processed entirely inside your browser using WebAssembly.
             Nothing is uploaded to any server. NilPDF has no backend — there is no server to send your files to.
@@ -155,22 +184,31 @@
         <section class="faq">
             <h2>Frequently Asked Questions</h2>
             <div class="faq-item">
-                <h3>Is converting PDF to images really free?</h3>
-                <p>Yes — completely free, unlimited use, no account required.</p>
+                <h3>Is this really free?</h3>
+                <p>Yes. Completely free, unlimited use, no account required.</p>
             </div>
             <div class="faq-item">
-                <h3>Are my PDF files safe when I convert them to images?</h3>
+                <h3>Are my PDF files safe when I use this?</h3>
                 <p>Your files never leave your device. All processing happens in your browser using WebAssembly (Pyodide). NilPDF has no server — there is nothing to upload to.</p>
             </div>
             <div class="faq-item">
-                <h3>What resolution are the exported images?</h3>
-                <p>Pages are exported at 150 DPI by default, suitable for screen use and presentations.</p>
+                <h3>What if my PDF has no fillable form fields?</h3>
+                <p>That's fine — the Fields option only appears if NilPDF detects real AcroForm fields. On any other PDF you can still switch to Text mode and click anywhere to write in a blank or a date, then sign it.</p>
+            </div>
+            <div class="faq-item">
+                <h3>Is the signature a legally binding digital signature?</h3>
+                <p>No. It creates a visual signature, a picture of a signature placed on the page. It is not a certificate-based digital signature, and NilPDF makes no guarantee that it meets the legal requirements for your document.</p>
+            </div>
+            <div class="faq-item">
+                <h3>Can I use this on a password-protected PDF?</h3>
+                <p>Yes. Enter the password when prompted and NilPDF will decrypt the file locally before you fill it in or sign it.</p>
             </div>
         </section>
         <nav class="related-tools">
             <p>Other free PDF tools:</p>
-            <a href="https://nilpdf.com/images-to-pdf/">Images to PDF</a>
-            <a href="https://nilpdf.com/pdf-to-text/">PDF to Text</a>
+            <a href="https://nilpdf.com/fill-pdf-forms/">Fill PDF Forms</a>
+            <a href="https://nilpdf.com/sign-pdf/">Sign PDF</a>
+            <a href="https://nilpdf.com/edit-pdf/">Edit PDF</a>
         </nav>
         <footer>
             <p>Part of <a href="https://nilpdf.com/">NilPDF</a> — 20 free PDF tools, zero uploads.</p>

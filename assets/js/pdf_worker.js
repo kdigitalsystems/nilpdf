@@ -189,6 +189,8 @@ self.onmessage = async (event) => {
             result_py = self.pyodide.globals.get('process_fill_form')(payload.buffer, payload.fields, payload.flatten, id, password);
         } else if (action === 'PROTECT') {
             result_py = self.pyodide.globals.get('process_protect')(payload.buffer, payload.newPassword, id, password);
+        } else if (action === 'FILL_AND_SIGN') {
+            result_py = self.pyodide.globals.get('process_fill_and_sign')(payload.buffer, payload.fields, payload.edits, payload.signatures, payload.flatten, id, password);
         } else {
             throw new Error(`Unknown action: ${action}`);
         }
