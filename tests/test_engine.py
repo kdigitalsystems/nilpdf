@@ -232,9 +232,13 @@ class TestReorder(unittest.TestCase):
         result = process_reorder(make_pdf(3), [2, 1, 0])
         self.assertEqual(len(read_pdf(result).pages), 3)
 
-    def test_ignores_out_of_bounds_indices(self):
-        result = process_reorder(make_pdf(3), [0, 1, 99])
-        self.assertEqual(len(read_pdf(result).pages), 2)
+    def test_out_of_bounds_index_raises(self):
+        with self.assertRaises(ValueError):
+            process_reorder(make_pdf(3), [0, 1, 99])
+
+    def test_empty_order_raises(self):
+        with self.assertRaises(ValueError):
+            process_reorder(make_pdf(3), [])
 
     def test_stamps_producer(self):
         result = process_reorder(make_pdf(3), [0, 1, 2])
@@ -328,6 +332,10 @@ class TestRotate(unittest.TestCase):
     def test_wrong_password_raises(self):
         with self.assertRaises(ValueError):
             process_rotate(make_encrypted_pdf(password="x"), degrees=90, page_indices=[], password="wrong")
+
+    def test_out_of_range_index_raises_rather_than_silently_doing_nothing(self):
+        with self.assertRaises(ValueError):
+            process_rotate(make_pdf(3), degrees=90, page_indices=[99])
 
 
 # ── Remove pages ───────────────────────────────────────────────────────────
@@ -464,6 +472,25 @@ class TestBulk(unittest.TestCase):
         result = process_bulk("COMPRESS", names, buffers)
         with zipfile.ZipFile(io.BytesIO(result)) as zf:
             self.assertIn("report_compressed.pdf", zf.namelist())
+
+    def test_one_bad_file_does_not_lose_the_rest_of_the_batch(self):
+        # A wrong-password file in the middle of the batch used to raise and
+        # discard the entire in-progress zip, including files already
+        # successfully processed before it.
+        names = ["good1.pdf", "wrong-password.pdf", "good2.pdf"]
+        buffers = [make_pdf(1), make_encrypted_pdf(password="secret"), make_pdf(1)]
+        result = process_bulk("COMPRESS", names, buffers, password="not-the-password")
+        with zipfile.ZipFile(io.BytesIO(result)) as zf:
+            names_in_zip = zf.namelist()
+            self.assertIn("good1_compressed.pdf", names_in_zip)
+            self.assertIn("good2_compressed.pdf", names_in_zip)
+            self.assertIn("wrong-password_FAILED.txt", names_in_zip)
+
+    def test_all_files_failing_raises(self):
+        names = ["bad1.pdf", "bad2.pdf"]
+        buffers = [make_encrypted_pdf(password="secret")] * 2
+        with self.assertRaises(ValueError):
+            process_bulk("COMPRESS", names, buffers, password="wrong")
 
 
 # ── Repair ─────────────────────────────────────────────────────────────────

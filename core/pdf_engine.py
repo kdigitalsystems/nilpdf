@@ -345,10 +345,18 @@ def process_split_ranges(js_buf, ranges_list, status_id="", password=""):
 
 def process_reorder(js_buf, new_order, status_id="", password=""):
     reader = _open_reader(_ensure_py(js_buf), password)
+    total_pages = len(reader.pages)
+    order = list(_ensure_py(new_order))
+
+    if not order:
+        raise ValueError("No page order was provided.")
+    out_of_range = [idx + 1 for idx in order if not (0 <= idx < total_pages)]
+    if out_of_range:
+        raise ValueError(f"Page(s) {out_of_range} don't exist, this PDF has {total_pages} page(s).")
+
     writer = PdfWriter()
-    for idx in _ensure_py(new_order):
-        if 0 <= idx < len(reader.pages):
-            writer.add_page(reader.pages[idx])
+    for idx in order:
+        writer.add_page(reader.pages[idx])
     _stamp_producer(writer)
     out_stream = io.BytesIO()
     writer.write(out_stream)
@@ -361,21 +369,35 @@ def process_bulk(action, file_names, js_buffers, status_id="", password=""):
     total = len(names)
 
     out_zip_stream = io.BytesIO()
+    succeeded = 0
     with zipfile.ZipFile(out_zip_stream, 'w', zipfile.ZIP_DEFLATED) as zf:
         for i, (name, buf) in enumerate(zip(names, buffers)):
             _post_progress(status_id, int(i / total * 90), f"Processing {name} ({i + 1}/{total})...")
-            if action == 'COMPRESS':
-                processed_bytes = process_compress(buf, status_id=status_id, password=password)
-                suffix = "_compressed.pdf"
-            elif action == 'ANONYMIZE':
-                processed_bytes = process_anonymize(buf, status_id=status_id, password=password)
-                suffix = "_metadata_removed.pdf"
-            else:
-                processed_bytes = buf
-                suffix = "_processed.pdf"
-
             base_name = name.rsplit('.', 1)[0] if '.' in name else name
-            zf.writestr(f"{base_name}{suffix}", processed_bytes)
+            try:
+                if action == 'COMPRESS':
+                    processed_bytes = process_compress(buf, status_id=status_id, password=password)
+                    suffix = "_compressed.pdf"
+                elif action == 'ANONYMIZE':
+                    processed_bytes = process_anonymize(buf, status_id=status_id, password=password)
+                    suffix = "_metadata_removed.pdf"
+                else:
+                    processed_bytes = buf
+                    suffix = "_processed.pdf"
+                zf.writestr(f"{base_name}{suffix}", processed_bytes)
+                succeeded += 1
+            except Exception as exc:
+                # One bad file (wrong password, corrupt PDF) shouldn't lose every
+                # already-processed file in the batch — note the failure inside
+                # the zip and keep going instead of letting the exception escape
+                # and discard the whole in-progress archive.
+                zf.writestr(f"{base_name}_FAILED.txt", f"Could not process \"{name}\": {exc}")
+
+    if succeeded == 0:
+        raise ValueError(
+            "None of the selected files could be processed. "
+            "If any are password-protected, check that the password entered is correct."
+        )
 
     return out_zip_stream.getvalue()
 
@@ -386,9 +408,14 @@ def process_rotate(js_buf, degrees, page_indices, status_id="", password=""):
     """Rotate specific pages (or all pages if page_indices is empty)."""
     reader = _open_reader(_ensure_py(js_buf), password)
     writer = PdfWriter()
+    total = len(reader.pages)
     indices_set = set(_ensure_py(page_indices))
     rotate_all = len(indices_set) == 0
-    total = len(reader.pages)
+
+    if not rotate_all:
+        out_of_range = sorted(idx + 1 for idx in indices_set if not (0 <= idx < total))
+        if out_of_range:
+            raise ValueError(f"Page(s) {out_of_range} don't exist, this PDF has {total} page(s).")
 
     for i, page in enumerate(reader.pages):
         if rotate_all or i in indices_set:
