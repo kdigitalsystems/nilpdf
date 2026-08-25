@@ -189,6 +189,8 @@ self.onmessage = async (event) => {
             result_py = self.pyodide.globals.get('process_fill_form')(payload.buffer, payload.fields, payload.flatten, id, password);
         } else if (action === 'PROTECT') {
             result_py = self.pyodide.globals.get('process_protect')(payload.buffer, payload.newPassword, id, password);
+        } else if (action === 'UNLOCK') {
+            result_py = self.pyodide.globals.get('process_unlock')(payload.buffer, id, password);
         } else if (action === 'FILL_AND_SIGN') {
             result_py = self.pyodide.globals.get('process_fill_and_sign')(payload.buffer, payload.fields, payload.edits, payload.signatures, payload.flatten, id, password);
         } else {
@@ -201,8 +203,21 @@ self.onmessage = async (event) => {
         postMessage({ type: 'SUCCESS', id, result: result_uint8, isZip, isText }, [result_uint8.buffer]);
 
     } catch (error) {
+        // Pyodide surfaces a raised Python exception as a full traceback dump
+        // in .message ("Traceback (most recent call last):\n  File...\n
+        // ValueError: the actual message"), not just the exception's own
+        // text — pull out the last "SomeError: message" line so a clean
+        // sentence reaches the user instead of stack-trace noise.
         let msg = error.message || String(error);
-        if (msg.includes('Incorrect password') || msg.includes('password')) {
+        const lines = msg.trim().split('\n');
+        const lastLineMatch = lines[lines.length - 1].match(/^[\w.]+(?:Error|Exception):\s*(.*)$/);
+        if (lastLineMatch) msg = lastLineMatch[1];
+
+        // UNLOCK's own errors are already specific, user-facing sentences
+        // ("not protected", "needs the owner password") — collapsing them
+        // to a generic "incorrect password" would actively mislead, so only
+        // every other action gets the blanket remap.
+        if (action !== 'UNLOCK' && (msg.includes('Incorrect password') || msg.includes('password'))) {
             msg = 'Incorrect or missing password.';
         }
         postMessage({ type: 'ERROR', id, error: msg });

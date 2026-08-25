@@ -592,6 +592,7 @@ TOOLS = [
             ('Can I change the password on a PDF that is already protected?', 'Yes. Enter the current password to open it, then set a new one. The new password fully replaces the old one.'),
         ],
         'related': [
+            ('unlock-pdf', 'Unlock PDF'),
             ('redact-pdf', 'Redact PDF'),
             ('sign-pdf', 'Sign PDF'),
         ],
@@ -601,6 +602,55 @@ TOOLS = [
       "@type": "SoftwareApplication",
       "name": "NilPDF Protect PDF",
       "url": "https://nilpdf.com/protect-pdf/",
+      "applicationCategory": "UtilitiesApplication",
+      "operatingSystem": "Any (browser-based)",
+      "browserRequirements": "Requires a modern browser with JavaScript enabled",
+      "offers": {"@type": "Offer", "price": "0", "priceCurrency": "USD"}
+    }
+    </script>
+''',
+    },
+    {
+        'slug': 'unlock-pdf',
+        'tool_id': 'unlock',
+        'title': 'Unlock PDF — Remove Password Online Free — NilPDF',
+        'h1': 'Unlock PDF',
+        'tagline': 'Permanently remove password encryption from a PDF you have the password for — free and private.',
+        'description': 'Free online PDF password remover. Permanently strip encryption from a PDF once you supply the correct password. No uploads, runs entirely in your browser. Cannot crack, guess, or bypass an unknown password.',
+        'keywords': 'unlock pdf, remove pdf password, decrypt pdf, remove pdf encryption, pdf password remover free',
+        'bullets': [
+            'Supports common PDF encryption, including RC4, AES-128, and AES-256',
+            'Produces a genuinely unencrypted file, not a temporary unlock',
+            'Detects PDFs that were never password protected',
+            'Requires the owner password to lift permission restrictions like print/copy locks',
+            'No uploads — your file and password never leave your device',
+        ],
+        'body_text': "NilPDF Unlock permanently removes password encryption from a PDF, entirely inside your browser. Enter the file's password, and NilPDF rebuilds the document without any encryption at all, not a version that just skips the password prompt this one time. It supports the standard PDF encryption formats in use today, including the AES-256 encryption NilPDF's own Protect tool produces. Some protected PDFs use two passwords under the hood: a user password that only opens the file, and a separate owner password that also lifts restrictions on printing or copying. If those differ, NilPDF needs the owner password specifically before it will strip the restrictions, entering only the viewing password isn't enough. What NilPDF cannot do, under any circumstances, is discover, crack, or bypass a password it wasn't given, if you don't know the password, there is no workaround here.",
+        'how_to_name': 'How to remove a password from a PDF',
+        'how_to_steps': [
+            ('Open NilPDF Unlock', 'Visit nilpdf.com and select the Unlock PDF tool.'),
+            ('Upload your PDF', 'Drop your password-protected PDF or click Browse.'),
+            ('Enter the password', 'Type the PDF\'s password — use the show/hide toggle to check it.'),
+            ('Unlock', 'Click "Unlock & Download" and the unencrypted PDF downloads automatically.'),
+        ],
+        'faq': [
+            ('Is unlocking a PDF really free?', 'Yes. Completely free, unlimited use, no account required.'),
+            ('Are my PDF file and password safe when I unlock it?', 'Yes. Neither your file nor your password ever leaves your device. Everything runs in your browser using WebAssembly. NilPDF has no backend server, so there is nothing to upload, log, or retain.'),
+            ('Can NilPDF remove a password I don\'t know?', "No. NilPDF cannot discover, crack, guess, or bypass a password it wasn't given. This tool only removes encryption from a PDF you already have the correct password for."),
+            ('What PDF encryption does this support?', 'The standard PDF Standard Security Handler formats: RC4 (40 and 128-bit) and AES (128 and 256-bit), including the AES-256 encryption produced by NilPDF\'s own Protect PDF tool.'),
+            ('Why does it ask for an owner password instead of the one I have?', "Some PDFs have a separate owner password that controls permissions like printing or copying, distinct from the user password that just opens the file. If you only enter the user password, NilPDF can open the file but won't strip protections it isn't confident you're allowed to remove — the owner password is required for that."),
+        ],
+        'related': [
+            ('protect-pdf', 'Protect PDF'),
+            ('redact-pdf', 'Redact PDF'),
+            ('repair-pdf', 'Repair PDF'),
+        ],
+        'extra_json_ld': '''    <script type="application/ld+json">
+    {
+      "@context": "https://schema.org",
+      "@type": "SoftwareApplication",
+      "name": "NilPDF Unlock PDF",
+      "url": "https://nilpdf.com/unlock-pdf/",
       "applicationCategory": "UtilitiesApplication",
       "operatingSystem": "Any (browser-based)",
       "browserRequirements": "Requires a modern browser with JavaScript enabled",
@@ -833,7 +883,7 @@ PAGE_TEMPLATE = '''<!DOCTYPE html>
 {related_items}
         </nav>
         <footer>
-            <p>Part of <a href="https://nilpdf.com/">NilPDF</a> — 20 free PDF tools, zero uploads.</p>
+            <p>Part of <a href="https://nilpdf.com/">NilPDF</a> — 21 free PDF tools, zero uploads.</p>
         </footer>
     </div>
 </body>

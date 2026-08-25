@@ -6,12 +6,16 @@ def _ensure_py(data):
     """Handles both Browser (Pyodide) and Native Python (CI) inputs."""
     return data.to_py() if hasattr(data, 'to_py') else data
 
-def _open_reader(buf, password=""):
-    """Open a PdfReader, decrypting with password if needed. Falls back to strict=False on parse error."""
+def _open_pdf(buf):
+    """Open a PdfReader without decrypting it. Falls back to strict=False on parse error."""
     try:
-        reader = PdfReader(io.BytesIO(buf), strict=True)
+        return PdfReader(io.BytesIO(buf), strict=True)
     except Exception:
-        reader = PdfReader(io.BytesIO(buf), strict=False)
+        return PdfReader(io.BytesIO(buf), strict=False)
+
+def _open_reader(buf, password=""):
+    """Open a PdfReader, decrypting with password if needed."""
+    reader = _open_pdf(buf)
     if reader.is_encrypted:
         result = reader.decrypt(password or "")
         if result == 0:
@@ -820,6 +824,52 @@ def process_protect(js_buf, new_password, status_id="", password=""):
     _post_progress(status_id, 60, "Encrypting with AES-256...")
     writer.encrypt(user_password=new_password, owner_password=new_password, algorithm="AES-256")
 
+    out = io.BytesIO()
+    writer.write(out)
+    return out.getvalue()
+
+
+def process_unlock(js_buf, status_id="", password=""):
+    """Permanently remove password encryption from a PDF, producing a
+    genuinely unencrypted file — not a file that merely opens without a
+    prompt for this one session.
+
+    This only works with the correct password already in hand: NilPDF has
+    no way to discover, crack, or otherwise bypass a password it wasn't
+    given. Standard PDF encryption (RC4, AES-128, AES-256, including
+    NilPDF's own Protect output) uses two passwords under the hood, a user
+    password that just opens the file, and an owner password that also
+    lifts permission restrictions like printing or copying. Supplying only
+    the user password proves you can view the file, not that you're allowed
+    to strip its restrictions, so if the two differ, the owner password is
+    required before this will remove anything.
+    """
+    from pypdf import PasswordType
+
+    reader = _open_pdf(_ensure_py(js_buf))
+
+    if not reader.is_encrypted:
+        raise ValueError("This PDF isn't password protected — there's nothing to unlock.")
+
+    _post_progress(status_id, 15, "Checking password...")
+    result = reader.decrypt(password or "")
+    if result == PasswordType.NOT_DECRYPTED:
+        raise ValueError("Incorrect password. Please enter the correct PDF password.")
+    if result == PasswordType.USER_PASSWORD:
+        raise ValueError(
+            "That password only opens this PDF for viewing. It has a separate owner "
+            "password restricting permissions like printing or copying — enter that "
+            "owner password to remove the restrictions."
+        )
+
+    _post_progress(status_id, 40, "Removing encryption...")
+    writer = PdfWriter()
+    writer.append_pages_from_reader(reader)
+
+    total = max(len(writer.pages), 1)
+    _post_progress(status_id, 80, f"Rebuilding {total} page(s)...")
+
+    _stamp_producer(writer)
     out = io.BytesIO()
     writer.write(out)
     return out.getvalue()

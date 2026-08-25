@@ -23,6 +23,7 @@ from core.pdf_engine import (
     process_sign,
     process_fill_form,
     process_protect,
+    process_unlock,
     process_fill_and_sign,
 )
 
@@ -56,6 +57,20 @@ def make_encrypted_pdf(num_pages=1, password="secret"):
     for _ in range(num_pages):
         writer.add_blank_page(width=72, height=72)
     writer.encrypt(password)
+    buf = io.BytesIO()
+    writer.write(buf)
+    return buf.getvalue()
+
+
+def make_encrypted_pdf_with_owner(num_pages=1, user_password="userpw", owner_password="ownerpw", algorithm=None):
+    """Return bytes of a PDF with distinct user and owner passwords —
+    opening it only proves the user password, not permission to strip
+    restrictions, which requires the owner password."""
+    writer = PdfWriter()
+    for _ in range(num_pages):
+        writer.add_blank_page(width=72, height=72)
+    kwargs = {"algorithm": algorithm} if algorithm else {}
+    writer.encrypt(user_password=user_password, owner_password=owner_password, **kwargs)
     buf = io.BytesIO()
     writer.write(buf)
     return buf.getvalue()
@@ -789,6 +804,85 @@ class TestProtect(unittest.TestCase):
         reader2 = read_pdf(result)
         self.assertNotEqual(reader2.decrypt("new-pw"), 0)
         self.assertEqual(len(reader2.pages), 2)
+
+
+# ── Unlock ───────────────────────────────────────────────────────────────────
+
+class TestUnlock(unittest.TestCase):
+    def test_output_opens_without_a_password(self):
+        enc = make_encrypted_pdf(password="secret")
+        result = process_unlock(enc, password="secret")
+        reader = read_pdf(result)
+        self.assertFalse(reader.is_encrypted)
+        self.assertEqual(len(reader.pages), 1)
+
+    def test_output_reports_no_remaining_encryption(self):
+        enc = make_encrypted_pdf(num_pages=2, password="secret")
+        result = process_unlock(enc, password="secret")
+        self.assertNotIn(b"/Encrypt", result)
+        self.assertFalse(read_pdf(result).is_encrypted)
+
+    def test_preserves_page_content(self):
+        plain = make_pdf_with_text("Confidential clause 7")
+        writer = PdfWriter()
+        writer.append(PdfReader(io.BytesIO(plain)))
+        writer.encrypt(user_password="secret", owner_password="secret")
+        buf = io.BytesIO()
+        writer.write(buf)
+        result = process_unlock(buf.getvalue(), password="secret")
+        self.assertIn("Confidential clause 7", read_pdf(result).pages[0].extract_text())
+
+    def test_wrong_password_raises(self):
+        enc = make_encrypted_pdf(password="secret")
+        with self.assertRaises(ValueError):
+            process_unlock(enc, password="wrong-guess")
+
+    def test_blank_password_raises(self):
+        enc = make_encrypted_pdf(password="secret")
+        with self.assertRaises(ValueError):
+            process_unlock(enc, password="")
+
+    def test_unprotected_pdf_raises_a_clear_error(self):
+        with self.assertRaises(ValueError):
+            process_unlock(make_pdf(1))
+
+    def test_stamps_producer(self):
+        enc = make_encrypted_pdf(password="secret")
+        result = process_unlock(enc, password="secret")
+        self.assertIn("NilPDF", producer_of(result))
+
+    def test_user_password_alone_is_rejected_when_owner_password_differs(self):
+        enc = make_encrypted_pdf_with_owner(user_password="viewonly", owner_password="fullaccess")
+        with self.assertRaises(ValueError):
+            process_unlock(enc, password="viewonly")
+
+    def test_owner_password_removes_restrictions(self):
+        enc = make_encrypted_pdf_with_owner(num_pages=2, user_password="viewonly", owner_password="fullaccess")
+        result = process_unlock(enc, password="fullaccess")
+        reader = read_pdf(result)
+        self.assertFalse(reader.is_encrypted)
+        self.assertEqual(len(reader.pages), 2)
+
+    def test_single_password_used_for_both_roles_unlocks_directly(self):
+        # NilPDF's own Protect PDF sets the same password as both user and
+        # owner, so the common case never hits the owner-password gate.
+        enc = make_encrypted_pdf_with_owner(user_password="samepw", owner_password="samepw")
+        result = process_unlock(enc, password="samepw")
+        self.assertFalse(read_pdf(result).is_encrypted)
+
+    def test_unlocks_nilpdf_protect_output(self):
+        protected = process_protect(make_pdf_with_text("Round trip"), "roundtrip-pw")
+        result = process_unlock(protected, password="roundtrip-pw")
+        reader = read_pdf(result)
+        self.assertFalse(reader.is_encrypted)
+        self.assertIn("Round trip", reader.pages[0].extract_text())
+
+    def test_supports_common_encryption_algorithms(self):
+        for algorithm in ["RC4-40", "RC4-128", "AES-128", "AES-256-R5", "AES-256"]:
+            with self.subTest(algorithm=algorithm):
+                enc = make_encrypted_pdf_with_owner(user_password="pw", owner_password="pw", algorithm=algorithm)
+                result = process_unlock(enc, password="pw")
+                self.assertFalse(read_pdf(result).is_encrypted)
 
 
 # ── Fill & Sign ──────────────────────────────────────────────────────────────
