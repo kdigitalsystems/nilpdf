@@ -59,7 +59,7 @@ TOOLS = [
         'faq': [
             ('Is compressing a PDF really free?', 'Yes, completely free, unlimited use, no account required.'),
             ('Are my PDF files safe when I compress them?', 'Yes. Your files never leave your device. Everything runs in your browser using WebAssembly. NilPDF has no backend server.'),
-            ('How much will my PDF shrink?', 'It depends on the content, PDFs with large images typically compress 30–70%. Text-only PDFs compress less.'),
+            ('How much will my PDF shrink?', 'It depends on the content, PDFs with large images typically compress 30-70%. Text-only PDFs compress less.'),
         ],
         'related': [
             ('merge-pdf', 'Merge PDF'),
@@ -80,7 +80,7 @@ TOOLS = [
             'Works with encrypted PDFs',
             'Zero uploads, all processing in your browser',
         ],
-        'body_text': 'NilPDF Split lets you extract any combination of pages from a PDF without uploading anything to a server. Type a range like 2–5 or individual page numbers, and your extracted PDF or ZIP of separate files downloads in seconds. No account, no size limits, no data shared with anyone.',
+        'body_text': 'NilPDF Split lets you extract any combination of pages from a PDF without uploading anything to a server. Type a range like 2-5 or individual page numbers, and your extracted PDF or ZIP of separate files downloads in seconds. No account, no size limits, no data shared with anyone.',
         'how_to_name': 'How to split a PDF',
         'how_to_steps': [
             ('Open NilPDF Split', 'Visit nilpdf.com and select the Split tool.'),
@@ -234,7 +234,7 @@ TOOLS = [
         'keywords': 'watermark pdf, add watermark to pdf, pdf watermark online, stamp pdf',
         'bullets': [
             'Custom watermark text, any word or phrase',
-            'Adjustable opacity (10%–80%)',
+            'Adjustable opacity (10%-80%)',
             'Diagonal placement across every page',
             'No cloud processing, runs in your browser',
         ],
@@ -495,7 +495,7 @@ TOOLS = [
             'Remove or move notes before saving',
             'No uploads, your file never leaves your device',
         ],
-        'body_text': 'NilPDF Edit lets you write text directly onto any page of a PDF, fill in a blank, add a comment, sign off with a note, all rendered and applied locally in your browser. Click where you want the text, type it, and it’s placed on the page. Download the edited PDF when you’re done. Nothing is ever uploaded to a server.',
+        'body_text': "NilPDF Edit lets you write text directly onto any page of a PDF, fill in a blank, add a comment, sign off with a note, all rendered and applied locally in your browser. Click where you want the text, type it, and it's placed on the page. Download the edited PDF when you're done. Nothing is ever uploaded to a server.",
         'how_to_name': 'How to add text to a PDF',
         'how_to_steps': [
             ('Open NilPDF Edit', 'Visit nilpdf.com and select the Edit tool.'),

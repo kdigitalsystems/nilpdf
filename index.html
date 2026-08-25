@@ -1246,7 +1246,7 @@
     <div class="shortcuts-box" onclick="event.stopPropagation()">
         <h3>Keyboard Shortcuts</h3>
         <table class="shortcuts-table">
-            <tr><td><kbd>1</kbd>–<kbd>9</kbd>, <kbd>0</kbd></td><td>Switch tools (Merge → Images to PDF)</td></tr>
+            <tr><td><kbd>1</kbd>-<kbd>9</kbd>, <kbd>0</kbd></td><td>Switch tools (Merge → Images to PDF)</td></tr>
             <tr><td><kbd>Enter</kbd></td><td>Run active tool</td></tr>
             <tr><td><kbd>?</kbd></td><td>Show / hide this dialog</td></tr>
             <tr><td><kbd>Esc</kbd></td><td>Close dialog</td></tr>
@@ -1998,7 +1998,7 @@
         const indices = parsePageRange(range);
         const invalid = indices.filter(i => i < 0 || i >= splitTotalPages);
         if (invalid.length) {
-            preview.textContent = `⚠ Page(s) ${invalid.map(i => i + 1).join(', ')} out of range (1–${splitTotalPages})`;
+            preview.textContent = `⚠ Page(s) ${invalid.map(i => i + 1).join(', ')} out of range (1-${splitTotalPages})`;
             preview.className   = 'range-preview text-red';
         } else if (indices.length) {
             preview.textContent = `✓ ${indices.length} page(s) of ${splitTotalPages}`;
@@ -2150,7 +2150,7 @@
         const invalid = indices.filter(i => i < 0 || i >= rotateTotalPages);
         const valid   = indices.filter(i => i >= 0 && i < rotateTotalPages);
         if (invalid.length) {
-            preview.textContent = `⚠ Page(s) ${invalid.map(i => i + 1).join(', ')} out of range (1–${rotateTotalPages})`;
+            preview.textContent = `⚠ Page(s) ${invalid.map(i => i + 1).join(', ')} out of range (1-${rotateTotalPages})`;
             preview.className   = 'range-preview text-red';
         } else {
             preview.textContent = `✓ Rotating ${indices.length} page(s)`;
