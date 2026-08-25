@@ -707,6 +707,11 @@ class TestFillForm(unittest.TestCase):
         with self.assertRaises(ValueError):
             process_fill_form(make_pdf(1), {"anything": "value"})
 
+    def test_none_field_value_is_left_blank_not_stringified(self):
+        result = process_fill_form(make_form_pdf(), {"name_field": None}, flatten=False)
+        value = read_pdf(result).get_fields()["name_field"]["/V"]
+        self.assertNotEqual(value, "None")
+
     def test_stamps_producer(self):
         result = process_fill_form(make_form_pdf(), {"name_field": "X"}, flatten=False)
         self.assertIn("NilPDF", producer_of(result))
@@ -802,6 +807,19 @@ class TestFillAndSign(unittest.TestCase):
         sigs = [{"page": 0, "x": 5, "y": 5, "width": 40, "height": 20, "image": make_signature_png_base64()}]
         result = process_fill_and_sign(make_pdf(1), {}, [], sigs)
         self.assertEqual(len(read_pdf(result).pages), 1)
+
+    def test_malformed_text_edit_is_skipped_not_fatal(self):
+        edits = [
+            {"page": 0, "type": "text", "x": "not-a-number", "y": 5, "text": "bad", "size": 12},
+            {"page": 0, "type": "text", "x": 5, "y": 5, "text": "good", "size": 12},
+        ]
+        result = process_fill_and_sign(make_pdf(1), {}, edits, [])
+        self.assertIn("good", read_pdf(result).pages[0].extract_text())
+
+    def test_none_field_value_is_left_blank_not_stringified(self):
+        result = process_fill_and_sign(make_form_pdf(), {"name_field": None}, [], [])
+        value = read_pdf(result).get_fields()["name_field"]["/V"]
+        self.assertNotEqual(value, "None")
 
     def test_combines_fields_text_and_signature(self):
         edits = [{"page": 0, "type": "text", "x": 5, "y": 5, "text": "Signed on 2026-08-24", "size": 12}]

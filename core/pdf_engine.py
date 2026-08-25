@@ -116,6 +116,11 @@ def _draw_overlay(w, h, redacts=(), texts=(), signatures=()):
     was empty or failed to decode — callers should skip merging in that case
     rather than reading pages[0] of a reportlab canvas with zero pages, which
     is what save() produces when nothing was drawn on it.
+
+    Each item is drawn independently and a malformed one (non-numeric
+    coordinates, for example) is skipped rather than raised, the same way an
+    undecodable signature image already was — one bad item from a large batch
+    shouldn't take down the whole page.
     """
     import base64
     from reportlab.pdfgen import canvas as rl_canvas
@@ -127,18 +132,24 @@ def _draw_overlay(w, h, redacts=(), texts=(), signatures=()):
     drawn_any = False
 
     for edit in redacts:
-        c.setFillColor(black)
-        c.rect(float(edit.get("x", 0)), float(edit.get("y", 0)),
-               float(edit.get("width", 0)), float(edit.get("height", 0)),
-               stroke=0, fill=1)
-        drawn_any = True
+        try:
+            c.setFillColor(black)
+            c.rect(float(edit.get("x", 0)), float(edit.get("y", 0)),
+                   float(edit.get("width", 0)), float(edit.get("height", 0)),
+                   stroke=0, fill=1)
+            drawn_any = True
+        except Exception:
+            continue
 
     for edit in texts:
-        size = float(edit.get("size") or 12)
-        c.setFillColor(black)
-        c.setFont("Helvetica", size)
-        c.drawString(float(edit.get("x", 0)), float(edit.get("y", 0)), str(edit.get("text", "")))
-        drawn_any = True
+        try:
+            size = float(edit.get("size") or 12)
+            c.setFillColor(black)
+            c.setFont("Helvetica", size)
+            c.drawString(float(edit.get("x", 0)), float(edit.get("y", 0)), str(edit.get("text", "")))
+            drawn_any = True
+        except Exception:
+            continue
 
     for sig in signatures:
         raw = str(sig.get("image", ""))
@@ -168,6 +179,14 @@ def _merge_overlay(page, overlay_page):
         page.merge_page(overlay_page, over=True)
     except TypeError:
         page.merge_page(overlay_page)  # older pypdf without `over` param
+
+
+def _clean_field_values(values):
+    """Coerce a None field value to an empty string before handing it to
+    pypdf, which otherwise stringifies it to the literal text "None" and
+    bakes that into the field's appearance instead of leaving it blank.
+    """
+    return {k: ("" if v is None else v) for k, v in values.items()}
 
 
 def _flatten_form_fields(writer):
@@ -763,7 +782,7 @@ def process_fill_form(js_buf, field_values, flatten=False, status_id="", passwor
         raise ValueError("This PDF has no fillable form fields.")
 
     _post_progress(status_id, 20, "Filling form fields...")
-    values = dict(_ensure_py(field_values) or {})
+    values = _clean_field_values(dict(_ensure_py(field_values) or {}))
     try:
         writer.update_page_form_field_values(None, values, auto_regenerate=not flatten, flatten=bool(flatten))
     except Exception as exc:
@@ -832,7 +851,7 @@ def process_fill_and_sign(js_buf, field_values, edits, signatures, flatten=False
     writer = PdfWriter()
     writer.append(reader)
 
-    values = dict(_ensure_py(field_values) or {})
+    values = _clean_field_values(dict(_ensure_py(field_values) or {}))
     if values:
         if "/AcroForm" not in writer._root_object:
             raise ValueError("This PDF has no fillable form fields.")

@@ -3582,7 +3582,6 @@
     /** ════ FILL & SIGN ══════════════════════════════════════════════════════ */
     (function initFillSignTool() {
         const input = document.getElementById('fillsign-upload');
-        const SCALE = 1.5;
         const SAVED_SIG_KEY = 'nilpdf_saved_signature';
         const FONT_FAMILY_MAP = {
             'sign-font-dancing': 'Dancing Script',
@@ -3592,6 +3591,7 @@
         };
         const state = {
             pdfDoc: null, currentPage: 0, totalPages: 0, file: null,
+            scale: 1.5,  // recomputed to fit the container on each page render, see renderFillSignPage
             fieldsByPage: {}, fieldValues: {}, hasFields: false,
             textItems: {},  // { pageIndex: [{ id, x, y, text, size }] }
             sigItems: {},   // { pageIndex: [{ id, dataUrl, x, y, width, height }] }
@@ -3672,7 +3672,12 @@
 
         async function renderFillSignPage() {
             const page = await state.pdfDoc.getPage(state.currentPage + 1);
-            const viewport = page.getViewport({ scale: SCALE });
+            // Adaptive scale-to-fit, same approach as the standalone Fill Forms
+            // tool, so a large-format form doesn't overflow the workspace.
+            const unscaled = page.getViewport({ scale: 1 });
+            const availWidth = el('canvas-wrap').parentElement.clientWidth;
+            state.scale = availWidth > 0 ? Math.min(availWidth / unscaled.width, 2.5) : 1.5;
+            const viewport = page.getViewport({ scale: state.scale });
             const canvas = el('canvas');
             canvas.width = viewport.width;
             canvas.height = viewport.height;
@@ -3697,10 +3702,10 @@
             (state.fieldsByPage[state.currentPage] || []).forEach(field => {
                 if (field.hidden) return;
                 const [x1, y1, x2, y2] = field.rect;
-                const left   = x1 * SCALE;
-                const top    = canvas.height - y2 * SCALE;
-                const width  = (x2 - x1) * SCALE;
-                const height = (y2 - y1) * SCALE;
+                const left   = x1 * state.scale;
+                const top    = canvas.height - y2 * state.scale;
+                const width  = (x2 - x1) * state.scale;
+                const height = (y2 - y1) * state.scale;
                 let fieldEl;
 
                 if (field.fieldType === 'Btn' && field.radioButton) {
@@ -3741,7 +3746,7 @@
                 }
 
                 if (fieldEl.tagName !== 'INPUT' || (fieldEl.type !== 'checkbox' && fieldEl.type !== 'radio')) {
-                    fieldEl.style.fontSize = Math.max(9, Math.min(height * 0.6, 11 * SCALE)) + 'px';
+                    fieldEl.style.fontSize = Math.max(9, Math.min(height * 0.6, 11 * state.scale)) + 'px';
                 }
                 if (field.readOnly) {
                     if (fieldEl.tagName === 'TEXTAREA' || (fieldEl.tagName === 'INPUT' && fieldEl.type === 'text')) fieldEl.readOnly = true;
@@ -3758,9 +3763,9 @@
             (state.textItems[state.currentPage] || []).forEach(item => {
                 const box = document.createElement('div');
                 box.className = 'redact-text-box';
-                box.style.left = (item.x * SCALE) + 'px';
-                box.style.top  = (canvas.height - (item.y + item.size) * SCALE) + 'px';
-                box.style.fontSize = (item.size * SCALE) + 'px';
+                box.style.left = (item.x * state.scale) + 'px';
+                box.style.top  = (canvas.height - (item.y + item.size) * state.scale) + 'px';
+                box.style.fontSize = (item.size * state.scale) + 'px';
                 box.textContent = item.text;
                 const rm = document.createElement('button');
                 rm.type = 'button';
@@ -3777,10 +3782,10 @@
                 const wrap = document.createElement('div');
                 wrap.className = 'sign-item';
                 wrap.dataset.id = item.id;
-                wrap.style.left   = (item.x * SCALE) + 'px';
-                wrap.style.top    = (canvas.height - (item.y + item.height) * SCALE) + 'px';
-                wrap.style.width  = (item.width * SCALE) + 'px';
-                wrap.style.height = (item.height * SCALE) + 'px';
+                wrap.style.left   = (item.x * state.scale) + 'px';
+                wrap.style.top    = (canvas.height - (item.y + item.height) * state.scale) + 'px';
+                wrap.style.width  = (item.width * state.scale) + 'px';
+                wrap.style.height = (item.height * state.scale) + 'px';
 
                 const img = document.createElement('img');
                 img.src = item.dataUrl;
@@ -3814,8 +3819,8 @@
         function addTextItem(px, py, text) {
             const canvas = el('canvas');
             const size = 14;
-            const x = px / SCALE;
-            const y = (canvas.height - py) / SCALE - size;
+            const x = px / state.scale;
+            const y = (canvas.height - py) / state.scale - size;
             const items = state.textItems[state.currentPage] || (state.textItems[state.currentPage] = []);
             items.push({ id: ++state.idCounter, x, y, text, size });
             renderFillSignOverlay();
@@ -3842,10 +3847,10 @@
 
             function applyPdfCoords(leftPx, topPx, widthPx, heightPx) {
                 const canvas = el('canvas');
-                item.width  = widthPx / SCALE;
-                item.height = heightPx / SCALE;
-                item.x = leftPx / SCALE;
-                item.y = (canvas.height - topPx - heightPx) / SCALE;
+                item.width  = widthPx / state.scale;
+                item.height = heightPx / state.scale;
+                item.x = leftPx / state.scale;
+                item.y = (canvas.height - topPx - heightPx) / state.scale;
             }
             function onPointerMove(e) {
                 if (activePointerId === null || e.pointerId !== activePointerId) return;
@@ -3931,7 +3936,7 @@
             const items = state.sigItems[state.currentPage] || [];
             const item = items.find(i => i.id === id);
             if (!item) return;
-            const offset = 10 / SCALE;
+            const offset = 10 / state.scale;
             items.push({ ...item, id: ++state.idCounter, x: item.x + offset, y: Math.max(0, item.y - offset) });
             renderFillSignOverlay();
         }
@@ -4066,9 +4071,9 @@
 
         function addSigToCurrentPage(dataUrl, aspect) {
             const canvas = el('canvas');
-            const pageWidthPt  = canvas.width / SCALE;
-            const pageHeightPt = canvas.height / SCALE;
-            const widthPt  = Math.min(180, canvas.width * 0.4) / SCALE;
+            const pageWidthPt  = canvas.width / state.scale;
+            const pageHeightPt = canvas.height / state.scale;
+            const widthPt  = Math.min(180, canvas.width * 0.4) / state.scale;
             const heightPt = widthPt / (aspect || 2.5);
             const items = state.sigItems[state.currentPage] || (state.sigItems[state.currentPage] = []);
             items.push({
