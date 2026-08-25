@@ -305,7 +305,7 @@ def process_split(js_buf, page_indices, status_id="", password=""):
 
     out_of_range = [idx + 1 for idx in indices if not (0 <= idx < total_pages)]
     if out_of_range:
-        raise ValueError(f"Page(s) {out_of_range} don't exist — this PDF has {total_pages} page(s).")
+        raise ValueError(f"Page(s) {out_of_range} don't exist: this PDF has {total_pages} page(s).")
 
     for idx in indices:
         writer.add_page(reader.pages[idx])
@@ -329,7 +329,7 @@ def process_split_ranges(js_buf, ranges_list, status_id="", password=""):
             out_of_range = [idx + 1 for idx in indices if not (0 <= idx < total_pages)]
             if out_of_range:
                 raise ValueError(
-                    f"Range {i + 1}: page(s) {out_of_range} don't exist — this PDF has {total_pages} page(s)."
+                    f"Range {i + 1}: page(s) {out_of_range} don't exist, this PDF has {total_pages} page(s)."
                 )
             part_writer = PdfWriter()
             for idx in indices:
@@ -410,7 +410,7 @@ def process_remove_pages(js_buf, page_indices, status_id="", password=""):
 
     out_of_range = [idx + 1 for idx in indices_to_remove if not (0 <= idx < total)]
     if out_of_range:
-        raise ValueError(f"Page(s) {out_of_range} don't exist — this PDF has {total} page(s).")
+        raise ValueError(f"Page(s) {out_of_range} don't exist: this PDF has {total} page(s).")
 
     writer = PdfWriter()
     for i, page in enumerate(reader.pages):
@@ -418,7 +418,7 @@ def process_remove_pages(js_buf, page_indices, status_id="", password=""):
             writer.add_page(page)
 
     if len(writer.pages) == 0:
-        raise ValueError("Cannot remove all pages — at least one page must remain.")
+        raise ValueError("Cannot remove all pages, at least one page must remain.")
 
     _stamp_producer(writer)
     out = io.BytesIO()
@@ -585,7 +585,7 @@ def process_repair(js_buf, status_id="", password=""):
     try:
         reader = PdfReader(io.BytesIO(buf), strict=True)
     except Exception:
-        _post_progress(status_id, 15, "Strict parse failed — retrying with lenient recovery…")
+        _post_progress(status_id, 15, "Strict parse failed, retrying with lenient recovery…")
         reader = PdfReader(io.BytesIO(buf), strict=False)
     if reader.is_encrypted:
         result = reader.decrypt(password or "")
@@ -606,7 +606,7 @@ def process_repair(js_buf, status_id="", password=""):
                        f"Recovered {recovered} of {total} pages…")
     if recovered == 0:
         raise ValueError("No readable pages could be recovered.")
-    _post_progress(status_id, 95, f"Finalising — {recovered} pages recovered, {skipped} skipped…")
+    _post_progress(status_id, 95, f"Finalising: {recovered} pages recovered, {skipped} skipped…")
     _stamp_producer(writer)
     out = io.BytesIO()
     writer.write(out)
@@ -849,7 +849,7 @@ def process_unlock(js_buf, status_id="", password=""):
     reader = _open_pdf(_ensure_py(js_buf))
 
     if not reader.is_encrypted:
-        raise ValueError("This PDF isn't password protected — there's nothing to unlock.")
+        raise ValueError("This PDF isn't password protected, there's nothing to unlock.")
 
     _post_progress(status_id, 15, "Checking password...")
     result = reader.decrypt(password or "")
@@ -858,7 +858,7 @@ def process_unlock(js_buf, status_id="", password=""):
     if result == PasswordType.USER_PASSWORD:
         raise ValueError(
             "That password only opens this PDF for viewing. It has a separate owner "
-            "password restricting permissions like printing or copying — enter that "
+            "password restricting permissions like printing or copying, enter that "
             "owner password to remove the restrictions."
         )
 

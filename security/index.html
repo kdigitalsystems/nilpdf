@@ -11,16 +11,16 @@
     </script>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Security — NilPDF</title>
+    <title>Security | NilPDF</title>
     <meta name="description" content="NilPDF's security architecture: local-only processing, what network requests the app makes, dependency handling, and how to report a vulnerability.">
     <link rel="canonical" href="https://nilpdf.com/security/">
-    <meta property="og:title" content="Security — NilPDF">
+    <meta property="og:title" content="Security | NilPDF">
     <meta property="og:description" content="NilPDF's security architecture, dependency handling, and vulnerability reporting.">
     <meta property="og:type" content="website">
     <meta property="og:url" content="https://nilpdf.com/security/">
     <meta property="og:image" content="https://nilpdf.com/assets/og-image.png">
     <meta name="twitter:card" content="summary_large_image">
-    <meta name="twitter:title" content="Security — NilPDF">
+    <meta name="twitter:title" content="Security | NilPDF">
     <meta name="twitter:image" content="https://nilpdf.com/assets/og-image.png">
     <link rel="icon" href="https://nilpdf.com/assets/icon.svg" type="image/svg+xml">
     <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -80,34 +80,34 @@
         <p class="tagline">How NilPDF is built to keep your documents on your device, and how to report a problem.</p>
 
         <h2>Local-processing architecture</h2>
-        <p>Every PDF tool runs inside a <a href="https://developer.mozilla.org/en-US/docs/Web/API/Web_Workers_API" target="_blank" rel="noopener">Web Worker</a> in your browser, executing Python compiled to WebAssembly via <a href="https://pyodide.org" target="_blank" rel="noopener">Pyodide</a>. There is no NilPDF backend that accepts uploaded documents — the application has no server-side code capable of receiving a PDF file. This isn't a policy choice layered on top of a server that could technically receive files; the capability to upload a document simply doesn't exist in the code.</p>
+        <p>Every PDF tool runs inside a <a href="https://developer.mozilla.org/en-US/docs/Web/API/Web_Workers_API" target="_blank" rel="noopener">Web Worker</a> in your browser, executing Python compiled to WebAssembly via <a href="https://pyodide.org" target="_blank" rel="noopener">Pyodide</a>. There is no NilPDF backend that accepts uploaded documents. The application has no server-side code capable of receiving a PDF file. This isn't a policy choice layered on top of a server that could technically receive files; the capability to upload a document simply doesn't exist in the code.</p>
 
         <h2>What network requests NilPDF makes</h2>
         <p>When you load nilpdf.com, your browser makes requests for:</p>
         <ul>
             <li>The site's own HTML, CSS, and JavaScript files, from NilPDF's hosting provider (GitHub Pages).</li>
-            <li>The pdf.js library and the Pyodide WebAssembly runtime, from public CDNs (cdnjs, jsDelivr) — the same libraries used by many other websites, not something specific to your session.</li>
-            <li>Standard web analytics requests for aggregate site-traffic statistics — these carry ordinary page-visit information, not document data.</li>
+            <li>The pdf.js library and the Pyodide WebAssembly runtime, from public CDNs (cdnjs, jsDelivr), the same libraries used by many other websites, not something specific to your session.</li>
+            <li>Standard web analytics requests for aggregate site-traffic statistics; these carry ordinary page-visit information, not document data.</li>
         </ul>
-        <p>Once a tool is open and you select a file, no further network requests are made to process it — everything after that point runs locally. You can verify this yourself; see <a href="#verify">Verify local processing</a> below.</p>
+        <p>Once a tool is open and you select a file, no further network requests are made to process it. Everything after that point runs locally. You can verify this yourself; see <a href="#verify">Verify local processing</a> below.</p>
 
         <h2 id="verify">Verify local processing</h2>
-        <p>You don't have to take this on trust — you can confirm it directly in your browser:</p>
+        <p>You don't have to take this on trust. You can confirm it directly in your browser:</p>
         <ol>
             <li>Open your browser's developer tools (F12, or Ctrl+Shift+I / Cmd+Option+I).</li>
             <li>Go to the <strong>Network</strong> tab.</li>
             <li>Load a NilPDF tool and select a PDF file to process.</li>
-            <li>Watch the Network tab while the tool runs. You will see no outgoing request that contains your file's bytes, filename, or extracted content — only the page's own static assets loaded once at the start.</li>
+            <li>Watch the Network tab while the tool runs. You will see no outgoing request that contains your file's bytes, filename, or extracted content, only the page's own static assets loaded once at the start.</li>
         </ol>
-        <p class="muted">If you ever observe a request that appears to transmit file content, please report it — see Vulnerability reporting below. That would be a bug, not intended behavior.</p>
+        <p class="muted">If you ever observe a request that appears to transmit file content, please report it; see Vulnerability reporting below. That would be a bug, not intended behavior.</p>
 
         <h3>What requests to expect</h3>
-        <p>In the Network tab, once a tool is open, you should only see requests like these — none of which include your file:</p>
+        <p>In the Network tab, once a tool is open, you should only see requests like these, none of which include your file:</p>
         <table>
             <tr><th>Request</th><th>Contains your file?</th></tr>
-            <tr><td>GET pdf.worker.min.js (cdnjs)</td><td>No — a fixed library file</td></tr>
-            <tr><td>GET pyodide.asm.wasm (jsDelivr)</td><td>No — a fixed runtime file</td></tr>
-            <tr><td>GET *.whl package files (jsDelivr)</td><td>No — fixed Python package files</td></tr>
+            <tr><td>GET pdf.worker.min.js (cdnjs)</td><td>No: a fixed library file</td></tr>
+            <tr><td>GET pyodide.asm.wasm (jsDelivr)</td><td>No: a fixed runtime file</td></tr>
+            <tr><td>GET *.whl package files (jsDelivr)</td><td>No: fixed Python package files</td></tr>
         </table>
         <p>You should <strong>not</strong> see any <code>POST</code> or <code>PUT</code> request containing binary data around the time you select or process a file.</p>
 
@@ -145,7 +145,7 @@ Network requests (separate from the above):
 
         <h2>Known limitations</h2>
         <ul>
-            <li>NilPDF does not encrypt data at rest on your own device — files you save remain subject to your device's own file-system security.</li>
+            <li>NilPDF does not encrypt data at rest on your own device. Files you save remain subject to your device's own file-system security.</li>
             <li>Very large PDFs can exhaust available browser memory, since the entire document is held in memory during processing.</li>
             <li>A formal, independent third-party security audit has not been performed.</li>
         </ul>
@@ -154,7 +154,7 @@ Network requests (separate from the above):
         <p>If you discover a security issue, please report it through the feedback form on the site, or via the contact details on the <a href="https://nilpdf.com/about/">About page</a>. Please avoid publicly disclosing a vulnerability until it has been addressed.</p>
 
         <footer>
-            <p>Part of <a href="https://nilpdf.com/">NilPDF</a> — a property of K Digital Systems LLC. See also: <a href="https://nilpdf.com/privacy/">Privacy</a> · <a href="https://nilpdf.com/about/">About</a>.</p>
+            <p>Part of <a href="https://nilpdf.com/">NilPDF</a>, a property of K Digital Systems LLC. See also: <a href="https://nilpdf.com/privacy/">Privacy</a> · <a href="https://nilpdf.com/about/">About</a>.</p>
         </footer>
     </div>
 </body>
