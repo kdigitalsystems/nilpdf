@@ -21,25 +21,29 @@ concurrency:
   group: "pages-deploy"
   cancel-in-progress: false
 
+# Both jobs run on self-hosted runners inside a Docker container, rather than
+# directly on the runner host. The host machine is shared across several
+# other projects' CI, each with their own tool versions; running in a
+# container gives this pipeline a clean, reproducible environment (fixed
+# Python 3.11 + Node 20, nothing left over from a previous job) instead of
+# depending on whatever happens to be globally installed on the shared host.
 jobs:
   test:
     runs-on: self-hosted
+    container:
+      image: python:3.11-slim
     timeout-minutes: 10
     steps:
+      - name: Install git and Node.js (bare Python image has neither)
+        run: |
+          apt-get update -qq
+          apt-get install -y --no-install-recommends git curl ca-certificates gnupg
+          curl -fsSL https://deb.nodesource.com/setup_20.x | bash -
+          apt-get install -y --no-install-recommends nodejs
+
       - uses: actions/checkout@v7
 
-      - name: Set up Python
-        uses: actions/setup-python@v7
-        with:
-          python-version: '3.11'
-          cache: 'pip'
-
-      - name: Set up Node
-        uses: actions/setup-node@v4
-        with:
-          node-version: '20'
-
-      - name: Install dependencies
+      - name: Install Python dependencies
         run: pip install -r requirements.txt
 
       - name: Run tests with verbose output
@@ -47,6 +51,7 @@ jobs:
 
       - name: Verify SEO landing pages are in sync with generate_pages.py
         run: |
+          git config --global --add safe.directory "$GITHUB_WORKSPACE"
           python3 generate_pages.py
           if ! git diff --exit-code; then
             echo "::error::generate_pages.py output does not match the committed landing pages." \
@@ -61,8 +66,13 @@ jobs:
       name: github-pages
       url: ${{ steps.deployment.outputs.page_url }}
     runs-on: self-hosted
+    container:
+      image: python:3.11-slim
     timeout-minutes: 10
     steps:
+      - name: Install git (bare Python image doesn't have it, checkout needs it)
+        run: apt-get update -qq && apt-get install -y --no-install-recommends git
+
       - name: Checkout
         uses: actions/checkout@v7
       - name: Setup Pages
