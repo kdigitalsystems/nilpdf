@@ -1281,8 +1281,8 @@
     let pendingAction = null;
     let pendingCompressInfo = null;
     const pendingStats = {}; // { [statusId]: parsed __STATS__ payload from the last processing run }
-    let pendingDownload = null;
-    let pendingFooter = false;
+    const pendingDownloads = {}; // keyed by status id, since multiple tools can have jobs in flight at once
+    const pendingFooters = {};
     let lastLoadedFile = null;
     let lastLoadedTool = null;
 
@@ -1387,8 +1387,8 @@
             }
 
         } else if (type === 'SUCCESS') {
-            if (pendingFooter && !isZip && !isText) {
-                pendingFooter = false;
+            if (pendingFooters[id] && !isZip && !isText) {
+                pendingFooters[id] = false;
                 const transferBuf = result instanceof Uint8Array ? result : new Uint8Array(result);
                 worker.postMessage(
                     { id, action: 'ADD_FOOTER', payload: { buffer: transferBuf, password: '' } },
@@ -1406,8 +1406,8 @@
             const url  = URL.createObjectURL(blob);
             const a    = document.createElement('a');
             a.href = url;
-            a.download = pendingDownload || `NilPDF_Export_${Date.now()}.${ext}`;
-            pendingDownload = null;
+            a.download = pendingDownloads[id] || `NilPDF_Export_${Date.now()}.${ext}`;
+            delete pendingDownloads[id];
 
             if (id === 'totext-status' && isText) {
                 const text = new TextDecoder().decode(result);
@@ -1468,7 +1468,8 @@
 
         } else if (type === 'ERROR') {
             updateStatus(id, formatProcessingError(error, id), "text-red");
-            pendingFooter = false;
+            pendingFooters[id] = false;
+            delete pendingDownloads[id];
             pendingCompressInfo = null;
             const errBar = document.getElementById(id.replace('-status', '-progress'));
             if (errBar) { errBar.style.display = 'none'; errBar.value = 0; }
@@ -1657,7 +1658,7 @@
                 const short = lastLoadedFile.name.length > 28
                     ? lastLoadedFile.name.slice(0, 25) + '…'
                     : lastLoadedFile.name;
-                banner.innerHTML = `<span>Use <strong>${short}</strong>?</span>
+                banner.innerHTML = `<span>Use <strong>${escHtml(short)}</strong>?</span>
                     <button class="nudge-copy-btn" id="pf-use-btn">Use it</button>
                     <button class="nudge-dismiss" id="pf-dismiss-btn" aria-label="Dismiss">✕</button>`;
                 document.getElementById(`tool-${tool}`).prepend(banner);
@@ -1863,9 +1864,9 @@
         const password = document.getElementById('merge-password').value;
         const buffers = await toUint8All(mergeFilesArray.map(item => item.file));
         const count = mergeFilesArray.length;
-        pendingDownload = 'merged.pdf';
+        pendingDownloads['status'] = 'merged.pdf';
         runWhenReady('status', () => {
-            pendingFooter = document.getElementById('merge-footer')?.checked ?? false;
+            pendingFooters['status'] = document.getElementById('merge-footer')?.checked ?? false;
             updateStatus('status', `Merging ${count} files...`, '');
             worker.postMessage({ id: 'status', action: 'MERGE', payload: { buffers, password } }, buffers.map(b => b.buffer));
         });
@@ -1902,14 +1903,14 @@
         runWhenReady('compress-status', () => {
             updateStatus('compress-status', `Compressing ${fcount} file(s)...`, '');
             if (single) {
-                pendingFooter = document.getElementById('compress-footer')?.checked ?? false;
+                pendingFooters['compress-status'] = document.getElementById('compress-footer')?.checked ?? false;
                 pendingCompressInfo = { origSize, isBulk: false, startedAt: performance.now() };
-                pendingDownload = stem(fname) + '_compressed.pdf';
+                pendingDownloads['compress-status'] = stem(fname) + '_compressed.pdf';
                 worker.postMessage({ id: 'compress-status', action: 'COMPRESS', payload: { buffer: buffers[0], password } }, [buffers[0].buffer]);
             } else {
-                pendingFooter = false;
+                pendingFooters['compress-status'] = false;
                 pendingCompressInfo = { isBulk: true };
-                pendingDownload = 'compressed_batch.zip';
+                pendingDownloads['compress-status'] = 'compressed_batch.zip';
                 worker.postMessage({ id: 'compress-status', action: 'BULK_PROCESS', payload: { sub_action: 'COMPRESS', names, buffers, password } }, buffers.map(b => b.buffer));
             }
         });
@@ -1932,13 +1933,13 @@
         const single = files.length === 1;
         const fname = files[0].name; const fcount = files.length;
         runWhenReady('anonymize-status', () => {
-            pendingFooter = false;
+            pendingFooters['anonymize-status'] = false;
             updateStatus('anonymize-status', `Removing metadata from ${fcount} file(s)...`, '');
             if (single) {
-                pendingDownload = stem(fname) + '_metadata_removed.pdf';
+                pendingDownloads['anonymize-status'] = stem(fname) + '_metadata_removed.pdf';
                 worker.postMessage({ id: 'anonymize-status', action: 'ANONYMIZE', payload: { buffer: buffers[0], password } }, [buffers[0].buffer]);
             } else {
-                pendingDownload = 'metadata_removed_batch.zip';
+                pendingDownloads['anonymize-status'] = 'metadata_removed_batch.zip';
                 worker.postMessage({ id: 'anonymize-status', action: 'BULK_PROCESS', payload: { sub_action: 'ANONYMIZE', names, buffers, password } }, buffers.map(b => b.buffer));
             }
         });
@@ -2019,18 +2020,18 @@
         if (multi) {
             const groups = range.replace(/\s/g, '').split(',').map(p => parseRangePart(p)).filter(g => g.length);
             if (!groups.length) { updateStatus('split-status', 'Enter valid page ranges.', 'text-red'); return; }
-            pendingDownload = stem(fname) + '_split.zip';
+            pendingDownloads['split-status'] = stem(fname) + '_split.zip';
             runWhenReady('split-status', () => {
-                pendingFooter = false;
+                pendingFooters['split-status'] = false;
                 updateStatus('split-status', `Splitting into ${groups.length} file(s)...`, '');
                 worker.postMessage({ id: 'split-status', action: 'SPLIT_MULTI', payload: { buffer, ranges: groups, password } }, [buffer.buffer]);
             });
         } else {
             const indices = parsePageRange(range);
             if (!indices.length) { updateStatus('split-status', 'Enter valid page numbers.', 'text-red'); return; }
-            pendingDownload = stem(fname) + '_split.pdf';
+            pendingDownloads['split-status'] = stem(fname) + '_split.pdf';
             runWhenReady('split-status', () => {
-                pendingFooter = document.getElementById('split-footer')?.checked ?? false;
+                pendingFooters['split-status'] = document.getElementById('split-footer')?.checked ?? false;
                 updateStatus('split-status', 'Extracting pages...', '');
                 worker.postMessage({ id: 'split-status', action: 'SPLIT', payload: { buffer, indices, password } }, [buffer.buffer]);
             });
@@ -2078,9 +2079,9 @@
         const order    = Array.from(document.getElementById('thumbnail-grid').children).map(el => parseInt(el.dataset.index));
         const password = document.getElementById('reorder-password').value;
         const buffer   = await toUint8(rInput.files[0]);
-        pendingDownload = stem(rInput.files[0].name) + '_reordered.pdf';
+        pendingDownloads['reorder-status'] = stem(rInput.files[0].name) + '_reordered.pdf';
         runWhenReady('reorder-status', () => {
-            pendingFooter = document.getElementById('reorder-footer')?.checked ?? false;
+            pendingFooters['reorder-status'] = document.getElementById('reorder-footer')?.checked ?? false;
             updateStatus('reorder-status', 'Saving new order...', '');
             worker.postMessage({ id: 'reorder-status', action: 'REORDER', payload: { buffer, order, password } }, [buffer.buffer]);
         });
@@ -2180,9 +2181,9 @@
         const indices  = pagesStr ? parsePageRange(pagesStr) : [];
         const password = document.getElementById('rotate-password').value;
         const buffer   = await toUint8(rotateInput.files[0]);
-        pendingDownload = stem(rotateInput.files[0].name) + '_rotated.pdf';
+        pendingDownloads['rotate-status'] = stem(rotateInput.files[0].name) + '_rotated.pdf';
         runWhenReady('rotate-status', () => {
-            pendingFooter = document.getElementById('rotate-footer')?.checked ?? false;
+            pendingFooters['rotate-status'] = document.getElementById('rotate-footer')?.checked ?? false;
             updateStatus('rotate-status', 'Rotating pages...', '');
             worker.postMessage({ id: 'rotate-status', action: 'ROTATE', payload: { buffer, degrees, indices, password } }, [buffer.buffer]);
         });
@@ -2276,9 +2277,9 @@
         }
         const password = document.getElementById('remove-password').value;
         const buffer   = await toUint8(removeInput.files[0]);
-        pendingDownload = stem(removeInput.files[0].name) + '_pages_removed.pdf';
+        pendingDownloads['remove-status'] = stem(removeInput.files[0].name) + '_pages_removed.pdf';
         runWhenReady('remove-status', () => {
-            pendingFooter = document.getElementById('remove-footer')?.checked ?? false;
+            pendingFooters['remove-status'] = document.getElementById('remove-footer')?.checked ?? false;
             updateStatus('remove-status', 'Removing pages...', '');
             worker.postMessage({ id: 'remove-status', action: 'REMOVE_PAGES', payload: { buffer, indices, password } }, [buffer.buffer]);
         });
@@ -2301,9 +2302,9 @@
         if (check.warn) updateStatus('totext-status', check.warn, '');
         const password = document.getElementById('totext-password').value;
         const buffer   = await toUint8(totextInput.files[0]);
-        pendingDownload = stem(totextInput.files[0].name) + '.txt';
+        pendingDownloads['totext-status'] = stem(totextInput.files[0].name) + '.txt';
         runWhenReady('totext-status', () => {
-            pendingFooter = false;
+            pendingFooters['totext-status'] = false;
             updateStatus('totext-status', 'Extracting text...', '');
             worker.postMessage({ id: 'totext-status', action: 'EXTRACT_TEXT', payload: { buffer, password } }, [buffer.buffer]);
         });
@@ -2446,7 +2447,7 @@
                 try {
                     if (mime === 'image/jpeg' || mime === 'image/jpg') img = await pdfDoc.embedJpg(bytes);
                     else if (mime === 'image/png') img = await pdfDoc.embedPng(bytes);
-                    else { updateStatus('topdf-status', `Skipped "${file.name}", only JPG and PNG supported.`, 'text-red'); continue; }
+                    else { updateStatus('topdf-status', `Skipped "${file.name}": only JPG and PNG are supported.`, 'text-red'); continue; }
                 } catch (e) { updateStatus('topdf-status', `Skipped "${file.name}": ${e.message}`, 'text-red'); continue; }
                 const page = pdfDoc.addPage([img.width, img.height]);
                 page.drawImage(img, { x: 0, y: 0, width: img.width, height: img.height });
@@ -2496,9 +2497,9 @@
         const opacity  = parseInt(document.getElementById('watermark-opacity').value) / 100;
         const password = document.getElementById('watermark-password').value;
         const buffer   = await toUint8(watermarkInput.files[0]);
-        pendingDownload = stem(watermarkInput.files[0].name) + '_watermarked.pdf';
+        pendingDownloads['watermark-status'] = stem(watermarkInput.files[0].name) + '_watermarked.pdf';
         runWhenReady('watermark-status', () => {
-            pendingFooter = document.getElementById('watermark-footer')?.checked ?? false;
+            pendingFooters['watermark-status'] = document.getElementById('watermark-footer')?.checked ?? false;
             updateStatus('watermark-status', 'Applying watermark...', '');
             worker.postMessage({ id: 'watermark-status', action: 'WATERMARK', payload: { buffer, text, opacity, password } }, [buffer.buffer]);
         });
@@ -2523,9 +2524,9 @@
         const startNum = Math.max(1, parseInt(document.getElementById('pagenums-start').value) || 1);
         const password = document.getElementById('pagenums-password').value;
         const buffer   = await toUint8(pagenumInput.files[0]);
-        pendingDownload = stem(pagenumInput.files[0].name) + '_numbered.pdf';
+        pendingDownloads['pagenums-status'] = stem(pagenumInput.files[0].name) + '_numbered.pdf';
         runWhenReady('pagenums-status', () => {
-            pendingFooter = document.getElementById('pagenums-footer')?.checked ?? false;
+            pendingFooters['pagenums-status'] = document.getElementById('pagenums-footer')?.checked ?? false;
             updateStatus('pagenums-status', 'Adding page numbers...', '');
             worker.postMessage({ id: 'pagenums-status', action: 'ADD_PAGE_NUMBERS', payload: { buffer, position, startNum, password } }, [buffer.buffer]);
         });
@@ -2644,7 +2645,7 @@
         if (check.warn) updateStatus('repair-status', check.warn, '');
         const password = document.getElementById('repair-password').value;
         const buffer   = await toUint8(repairInput.files[0]);
-        pendingDownload = stem(repairInput.files[0].name) + '_repaired.pdf';
+        pendingDownloads['repair-status'] = stem(repairInput.files[0].name) + '_repaired.pdf';
         runWhenReady('repair-status', () => {
             updateStatus('repair-status', 'Attempting recovery…', '');
             worker.postMessage({ id: 'repair-status', action: 'REPAIR', payload: { buffer, password } }, [buffer.buffer]);
@@ -2891,9 +2892,9 @@
 
                 const password = el('password').value;
                 const buffer = await toUint8(state.file);
-                pendingDownload = stem(state.file.name) + suffix;
+                pendingDownloads[`${prefix}-status`] = stem(state.file.name) + suffix;
                 runWhenReady(`${prefix}-status`, () => {
-                    pendingFooter = el('footer')?.checked ?? false;
+                    pendingFooters[`${prefix}-status`] = el('footer')?.checked ?? false;
                     updateStatus(`${prefix}-status`, 'Rebuilding redacted pages...', '');
                     worker.postMessage({ id: `${prefix}-status`, action: 'REDACT', payload: { buffer, pageImages, password } }, [buffer.buffer]);
                 });
@@ -2914,9 +2915,9 @@
             if (check.warn) updateStatus(`${prefix}-status`, check.warn, '');
             const password = el('password').value;
             const buffer   = await toUint8(state.file);
-            pendingDownload = stem(state.file.name) + suffix;
+            pendingDownloads[`${prefix}-status`] = stem(state.file.name) + suffix;
             runWhenReady(`${prefix}-status`, () => {
-                pendingFooter = el('footer')?.checked ?? false;
+                pendingFooters[`${prefix}-status`] = el('footer')?.checked ?? false;
                 updateStatus(`${prefix}-status`, 'Applying edits...', '');
                 worker.postMessage({ id: `${prefix}-status`, action: 'EDIT', payload: { buffer, edits: allEdits, password } }, [buffer.buffer]);
             });
@@ -3347,9 +3348,9 @@
             if (check.warn) updateStatus('sign-status', check.warn, '');
             const password = el('password').value;
             const buffer = await toUint8(state.file);
-            pendingDownload = stem(state.file.name) + '_signed.pdf';
+            pendingDownloads['sign-status'] = stem(state.file.name) + '_signed.pdf';
             runWhenReady('sign-status', () => {
-                pendingFooter = el('footer')?.checked ?? false;
+                pendingFooters['sign-status'] = el('footer')?.checked ?? false;
                 updateStatus('sign-status', 'Applying signatures...', '');
                 worker.postMessage({ id: 'sign-status', action: 'SIGN', payload: { buffer, signatures: allSignatures, password } }, [buffer.buffer]);
             });
@@ -3526,9 +3527,9 @@
         const password = document.getElementById('fillform-password').value;
         const flatten  = document.getElementById('fillform-flatten').checked;
         const buffer   = await toUint8(fillformFile);
-        pendingDownload = stem(fillformFile.name) + (flatten ? '_filled_flat.pdf' : '_filled.pdf');
+        pendingDownloads['fillform-status'] = stem(fillformFile.name) + (flatten ? '_filled_flat.pdf' : '_filled.pdf');
         runWhenReady('fillform-status', () => {
-            pendingFooter = document.getElementById('fillform-footer')?.checked ?? false;
+            pendingFooters['fillform-status'] = document.getElementById('fillform-footer')?.checked ?? false;
             updateStatus('fillform-status', 'Filling form...', '');
             worker.postMessage({ id: 'fillform-status', action: 'FILL_FORM', payload: { buffer, fields: fillformValues, flatten, password } }, [buffer.buffer]);
         });
@@ -3618,9 +3619,9 @@
         mismatchEl.hidden = true;
 
         const buffer = await toUint8(protectInput.files[0]);
-        pendingDownload = stem(protectInput.files[0].name) + '_protected.pdf';
+        pendingDownloads['protect-status'] = stem(protectInput.files[0].name) + '_protected.pdf';
         runWhenReady('protect-status', () => {
-            pendingFooter = false; // never chain into ADD_FOOTER — it would try to reopen the newly-encrypted file with a blank password
+            pendingFooters['protect-status'] = false; // never chain into ADD_FOOTER — it would try to reopen the newly-encrypted file with a blank password
             updateStatus('protect-status', 'Encrypting...', '');
             worker.postMessage(
                 { id: 'protect-status', action: 'PROTECT', payload: { buffer, newPassword, password: currentPassword } },
@@ -3648,9 +3649,9 @@
 
         const password = document.getElementById('unlock-password').value;
         const buffer = await toUint8(unlockInput.files[0]);
-        pendingDownload = stem(unlockInput.files[0].name) + '_unlocked.pdf';
+        pendingDownloads['unlock-status'] = stem(unlockInput.files[0].name) + '_unlocked.pdf';
         runWhenReady('unlock-status', () => {
-            pendingFooter = false;
+            pendingFooters['unlock-status'] = false;
             updateStatus('unlock-status', 'Removing encryption...', '');
             worker.postMessage(
                 { id: 'unlock-status', action: 'UNLOCK', payload: { buffer, password } },
@@ -4235,9 +4236,9 @@
 
             const password = el('password').value;
             const buffer = await toUint8(state.file);
-            pendingDownload = stem(state.file.name) + '_filled_signed.pdf';
+            pendingDownloads['fillsign-status'] = stem(state.file.name) + '_filled_signed.pdf';
             runWhenReady('fillsign-status', () => {
-                pendingFooter = el('footer')?.checked ?? false;
+                pendingFooters['fillsign-status'] = el('footer')?.checked ?? false;
                 updateStatus('fillsign-status', 'Applying...', '');
                 worker.postMessage(
                     { id: 'fillsign-status', action: 'FILL_AND_SIGN', payload: { buffer, fields, edits, signatures, flatten, password } },
@@ -4343,7 +4344,8 @@
         }
         const num = parseInt(e.key);
         if (!isNaN(num)) {
-            const TOOL_NAMES = ['merge','compress','anonymize','split','reorder','rotate','remove','totext','topng','topdf','watermark','pagenums','inspect','repair','redact','fillform'];
+            // Only digits 1-9 and 0 are bindable (10 slots), so only the first 10 tools are reachable here.
+            const TOOL_NAMES = ['merge','compress','anonymize','split','reorder','rotate','remove','totext','topng','topdf'];
             const idx = num === 0 ? 9 : num - 1;
             const toolId = TOOL_NAMES[idx];
             if (toolId) openTool(toolId);

@@ -370,6 +370,14 @@ def process_bulk(action, file_names, js_buffers, status_id="", password=""):
 
     out_zip_stream = io.BytesIO()
     succeeded = 0
+    used_names = {}
+    def _unique(zip_name):
+        # Two uploaded files can share a name (e.g. from different folders), which
+        # would otherwise silently overwrite one output with the other in the zip.
+        count = used_names.get(zip_name, 0)
+        used_names[zip_name] = count + 1
+        return zip_name if count == 0 else f"{zip_name.rsplit('.', 1)[0]}_{count}.{zip_name.rsplit('.', 1)[1]}"
+
     with zipfile.ZipFile(out_zip_stream, 'w', zipfile.ZIP_DEFLATED) as zf:
         for i, (name, buf) in enumerate(zip(names, buffers)):
             _post_progress(status_id, int(i / total * 90), f"Processing {name} ({i + 1}/{total})...")
@@ -384,14 +392,14 @@ def process_bulk(action, file_names, js_buffers, status_id="", password=""):
                 else:
                     processed_bytes = buf
                     suffix = "_processed.pdf"
-                zf.writestr(f"{base_name}{suffix}", processed_bytes)
+                zf.writestr(_unique(f"{base_name}{suffix}"), processed_bytes)
                 succeeded += 1
             except Exception as exc:
                 # One bad file (wrong password, corrupt PDF) shouldn't lose every
                 # already-processed file in the batch — note the failure inside
                 # the zip and keep going instead of letting the exception escape
                 # and discard the whole in-progress archive.
-                zf.writestr(f"{base_name}_FAILED.txt", f"Could not process \"{name}\": {exc}")
+                zf.writestr(_unique(f"{base_name}_FAILED.txt"), f"Could not process \"{name}\": {exc}")
 
     if succeeded == 0:
         raise ValueError(
@@ -609,15 +617,7 @@ def process_repair(js_buf, status_id="", password=""):
     _post_progress(status_id, 2, "Reading file data…")
     buf = _ensure_py(js_buf)
     _post_progress(status_id, 5, "Parsing PDF structure (may take a moment for large files)…")
-    try:
-        reader = PdfReader(io.BytesIO(buf), strict=True)
-    except Exception:
-        _post_progress(status_id, 15, "Strict parse failed, retrying with lenient recovery…")
-        reader = PdfReader(io.BytesIO(buf), strict=False)
-    if reader.is_encrypted:
-        result = reader.decrypt(password or "")
-        if result == 0:
-            raise ValueError("Incorrect or missing password.")
+    reader = _open_reader(buf, password)
     total = len(reader.pages)
     if total == 0:
         raise ValueError("PDF contains no pages.")
@@ -663,7 +663,7 @@ def process_edit(js_buf, edits, status_id="", password=""):
     total = len(writer.pages)
 
     edits_by_page = {}
-    for edit in _ensure_py(edits):
+    for edit in _ensure_py(edits) or []:
         edit = dict(edit)
         page_idx = int(edit.get("page", 0))
         edits_by_page.setdefault(page_idx, []).append(edit)
@@ -718,7 +718,7 @@ def process_redact(js_buf, page_images, status_id="", password=""):
     writer = PdfWriter()
     total = len(reader.pages)
 
-    images = {int(k): v for k, v in dict(_ensure_py(page_images)).items()}
+    images = {int(k): v for k, v in dict(_ensure_py(page_images) or {}).items()}
 
     for i in range(total):
         raw = images.get(i)
@@ -773,7 +773,7 @@ def process_sign(js_buf, signatures, status_id="", password=""):
     total = len(writer.pages)
 
     sigs_by_page = {}
-    for sig in _ensure_py(signatures):
+    for sig in _ensure_py(signatures) or []:
         sig = dict(sig)
         page_idx = int(sig.get("page", 0))
         sigs_by_page.setdefault(page_idx, []).append(sig)
@@ -954,12 +954,13 @@ def process_fill_and_sign(js_buf, field_values, edits, signatures, flatten=False
     total = len(writer.pages)
     for i in range(total):
         page_edits = edits_by_page.get(i) or []
+        page_texts = [e for e in page_edits if e.get("type") == "text"]
         page_sigs = sigs_by_page.get(i) or []
-        if page_edits or page_sigs:
+        if page_texts or page_sigs:
             page = writer.pages[i]
             w = float(page.mediabox.width)
             h = float(page.mediabox.height)
-            overlay_page = _draw_overlay(w, h, texts=page_edits, signatures=page_sigs)
+            overlay_page = _draw_overlay(w, h, texts=page_texts, signatures=page_sigs)
             if overlay_page is not None:
                 _merge_overlay(page, overlay_page)
 

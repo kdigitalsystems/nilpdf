@@ -44,6 +44,17 @@ HTML_FILES = [
 ]
 PY_FILES = ["generate_pages.py", "core/pdf_engine.py"]
 
+# Plain JS/JSON files scanned whole (after stripping // and /* */ comments for
+# the JS ones): no HTML markup to strip comments out of, so strip_script_comments'
+# <script> wrapping doesn't apply, just the comment-stripping regexes directly.
+JS_FILES = ["assets/js/pdf_worker.js", "sw.js"]
+JSON_FILES = ["manifest.json"]
+
+
+def strip_js_comments(code):
+    code = re.sub(r"/\*.*?\*/", "", code, flags=re.DOTALL)
+    return re.sub(r"(?<!:)//[^\n]*", "", code)  # (?<!:) skips http(s):// URLs
+
 
 def read(relative_path):
     with open(os.path.join(BASE, relative_path), encoding="utf-8") as f:
@@ -69,9 +80,21 @@ def non_docstring_string_literals(code):
     """Yield (line_number, text) for every regular-quoted Python string
     literal, skipping comments (tokenize never returns them as STRING) and
     triple-quoted docstrings (every real docstring in this codebase uses
-    triple quotes; no user-facing message does)."""
+    triple quotes; no user-facing message does).
+
+    Also yields FSTRING_MIDDLE tokens (the literal text segments of an
+    f-string) where present: under PEP 701 (Python 3.12+), f-strings are
+    tokenized as FSTRING_START/FSTRING_MIDDLE/FSTRING_END rather than a
+    single STRING token, so an f-string's literal text (e.g. the "s left"
+    in f"{n} left") would otherwise never be checked. Older Python versions
+    (pre-3.12) have no FSTRING_MIDDLE token at all and tokenize an f-string
+    as a plain STRING, already covered by the check above.
+    """
+    fstring_middle = getattr(tokenize, "FSTRING_MIDDLE", None)
     for tok in tokenize.generate_tokens(io.StringIO(code).readline):
         if tok.type == tokenize.STRING and not tok.string.startswith(("'''", '"""')):
+            yield tok.start[0], tok.string
+        elif fstring_middle is not None and tok.type == fstring_middle:
             yield tok.start[0], tok.string
 
 
@@ -94,6 +117,14 @@ class TestNoBannedPunctuation(unittest.TestCase):
                 for char, name in BANNED.items():
                     if char in literal:
                         self.fail(f"{rel}, line {line_no}: found {name} in string literal: {literal[:120]}")
+
+    def test_js_files_have_no_banned_punctuation(self):
+        for rel in JS_FILES:
+            self._assert_clean(strip_js_comments(read(rel)), rel)
+
+    def test_json_files_have_no_banned_punctuation(self):
+        for rel in JSON_FILES:
+            self._assert_clean(read(rel), rel)
 
 
 if __name__ == "__main__":
