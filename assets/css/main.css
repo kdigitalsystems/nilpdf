@@ -13,6 +13,7 @@
     --vault: #2f6b5c;
     --vault-soft: #dfeae6;
     --redact-bar: #0b0b0c;
+    --on-accent: #ffffff; /* text/icon color for anything on a --primary/--accent background */
     --font-display: 'Fraunces', Georgia, 'Times New Roman', serif;
     --font-body: 'Public Sans', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
     --font-mono: 'IBM Plex Mono', ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
@@ -33,6 +34,11 @@
     --vault: #6fb3a0;
     --vault-soft: #1c3530;
     --redact-bar: #000000;
+    /* The dark-mode accent/primary are held brighter than their light-mode
+       values for readability against the dark background, which flips which
+       text color actually contrasts with them: white text on this brighter
+       brass fails WCAG AA (~2.3:1), dark ink passes comfortably (~7.8:1). */
+    --on-accent: #15181d;
 }
 
 body {
@@ -173,7 +179,7 @@ button {
 .primary-btn {
     width: 100%;
     background-color: var(--primary);
-    color: white;
+    color: var(--on-accent);
     border: none;
     padding: 0.85rem;
 }
@@ -415,7 +421,7 @@ button {
 
 .redact-mode-btn.active {
     background: var(--accent);
-    color: #fff;
+    color: var(--on-accent);
     border-color: var(--accent);
 }
 
@@ -647,7 +653,7 @@ button {
     color: #fff;
 }
 .sign-item-remove { background: #ef4444; }
-.sign-item-duplicate { background: var(--accent); }
+.sign-item-duplicate { background: var(--accent); color: var(--on-accent); }
 
 .sign-item-handle {
     position: absolute;
@@ -1551,6 +1557,21 @@ body {
     gap: 0;
 }
 .workspace .tabs::-webkit-scrollbar { display: none; }
+/* Hint that there are more tools off-screen, since the hidden scrollbar above
+   gives no other visual cue that this row scrolls. Only fades the edge that
+   actually has hidden content — toggled by JS in updateTabsFade(). */
+.workspace .tabs.has-hidden-start {
+    -webkit-mask-image: linear-gradient(to right, transparent 0, black 16px);
+    mask-image: linear-gradient(to right, transparent 0, black 16px);
+}
+.workspace .tabs.has-hidden-end {
+    -webkit-mask-image: linear-gradient(to left, transparent 0, black 16px);
+    mask-image: linear-gradient(to left, transparent 0, black 16px);
+}
+.workspace .tabs.has-hidden-start.has-hidden-end {
+    -webkit-mask-image: linear-gradient(to right, transparent 0, black 16px, black calc(100% - 16px), transparent 100%);
+    mask-image: linear-gradient(to right, transparent 0, black 16px, black calc(100% - 16px), transparent 100%);
+}
 [data-theme="dark"] .workspace .tabs { background: transparent; }
 
 .workspace .tab-btn {
@@ -1824,7 +1845,7 @@ body {
     transition: transform 0.15s ease, box-shadow 0.15s ease, border-color 0.15s ease, background 0.15s ease, color 0.15s ease;
 }
 .popular-tool-btn:hover {
-    color: #fff;
+    color: var(--on-accent);
     background: var(--accent);
     border-color: var(--accent);
     transform: translateY(-2px);
@@ -2194,7 +2215,7 @@ body {
     align-items: center;
     gap: 0.5rem;
     background: var(--primary);
-    color: #fff;
+    color: var(--on-accent);
     font-size: 0.95rem;
     font-weight: 700;
     padding: 0.9rem 1.75rem;
@@ -2331,7 +2352,7 @@ body {
 .modal-dialog {
     background: var(--card-bg);
     border: 1px solid var(--border);
-    border-radius: 20px;
+    border-radius: 6px;
     padding: 2rem;
     max-width: 480px;
     width: 100%;
@@ -2467,7 +2488,7 @@ body {
 
 .modal-btn-primary {
     background: var(--accent);
-    color: #fff;
+    color: var(--on-accent);
     border: none;
     border-radius: 5px;
     font-family: inherit;

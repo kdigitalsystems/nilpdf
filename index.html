@@ -125,7 +125,7 @@
 
     <!-- Popular tools -->
     <section class="popular-tools">
-        <p class="popular-tools-title">Popular tools</p>
+        <h2 class="popular-tools-title">Popular tools</h2>
         <div class="popular-tools-row">
             <button class="popular-tool-btn" onclick="openTool('merge')">Merge PDF</button>
             <button class="popular-tool-btn" onclick="openTool('compress')">Compress PDF</button>
@@ -163,7 +163,7 @@
 
     <!-- Tool grid -->
     <section class="tools-section">
-        <p class="tools-section-title">All tools</p>
+        <h2 class="tools-section-title">All tools</h2>
         <div class="tool-search-wrap">
             <svg class="tool-search-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
             <input type="search" id="tool-search" class="tool-search-input" placeholder="Search tools…" aria-label="Search tools" oninput="searchTools(this.value)">
@@ -457,7 +457,7 @@
 
     <!-- Trust section -->
     <section class="trust-section">
-        <p class="trust-section-title">Why trust NilPDF</p>
+        <h2 class="trust-section-title">Why trust NilPDF</h2>
         <div class="trust-grid">
             <a href="https://nilpdf.com/security/#verify" class="trust-item">
                 <div class="trust-item-icon">
@@ -485,7 +485,7 @@
 
     <!-- FAQ -->
     <section class="faq-section">
-        <p class="faq-section-title">Frequently asked questions</p>
+        <h2 class="faq-section-title">Frequently asked questions</h2>
         <details class="faq-item">
             <summary>Is NilPDF really free?</summary>
             <p>Yes. Every tool is free to use, with no account, no usage limits, and no paywalled features.</p>
@@ -1630,12 +1630,27 @@
         }
     });
 
+    /** Toggle the tab-bar's edge fades to only hint at whichever side still has
+     * tabs scrolled out of view, instead of a static fade that would dim the
+     * first/last tab even once there's nothing left to scroll to. **/
+    function updateTabsFade() {
+        const nav = document.querySelector('.workspace .tabs');
+        if (!nav) return;
+        nav.classList.toggle('has-hidden-start', nav.scrollLeft > 1);
+        nav.classList.toggle('has-hidden-end', nav.scrollLeft + nav.clientWidth < nav.scrollWidth - 1);
+    }
+    document.querySelector('.workspace .tabs')?.addEventListener('scroll', updateTabsFade, { passive: true });
+    window.addEventListener('resize', updateTabsFade);
+    updateTabsFade();
+
     function switchTab(event, tool) {
         document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
         document.querySelectorAll('.tool-section').forEach(s => {
             s.classList.remove('active-tool'); s.classList.add('hidden-tool');
         });
         event.target.classList.add('active');
+        event.target.scrollIntoView({ block: 'nearest', inline: 'nearest' });
+        updateTabsFade();
         document.getElementById(`tool-${tool}`).classList.replace('hidden-tool', 'active-tool');
         if (!_skipTabHistory) history.replaceState({ view: 'tool', tool }, '', '#' + tool);
         const meta = TOOL_META[tool];
@@ -1832,7 +1847,7 @@
                 `<span class="drag-handle" title="Drag to reorder">⠿</span>` +
                 `<span class="file-name">📄 ${escHtml(item.file.name)}</span>` +
                 `<span class="file-size-badge">${kb}</span>` +
-                `<button class="remove-file-btn" onclick="removeMergeFile(${item.id})" title="Remove">×</button>`;
+                `<button class="remove-file-btn" onclick="removeMergeFile(${item.id})" title="Remove" aria-label="Remove file">×</button>`;
             list.appendChild(li);
         });
         const count = mergeFilesArray.length;
@@ -2404,7 +2419,7 @@
             li.innerHTML =
                 `<span class="drag-handle" title="Drag to reorder">⠿</span>` +
                 `<span class="file-name">🖼 ${escHtml(item.file.name)}</span>` +
-                `<button class="remove-file-btn" onclick="removeTopdfFile(${item.id})" title="Remove">×</button>`;
+                `<button class="remove-file-btn" onclick="removeTopdfFile(${item.id})" title="Remove" aria-label="Remove file">×</button>`;
             list.appendChild(li);
         });
         const count = topdfFilesArray.length;
