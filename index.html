@@ -17,7 +17,16 @@
     <script>
         if ('serviceWorker' in navigator) {
             navigator.serviceWorker.register('./sw.js').then(() => {
-                if (!crossOriginIsolated) location.reload();
+                // Reload once to pick up the COOP/COEP headers the service worker
+                // adds. Guarded by a sessionStorage flag: if the reloaded page is
+                // still not cross-origin isolated (e.g. offline with a cache miss,
+                // or the SW response genuinely can't carry the headers), retrying
+                // forever would freeze the page in a reload loop instead of just
+                // running without the SharedArrayBuffer-dependent fast path.
+                if (!crossOriginIsolated && !sessionStorage.getItem('sw-coi-reload')) {
+                    sessionStorage.setItem('sw-coi-reload', '1');
+                    location.reload();
+                }
             }).catch(() => {});
         }
     </script>
@@ -1268,7 +1277,8 @@
     };
 
     /** 2. WORKER BRIDGE **/
-    if (!crossOriginIsolated) {
+    if (!crossOriginIsolated && !sessionStorage.getItem('sw-coi-reload')) {
+        sessionStorage.setItem('sw-coi-reload', '1');
         document.querySelectorAll('.status-message').forEach(el => {
             el.textContent = 'Finishing setup, reloading…';
             el.className = 'status-message is-loading';

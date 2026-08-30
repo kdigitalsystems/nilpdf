@@ -39,7 +39,8 @@ self.addEventListener('fetch', e => {
     // gets the latest HTML; fall back to cache only when offline.
     if (e.request.mode === 'navigate') {
         e.respondWith(
-            fetch(e.request).then(addSecurityHeaders).catch(() => caches.match(e.request))
+            fetch(e.request).then(addSecurityHeaders)
+                .catch(() => caches.match(e.request).then(addSecurityHeaders))
         );
         return;
     }
@@ -56,7 +57,7 @@ self.addEventListener('fetch', e => {
                     caches.open(CACHE).then(c => c.put(e.request, clone));
                     return addSecurityHeaders(res);
                 })
-                .catch(() => caches.match(e.request))
+                .catch(() => caches.match(e.request).then(addSecurityHeaders))
         );
         return;
     }

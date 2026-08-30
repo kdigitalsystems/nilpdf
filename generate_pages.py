@@ -17,7 +17,7 @@ TOOLS = [
             'Password-protected PDFs supported',
             'Files never leave your device, zero uploads',
         ],
-        'body_text': 'NilPDF Merge runs entirely in your browser using WebAssembly, no file ever leaves your device. Whether you\'re combining contracts, reports, or scanned documents, the result is a single, clean PDF downloaded directly to you. There are no file size limits, no account required, and no data sent to any server.',
+        'body_text': 'NilPDF Merge runs entirely in your browser using WebAssembly, no file ever leaves your device. Whether you\'re combining contracts, reports, or scanned documents, the result is a single, clean PDF downloaded directly to you. Files up to 200MB each are supported, no account required, and no data sent to any server.',
         'how_to_name': 'How to merge PDF files',
         'how_to_steps': [
             ('Open NilPDF Merge', 'Visit nilpdf.com and select the Merge tool.'),
@@ -49,7 +49,7 @@ TOOLS = [
             'Shows before/after file size comparison',
             'No uploads, your files stay on your device',
         ],
-        'body_text': 'NilPDF Compress shrinks PDFs by optimising image data and removing redundant cross-reference tables, all inside your browser. No account, no size limits, no waiting for a server to process your files. Simply drop your PDF, click compress, and the smaller file downloads instantly.',
+        'body_text': 'NilPDF Compress shrinks PDFs by optimising image data and removing redundant cross-reference tables, all inside your browser. No account, files up to 200MB supported, no waiting for a server to process your files. Simply drop your PDF, click compress, and the smaller file downloads instantly.',
         'how_to_name': 'How to compress a PDF',
         'how_to_steps': [
             ('Open NilPDF Compress', 'Visit nilpdf.com and select the Compress PDF tool.'),
@@ -80,7 +80,7 @@ TOOLS = [
             'Works with encrypted PDFs',
             'Zero uploads, all processing in your browser',
         ],
-        'body_text': 'NilPDF Split lets you extract any combination of pages from a PDF without uploading anything to a server. Type a range like 2-5 or individual page numbers, and your extracted PDF or ZIP of separate files downloads in seconds. No account, no size limits, no data shared with anyone.',
+        'body_text': 'NilPDF Split lets you extract any combination of pages from a PDF without uploading anything to a server. Type a range like 2-5 or individual page numbers, and your extracted PDF or ZIP of separate files downloads in seconds. No account, files up to 200MB supported, no data shared with anyone.',
         'how_to_name': 'How to split a PDF',
         'how_to_steps': [
             ('Open NilPDF Split', 'Visit nilpdf.com and select the Split tool.'),
@@ -123,7 +123,7 @@ TOOLS = [
         'faq': [
             ('Is converting PDF to images really free?', 'Yes, completely free, unlimited use, no account required.'),
             ('Are my PDF files safe when I convert them to images?', 'Yes. Your files never leave your device. Everything runs in your browser using WebAssembly. NilPDF has no backend server.'),
-            ('What resolution are the exported images?', 'Pages are exported at 150 DPI by default, suitable for screen use and presentations.'),
+            ('What resolution are the exported images?', 'Pages are exported at 144 DPI by default, suitable for screen use and presentations.'),
         ],
         'related': [
             ('images-to-pdf', 'Images to PDF'),
@@ -144,7 +144,7 @@ TOOLS = [
             'Maintains original image quality',
             'No cloud upload, all local processing',
         ],
-        'body_text': 'NilPDF bundles your photos and screenshots into a single PDF locally, nothing is sent to a server. Mix JPG, PNG, and other image types freely, arrange them in the order you want, and download the result in one click. No account required, no file size limits.',
+        'body_text': 'NilPDF bundles your photos and screenshots into a single PDF locally, nothing is sent to a server. Mix JPG and PNG images freely, arrange them in the order you want, and download the result in one click. No account required, files up to 200MB each are supported.',
         'how_to_name': 'How to convert images to PDF',
         'how_to_steps': [
             ('Open NilPDF Images to PDF', 'Visit nilpdf.com and select the Images to PDF tool.'),
@@ -154,7 +154,7 @@ TOOLS = [
         'faq': [
             ('Is converting images to PDF really free?', 'Yes, completely free, unlimited use, no account required.'),
             ('Are my image files safe when I convert them?', 'Yes. Your files never leave your device. Everything runs in your browser using WebAssembly. NilPDF has no backend server.'),
-            ('What image formats are supported?', 'JPG, PNG, WebP, GIF, and BMP are all supported.'),
+            ('What image formats are supported?', 'JPG and PNG are supported.'),
         ],
         'related': [
             ('pdf-to-images', 'PDF to Images'),

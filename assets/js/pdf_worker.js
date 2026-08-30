@@ -216,8 +216,13 @@ self.onmessage = async (event) => {
         // UNLOCK's own errors are already specific, user-facing sentences
         // ("not protected", "needs the owner password") — collapsing them
         // to a generic "incorrect password" would actively mislead, so only
-        // every other action gets the blanket remap.
-        if (action !== 'UNLOCK' && (msg.includes('Incorrect password') || msg.includes('password'))) {
+        // every other action gets the blanket remap. Match only the exact
+        // phrase _open_reader's decrypt failure always uses, not a bare
+        // "password" substring — other validation errors legitimately
+        // mention the word "password" (e.g. Protect's "Enter a password to
+        // protect this PDF." when the new-password field is left blank) and
+        // would otherwise be misreported as a wrong source-file password.
+        if (action !== 'UNLOCK' && msg.includes('Incorrect password')) {
             msg = 'Incorrect or missing password.';
         }
         postMessage({ type: 'ERROR', id, error: msg });
