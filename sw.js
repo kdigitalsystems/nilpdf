@@ -3,13 +3,33 @@
 // stale caches, so users always receive fresh files after a deployment.
 const CACHE = 'nilpdf-__SW_VERSION__';
 
-// Only pre-cache the bare minimum. CSS is loaded with a ?v= query string that
-// changes every deploy, so it is intentionally excluded here — it will be cached
-// automatically on first request with the versioned URL as the key.
-const SHELL = ['/', '/index.html'];
+// Pre-cache the files the app cannot start without. All of them except the HTML
+// are requested with a ?v=<build> query string, so they are listed here without
+// one and looked up below with ignoreSearch — see the fetch handler.
+//
+// Pre-caching these is what makes offline work on the visit after the first one.
+// A service worker does not control the page that registers it, so on a first
+// visit these files are fetched straight from the network and never pass through
+// the fetch handler that would have cached them. Without an install-time copy,
+// the next load offline would serve index.html from cache and then fail to fetch
+// app.js, leaving a page that renders but does nothing.
+const SHELL = [
+    '/',
+    '/index.html',
+    '/assets/css/main.css',
+    '/assets/js/app.js',
+    '/assets/js/pdf_worker.js',
+    '/core/pdf_engine.py',
+];
 
 self.addEventListener('install', e => {
-    e.waitUntil(caches.open(CACHE).then(c => c.addAll(SHELL).catch(() => {})));
+    // Cache each entry independently: addAll() is atomic, so one 404 would throw
+    // away the whole pre-cache and silently leave the app with no offline copy.
+    e.waitUntil(
+        caches.open(CACHE).then(c => Promise.all(
+            SHELL.map(url => c.add(url).catch(() => {}))
+        ))
+    );
     // Activate immediately — don't wait for existing tabs to close
     self.skipWaiting();
 });
@@ -57,15 +77,15 @@ self.addEventListener('fetch', e => {
                     caches.open(CACHE).then(c => c.put(e.request, clone));
                     return addSecurityHeaders(res);
                 })
-                .catch(() => caches.match(e.request).then(addSecurityHeaders))
+                .catch(() => caches.match(e.request, { ignoreSearch: true }).then(addSecurityHeaders))
         );
         return;
     }
 
     // Assets (CSS, icons, JS, etc.): network-first so every online visit
     // gets the latest files; update the cache in the background; serve cache
-    // only when the user is offline. Navigate requests are already handled above,
-    // so SHELL paths never reach this branch.
+    // only when the user is offline. The SHELL assets are handled here too and
+    // simply overwrite their pre-cached copy with the versioned one.
     if (reqPath.startsWith('/assets/')) {
         e.respondWith(
             fetch(e.request)
@@ -74,7 +94,8 @@ self.addEventListener('fetch', e => {
                     caches.open(CACHE).then(c => c.put(e.request, clone));
                     return res;
                 })
-                .catch(() => caches.match(e.request))
+                // ignoreSearch so ?v=<build> still matches the pre-cached copy.
+                .catch(() => caches.match(e.request, { ignoreSearch: true }))
         );
     }
 });

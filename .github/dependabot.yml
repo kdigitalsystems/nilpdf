@@ -5,6 +5,19 @@ updates:
     schedule:
       interval: "weekly"
     open-pull-requests-limit: 5
+    ignore:
+      # cryptography and Pillow are not ours to choose. They load in the browser
+      # as compiled WASM wheels baked into Pyodide v0.25.0's lockfile, and
+      # requirements.txt pins them to those exact versions so CI tests what users
+      # actually run. A Dependabot bump here would only make the test job diverge
+      # from production. They move when PYODIDE_VERSION in assets/js/pdf_worker.js
+      # moves — see the comments in requirements.txt.
+      - dependency-name: "cryptography"
+      - dependency-name: "Pillow"
+      # pypdf and reportlab bumps ARE wanted, but must be mirrored into the
+      # micropip.install() pins in assets/js/pdf_worker.js. CI enforces that:
+      # tests/test_site_consistency.py fails while the two disagree, so such a PR
+      # stays red until pdf_worker.js is updated in the same change.
 
   - package-ecosystem: "github-actions"
     directory: "/"

@@ -1,5 +1,5 @@
-"""Static consistency checks across index.html, generate_pages.py, and
-sitemap.xml.
+"""Static consistency checks across index.html, assets/js/app.js,
+generate_pages.py, and sitemap.xml.
 
 These don't touch the PDF engine — they exist because every tool this
 session (Protect, Fill & Sign, Unlock) needed registering in half a dozen
@@ -32,24 +32,34 @@ def load_generate_pages():
     return module
 
 
+def tool_meta_ids(app_js):
+    """Tool ids declared in app.js's TOOL_META object."""
+    m = re.search(r"const TOOL_META = \{(.*?)\n\s*\};", app_js, re.DOTALL)
+    assert m is not None, "Could not find TOOL_META block in assets/js/app.js"
+    ids = set(re.findall(r"^\s*(\w+):\s*\{", m.group(1), re.MULTILINE))
+    assert ids, "TOOL_META parsed but no tool ids were found — regex may be stale"
+    return ids
+
+
 class TestToolRegistration(unittest.TestCase):
     """Every tool id that appears in TOOL_META must appear consistently in
-    every other place index.html registers a tool."""
+    every other place a tool is registered.
+
+    TOOL_META and SINGLE_FILE_TOOLS live in assets/js/app.js; the tab bar,
+    homepage cards, footer links and workspace sections are markup in
+    index.html. The split is why these checks read two files."""
 
     @classmethod
     def setUpClass(cls):
         cls.html = read("index.html")
+        cls.app = read("assets/js/app.js")
 
     def _tool_meta_ids(self):
-        m = re.search(r"const TOOL_META = \{(.*?)\n\s*\};", self.html, re.DOTALL)
-        self.assertIsNotNone(m, "Could not find TOOL_META block in index.html")
-        ids = set(re.findall(r"^\s*(\w+):\s*\{", m.group(1), re.MULTILINE))
-        self.assertTrue(ids, "TOOL_META parsed but no tool ids were found — regex may be stale")
-        return ids
+        return tool_meta_ids(self.app)
 
     def _single_file_tools(self):
-        m = re.search(r"const SINGLE_FILE_TOOLS = \[(.*?)\];", self.html)
-        self.assertIsNotNone(m, "Could not find SINGLE_FILE_TOOLS in index.html")
+        m = re.search(r"const SINGLE_FILE_TOOLS = \[(.*?)\];", self.app)
+        self.assertIsNotNone(m, "Could not find SINGLE_FILE_TOOLS in assets/js/app.js")
         return set(re.findall(r"'(\w+)'", m.group(1)))
 
     def _tab_buttons(self):
@@ -97,7 +107,7 @@ class TestToolRegistration(unittest.TestCase):
 
 class TestGeneratePagesConsistency(unittest.TestCase):
     """generate_pages.py's TOOLS list must be internally consistent and
-    aligned with index.html's TOOL_META."""
+    aligned with app.js's TOOL_META."""
 
     @classmethod
     def setUpClass(cls):
@@ -136,15 +146,12 @@ class TestGeneratePagesConsistency(unittest.TestCase):
             related_slugs = {rel_slug for rel_slug, _label in tool.get("related", [])}
             self.assertNotIn(tool["slug"], related_slugs, f"{tool['slug']} lists itself as a related tool")
 
-    def test_tool_ids_match_index_html_tool_meta(self):
-        html = read("index.html")
-        m = re.search(r"const TOOL_META = \{(.*?)\n\s*\};", html, re.DOTALL)
-        self.assertIsNotNone(m, "Could not find TOOL_META block in index.html")
-        meta_ids = set(re.findall(r"^\s*(\w+):\s*\{", m.group(1), re.MULTILINE))
+    def test_tool_ids_match_app_js_tool_meta(self):
+        meta_ids = tool_meta_ids(read("assets/js/app.js"))
         gp_ids = {t["tool_id"] for t in self.gp.TOOLS}
         self.assertEqual(
             meta_ids, gp_ids,
-            "generate_pages.py's TOOLS tool_ids don't match index.html's TOOL_META keys",
+            "generate_pages.py's TOOLS tool_ids don't match app.js's TOOL_META keys",
         )
 
 
@@ -155,6 +162,80 @@ class TestSitemapConsistency(unittest.TestCase):
         for tool in gp.TOOLS:
             url = f"https://nilpdf.com/{tool['slug']}/"
             self.assertIn(url, sitemap, f"{tool['slug']} has no <loc> entry in sitemap.xml")
+
+
+class TestBrowserDependencyPins(unittest.TestCase):
+    """The versions CI tests must be the versions the browser installs.
+
+    pypdf and reportlab are pure-Python wheels micropip pulls from PyPI at the
+    user's first visit, so they are pinned in two places: requirements.txt (what
+    the test job installs) and the micropip.install() call in pdf_worker.js (what
+    every visitor installs). If those drift, the suite is validating the engine
+    against libraries nobody actually runs, and a breaking upstream release ships
+    to users with CI still green. A Dependabot PR bumping requirements.txt alone
+    fails here until pdf_worker.js is bumped with it.
+
+    cryptography and Pillow are excluded on purpose: in the browser they resolve
+    to the compiled WASM wheels in Pyodide's own lockfile and cannot be pinned by
+    us, so they carry no version in the micropip call to compare against.
+    """
+
+    SHARED = ["pypdf", "reportlab"]
+
+    def _requirements_pins(self):
+        pins = {}
+        for line in read("requirements.txt").splitlines():
+            line = line.split("#")[0].strip()
+            m = re.match(r"^([A-Za-z0-9_.\-]+)==([A-Za-z0-9_.\-]+)$", line)
+            if m:
+                pins[m.group(1).lower()] = m.group(2)
+        self.assertTrue(pins, "No pinned requirements parsed — regex may be stale")
+        return pins
+
+    def _worker_pins(self):
+        worker = read("assets/js/pdf_worker.js")
+        m = re.search(r"micropip\.install\(\[(.*?)\]", worker, re.DOTALL)
+        self.assertIsNotNone(m, "Could not find the micropip.install([...]) call in pdf_worker.js")
+        pins = {}
+        for spec in re.findall(r"[\"']([^\"']+)[\"']", m.group(1)):
+            if "==" in spec:
+                name, version = spec.split("==", 1)
+                pins[name.lower()] = version
+        return pins
+
+    def test_shared_packages_are_pinned_in_both_places(self):
+        req, worker = self._requirements_pins(), self._worker_pins()
+        for pkg in self.SHARED:
+            with self.subTest(package=pkg):
+                self.assertIn(pkg, req, f"{pkg} is not pinned in requirements.txt")
+                self.assertIn(
+                    pkg, worker,
+                    f"{pkg} has no ==version pin in pdf_worker.js's micropip.install(); "
+                    f"every visitor would get whatever is latest on PyPI that day",
+                )
+
+    def test_pinned_versions_match(self):
+        req, worker = self._requirements_pins(), self._worker_pins()
+        for pkg in self.SHARED:
+            with self.subTest(package=pkg):
+                self.assertEqual(
+                    req.get(pkg), worker.get(pkg),
+                    f"{pkg} is pinned to {req.get(pkg)} in requirements.txt but "
+                    f"{worker.get(pkg)} in assets/js/pdf_worker.js. CI would be testing a "
+                    f"different version than the browser installs — bump both together.",
+                )
+
+    def test_worker_pins_nothing_pyodide_controls(self):
+        """Pinning cryptography or Pillow in micropip.install() would ask PyPI for a
+        version that has no WASM wheel, so boot could fail for every user."""
+        worker = self._worker_pins()
+        for pkg in ("cryptography", "pillow"):
+            with self.subTest(package=pkg):
+                self.assertNotIn(
+                    pkg, worker,
+                    f"{pkg} is version-pinned in pdf_worker.js. It ships as a compiled WASM "
+                    f"wheel from Pyodide's lockfile; pin it by changing PYODIDE_VERSION instead.",
+                )
 
 
 class TestWorkerActionWiring(unittest.TestCase):

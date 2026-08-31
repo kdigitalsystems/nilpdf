@@ -77,10 +77,10 @@ jobs:
         uses: actions/checkout@v7
       - name: Setup Pages
         uses: actions/configure-pages@v6
-      - name: Stamp build version and feedback token into index.html and sw.js
+      - name: Stamp build version and feedback endpoint into index.html, app.js and sw.js
         env:
           COMMIT_SHA: ${{ github.sha }}
-          FEEDBACK_GITHUB_TOKEN: ${{ secrets.FEEDBACK_GITHUB_TOKEN }}
+          FEEDBACK_ENDPOINT: ${{ vars.FEEDBACK_ENDPOINT }}
         run: |
           python3 - <<'EOF'
           import os, datetime
@@ -88,25 +88,32 @@ jobs:
           date = datetime.date.today().isoformat()
           ver  = f'{sha} {date}'
 
-          # Stamp index.html (__BUILD_VERSION__ appears in the CSS link, the JS const, and the worker URL)
-          html = open('index.html').read()
-          if '__BUILD_VERSION__' not in html:
-              print('ERROR: __BUILD_VERSION__ placeholder not found in index.html'); exit(1)
-          html = html.replace('__BUILD_VERSION__', ver)
-          print(f'index.html stamped: {ver}')
+          # Stamp __BUILD_VERSION__ into index.html (the CSS link and the app.js
+          # script tag) and into assets/js/app.js (the version const and the
+          # pdf_worker.js URL). Both files must carry it, so a missing placeholder
+          # in either one is a hard failure rather than a silently stale asset URL.
+          for path in ('index.html', 'assets/js/app.js'):
+              text = open(path).read()
+              if '__BUILD_VERSION__' not in text:
+                  print(f'ERROR: __BUILD_VERSION__ placeholder not found in {path}'); exit(1)
+              open(path, 'w').write(text.replace('__BUILD_VERSION__', ver))
+              print(f'{path} stamped: {ver}')
 
-          # Stamp the feedback GitHub token (__GH_FEEDBACK_TOKEN__).
-          # The token never touches the git repo — it exists only in the deployed
-          # artifact. It must have public_repo scope only. If the secret is not set
-          # the placeholder stays in place and the modal shows an "unavailable" error.
-          fb_token = os.environ.get('FEEDBACK_GITHUB_TOKEN', '').strip()
-          if fb_token:
-              html = html.replace('__GH_FEEDBACK_TOKEN__', fb_token)
-              print('Feedback token stamped.')
+          # Stamp the feedback relay endpoint (__FEEDBACK_ENDPOINT__) into app.js.
+          # This is the public URL of the Cloudflare Worker in feedback-worker/, which
+          # is what actually holds the GitHub token. No credential is ever stamped into
+          # the deployed site: everything served to a browser is world-readable, so a
+          # token in the page would be a published token. If the variable is not set,
+          # the placeholder stays and the modal shows an "unavailable" message.
+          endpoint = os.environ.get('FEEDBACK_ENDPOINT', '').strip()
+          app = open('assets/js/app.js').read()
+          if endpoint:
+              if '__FEEDBACK_ENDPOINT__' not in app:
+                  print('ERROR: __FEEDBACK_ENDPOINT__ placeholder not found in assets/js/app.js'); exit(1)
+              open('assets/js/app.js', 'w').write(app.replace('__FEEDBACK_ENDPOINT__', endpoint))
+              print(f'Feedback endpoint stamped: {endpoint}')
           else:
-              print('WARNING: FEEDBACK_GITHUB_TOKEN secret not set — feedback form will show unavailable message.')
-
-          open('index.html', 'w').write(html)
+              print('WARNING: FEEDBACK_ENDPOINT variable not set — feedback form will show unavailable message.')
 
           # Stamp sw.js (__SW_VERSION__ is the cache name — changing it on every
           # deploy forces browsers to delete the old cache and fetch fresh files)

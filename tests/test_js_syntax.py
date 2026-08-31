@@ -1,12 +1,12 @@
 """Catch JavaScript syntax errors before they ship.
 
-index.html carries one very large inline <script> block (thousands of lines,
-one per-tool IIFE after another) with no other automated check on it — a
-single unbalanced brace or stray token anywhere in it silently breaks the
-whole SPA for every tool, not just the one being edited, and nothing in the
-Python test suite would notice. This uses `node --check` (parse-only, no
-execution) to at least confirm every inline <script> block and
-pdf_worker.js are syntactically valid.
+assets/js/app.js is the whole SPA (thousands of lines, one per-tool IIFE
+after another) and there is no build step in front of it — a single
+unbalanced brace or stray token anywhere in it silently breaks every tool,
+not just the one being edited, and nothing in the Python test suite would
+notice. This uses `node --check` (parse-only, no execution) to confirm the
+standalone JS files and every remaining inline <script> block are
+syntactically valid.
 
 Skips cleanly if Node isn't available on the runner rather than failing CI
 for an unrelated environment reason.
@@ -63,9 +63,11 @@ class TestJavaScriptSyntax(unittest.TestCase):
             ok, stderr = node_check(script)
             self.assertTrue(ok, f"index.html inline <script> block #{i + 1} has a syntax error:\n{stderr}")
 
-    def test_pdf_worker_js_is_syntactically_valid(self):
-        ok, stderr = node_check(read("assets/js/pdf_worker.js"))
-        self.assertTrue(ok, f"assets/js/pdf_worker.js has a syntax error:\n{stderr}")
+    def test_standalone_js_files_are_syntactically_valid(self):
+        for path in ("assets/js/app.js", "assets/js/pdf_worker.js", "sw.js"):
+            with self.subTest(path=path):
+                ok, stderr = node_check(read(path))
+                self.assertTrue(ok, f"{path} has a syntax error:\n{stderr}")
 
 
 if __name__ == "__main__":

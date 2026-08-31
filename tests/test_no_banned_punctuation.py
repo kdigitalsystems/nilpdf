@@ -47,7 +47,7 @@ PY_FILES = ["generate_pages.py", "core/pdf_engine.py"]
 # Plain JS/JSON files scanned whole (after stripping // and /* */ comments for
 # the JS ones): no HTML markup to strip comments out of, so strip_script_comments'
 # <script> wrapping doesn't apply, just the comment-stripping regexes directly.
-JS_FILES = ["assets/js/pdf_worker.js", "sw.js"]
+JS_FILES = ["assets/js/app.js", "assets/js/pdf_worker.js", "sw.js"]
 JSON_FILES = ["manifest.json"]
 
 
