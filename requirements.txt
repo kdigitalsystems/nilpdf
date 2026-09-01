@@ -15,7 +15,7 @@
 #                      versions. Do not bump these on their own — they change only
 #                      when PYODIDE_VERSION in pdf_worker.js changes, which is why
 #                      Dependabot is told to ignore them in .github/dependabot.yml.
-pypdf==6.15.0
+pypdf==6.16.2
 reportlab==5.0.0
 cryptography==39.0.2
 Pillow==10.0.0
