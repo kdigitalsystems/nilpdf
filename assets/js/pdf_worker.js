@@ -2,7 +2,7 @@ importScripts("https://cdn.jsdelivr.net/pyodide/v0.25.0/full/pyodide.js");
 
 const PYODIDE_VERSION = 'v0.25.0';
 // Bump the trailing integer whenever packages change so stale caches are evicted.
-const PKG_CACHE_KEY = `nilpdf-pkgs-${PYODIDE_VERSION}-1`;
+const PKG_CACHE_KEY = `nilpdf-pkgs-${PYODIDE_VERSION}-2`;
 
 function withTimeout(promise, ms, label) {
     return Promise.race([
@@ -104,8 +104,20 @@ async function bootEngine() {
         postMessage({ type: 'BOOT_PROGRESS', msg: 'Installing packages (first visit ~30 s)…' });
         await withTimeout(self.pyodide.loadPackage("micropip"), 30000, 'loadPackage micropip');
         const micropip = self.pyodide.pyimport("micropip");
+        // pypdf and reportlab are pure-Python wheels that micropip fetches from
+        // PyPI, so without an explicit pin every visitor gets whatever version is
+        // latest on the day of their first visit — a breaking upstream release
+        // would take the site down with no deploy of ours, and CI would still be
+        // green because it tests different versions. Pinned here, and kept equal
+        // to requirements.txt by tests/test_site_consistency.py.
+        //
+        // cryptography and Pillow are deliberately left unpinned: both ship as
+        // compiled WASM wheels in Pyodide's own lockfile (cryptography 39.0.2,
+        // Pillow 10.0.0 for v0.25.0), which is the only build that can load here.
+        // Their versions are a property of the Pyodide release, not a choice we
+        // get to make, and are changed by upgrading PYODIDE_VERSION above.
         await withTimeout(
-            micropip.install(["pypdf", "cryptography", "Pillow", "reportlab"]),
+            micropip.install(["pypdf==6.15.0", "reportlab==5.0.0", "cryptography", "Pillow"]),
             120000,
             'micropip.install'
         );

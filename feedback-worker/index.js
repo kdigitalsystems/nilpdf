@@ -4,21 +4,36 @@
  * Receives a POST from the NilPDF in-app feedback form and creates a GitHub
  * issue on the kdigitalsystems/nilpdf repository.
  *
+ * This Worker exists so the GitHub credential lives server-side. The site is a
+ * static page on GitHub Pages: anything the browser can read, every visitor can
+ * read, so the token cannot be shipped with the page. The browser posts
+ * {type, name, message} here; only this Worker ever sees the token.
+ *
  * ── Setup ────────────────────────────────────────────────────────────────────
  * 1. Install Wrangler:  npm install -g wrangler
  * 2. Login:             wrangler login
  * 3. Deploy:            wrangler deploy   (from this directory)
- * 4. Set secrets:
+ * 4. Set the token:
  *      wrangler secret put GITHUB_TOKEN
- *      (paste a Classic PAT with the "repo" scope — or "public_repo" for
- *       public repos — when prompted)
- * 5. In index.html, replace the __FEEDBACK_ENDPOINT__ placeholder (or add a
- *    build step) with your Worker URL:
+ *
+ *    Prefer a fine-grained PAT scoped to this single repository with
+ *    Issues: Read and write — nothing else. A classic `public_repo` token also
+ *    works but is a far worse trade: it grants write access to every public
+ *    repository on the account, so a Worker compromise would reach all of them.
+ * 5. Point the site at this Worker. Set the deployed URL
  *      https://nilpdf-feedback.<your-account>.workers.dev
+ *    as the FEEDBACK_ENDPOINT repository *variable* (Settings → Secrets and
+ *    variables → Actions → Variables). The deploy job stamps it over the
+ *    __FEEDBACK_ENDPOINT__ placeholder in assets/js/app.js. It is a variable
+ *    rather than a secret because the URL is public by nature — it ends up in
+ *    the shipped JavaScript either way.
+ *
+ *    With the variable unset the placeholder survives and the in-app form shows
+ *    an "unavailable" message instead of failing silently.
  * ─────────────────────────────────────────────────────────────────────────────
  *
  * Environment variables (set via `wrangler secret put` or the dashboard):
- *   GITHUB_TOKEN  — GitHub Personal Access Token with repo / public_repo scope
+ *   GITHUB_TOKEN  — GitHub PAT; fine-grained with Issues: write on this repo
  *
  * Constants (edit below or override via wrangler.toml [vars]):
  *   GITHUB_REPO   — "owner/repo" string for the target repository
@@ -33,6 +48,9 @@ const ALLOWED_ORIGINS = [
     'http://localhost:8080',
     'http://127.0.0.1:8080',
     'http://localhost:3000',
+    // Port used by dev_server.py, the documented local dev server.
+    'http://localhost:8123',
+    'http://127.0.0.1:8123',
 ];
 
 export default {

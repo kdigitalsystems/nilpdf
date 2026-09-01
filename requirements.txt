@@ -1,11 +1,24 @@
-# Pins for the native CI test job (tests/test_engine.py), run with plain CPython.
-# This is independent of the Pyodide/WebAssembly runtime used in production —
-# assets/js/pdf_worker.js installs the same package names via micropip inside
-# Pyodide, which resolves versions from Pyodide's own package index (currently
-# unpinned there; pinning requires confirming exact versions Pyodide v0.25.0
-# actually bundles before changing that file).
+# Dependency versions for the native CI test job (tests/), run with plain CPython.
+#
+# These are deliberately aligned with what the browser actually runs, because the
+# whole value of the suite is that core/pdf_engine.py is exercised against the
+# same libraries production uses:
+#
+#   pypdf, reportlab   Pure-Python wheels micropip pulls from PyPI. Pinned in BOTH
+#                      this file and assets/js/pdf_worker.js; the two are asserted
+#                      equal by tests/test_site_consistency.py, so a Dependabot bump
+#                      here fails CI until pdf_worker.js is bumped to match.
+#
+#   cryptography,      Compiled WASM wheels that come from Pyodide v0.25.0's own
+#   Pillow             lockfile and cannot be overridden in the browser. Pinned here
+#                      to exactly what that lockfile ships so CI tests the real
+#                      versions. Do not bump these on their own — they change only
+#                      when PYODIDE_VERSION in pdf_worker.js changes, which is why
+#                      Dependabot is told to ignore them in .github/dependabot.yml.
 pypdf==6.15.0
-cryptography==50.0.0
-Pillow==12.3.0
-pytest==9.1.1
 reportlab==5.0.0
+cryptography==39.0.2
+Pillow==10.0.0
+
+# Test-runner only; not shipped to the browser, so free to track latest.
+pytest==9.1.1
