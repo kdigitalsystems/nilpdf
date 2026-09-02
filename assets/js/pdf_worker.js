@@ -101,7 +101,7 @@ async function bootEngine() {
     const fromCache = await loadPackagesFromOPFS(self.pyodide);
 
     if (!fromCache) {
-        postMessage({ type: 'BOOT_PROGRESS', msg: 'Installing packages (first visit ~30 s)…' });
+        postMessage({ type: 'BOOT_PROGRESS', msg: 'Installing Python packages (first visit only, ~11 MB)…' });
         await withTimeout(self.pyodide.loadPackage("micropip"), 30000, 'loadPackage micropip');
         const micropip = self.pyodide.pyimport("micropip");
         // pypdf and reportlab are pure-Python wheels that micropip fetches from

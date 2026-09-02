@@ -12,14 +12,18 @@ A free, privacy-first PDF toolkit that runs entirely in your browser — no uplo
 
 NilPDF is a collection of PDF tools that process files locally inside your browser using Python compiled to WebAssembly via [Pyodide](https://pyodide.org). Your files never leave your device — there is no backend, no cloud storage, and no tracking.
 
-The first visit installs the Python runtime (~10 MB); subsequent visits load in under a second from a local cache.
+The first visit downloads the Python runtime and packages, about 11 MB, and is usable in roughly three seconds on a fast connection (longer on a slow one, since it is download-bound). Subsequent visits load in under a second from a local cache.
 
 ---
 
 ## Screenshots
 
-<!-- Add a screenshot or GIF here -->
-![NilPDF screenshot](assets/og-image.png)
+![NilPDF home page](assets/screenshot-home.png)
+
+Every tool is a workspace on the same page. The badge is literal: once the
+runtime is cached the tools do not touch the network at all.
+
+![The Merge PDF workspace](assets/screenshot-merge.png)
 
 ---
 
@@ -76,7 +80,7 @@ Every operation runs inside a [Web Worker](https://developer.mozilla.org/en-US/d
 | Drag-and-drop reorder | [Sortable.js](https://sortablejs.github.io/Sortable/) |
 | ZIP creation | [jszip](https://stuk.github.io/jszip/) |
 | Client-side PDF ops | [pdf-lib](https://pdf-lib.js.org/) |
-| Package cache | [OPFS](https://developer.mozilla.org/en-US/docs/Web/API/File_System_API/Origin_private_file_system) (first visit ~30 s → repeat <1 s) |
+| Package cache | [OPFS](https://developer.mozilla.org/en-US/docs/Web/API/File_System_API/Origin_private_file_system) (first visit downloads ~11 MB, then <1 s from cache) |
 | Deployment | GitHub Pages via GitHub Actions |
 
 ### Project structure
