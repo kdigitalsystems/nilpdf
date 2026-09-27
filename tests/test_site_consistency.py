@@ -271,6 +271,31 @@ class TestSvgVisibilityToggles(unittest.TestCase):
                     )
 
 
+class TestStatedToolCountIsTrue(unittest.TestCase):
+    """The site states how many tools it has ("22 free PDF tools", "Twenty-two
+    ways to handle a PDF") in the meta tags, the manifest, the hero, the share
+    text and every landing page footer. Each new tool silently made all of those
+    wrong. The count is now checked against TOOL_META."""
+
+    WORDS = {20: "Twenty", 21: "Twenty-one", 22: "Twenty-two", 23: "Twenty-three", 24: "Twenty-four",
+             25: "Twenty-five", 26: "Twenty-six", 27: "Twenty-seven", 28: "Twenty-eight", 29: "Twenty-nine", 30: "Thirty"}
+
+    def test_every_stated_count_matches_the_number_of_tools(self):
+        app = read("assets/js/app.js")
+        m = re.search(r"const TOOL_META = \{(.*?)\n\s*\};", app, re.DOTALL)
+        actual = len(re.findall(r"^\s*(\w+):\s*\{", m.group(1), re.MULTILINE))
+        sources = {p: read(p) for p in ("index.html", "assets/js/app.js", "manifest.json", "generate_pages.py")}
+        stated = []
+        for path, text in sources.items():
+            stated += [(path, int(n)) for n in re.findall(r"\b(\d+) (?:free )?PDF tools", text)]
+            for n, word in self.WORDS.items():
+                if f"{word} ways to handle a PDF" in text:
+                    stated.append((path, n))
+        self.assertTrue(stated, "No stated tool count found; regex may be stale")
+        wrong = [(path, n) for path, n in stated if n != actual]
+        self.assertFalse(wrong, f"TOOL_META has {actual} tools, but the copy says: {wrong}")
+
+
 class TestWorkerActionWiring(unittest.TestCase):
     """Every process_* function pdf_worker.js dispatches to must actually
     exist in core/pdf_engine.py — this is exactly the class of bug a typo'd
