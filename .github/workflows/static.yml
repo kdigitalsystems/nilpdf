@@ -25,13 +25,13 @@ concurrency:
 # directly on the runner host. The host machine is shared across several
 # other projects' CI, each with their own tool versions; running in a
 # container gives this pipeline a clean, reproducible environment (fixed
-# Python 3.11 + Node 20, nothing left over from a previous job) instead of
+# Python 3.14 + Node 20, nothing left over from a previous job) instead of
 # depending on whatever happens to be globally installed on the shared host.
 jobs:
   test:
     runs-on: self-hosted
     container:
-      image: python:3.11-slim
+      image: python:3.14-slim
     timeout-minutes: 10
     steps:
       - name: Install git and Node.js (bare Python image has neither)
@@ -67,7 +67,7 @@ jobs:
       url: ${{ steps.deployment.outputs.page_url }}
     runs-on: self-hosted
     container:
-      image: python:3.11-slim
+      image: python:3.14-slim
     timeout-minutes: 10
     steps:
       - name: Install git (bare Python image doesn't have it, checkout needs it)

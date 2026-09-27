@@ -12,7 +12,7 @@ A free, privacy-first PDF toolkit that runs entirely in your browser — no uplo
 
 NilPDF is a collection of PDF tools that process files locally inside your browser using Python compiled to WebAssembly via [Pyodide](https://pyodide.org). Your files never leave your device — there is no backend, no cloud storage, and no tracking.
 
-The first visit downloads the Python runtime and packages, about 11 MB, and is usable in roughly three seconds on a fast connection (longer on a slow one, since it is download-bound). Subsequent visits load in under a second from a local cache.
+The first visit downloads the Python runtime and packages, about 11 MB, and is usable in roughly three seconds on a fast connection (longer on a slow one, since it is download-bound). Subsequent visits skip that download and start from a local cache.
 
 ---
 
@@ -74,7 +74,7 @@ Every operation runs inside a [Web Worker](https://developer.mozilla.org/en-US/d
 | Layer | Technology |
 |-------|-----------|
 | PDF engine | Python — `pypdf`, `Pillow`, `reportlab`, `cryptography` |
-| WASM runtime | [Pyodide v0.25.0](https://pyodide.org) |
+| WASM runtime | [Pyodide v314.0.7](https://pyodide.org) (Python 3.14) |
 | Frontend | Vanilla JavaScript (`assets/js/app.js`), HTML/CSS — no build step |
 | PDF rendering | [pdf.js](https://mozilla.github.io/pdf.js/) |
 | Drag-and-drop reorder | [Sortable.js](https://sortablejs.github.io/Sortable/) |

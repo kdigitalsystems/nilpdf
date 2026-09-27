@@ -56,8 +56,10 @@ closed rather than running modified code.
 - **The pdf.js worker** (`pdf.worker.min.js`). pdf.js starts this itself through
   the `Worker` constructor, which accepts no integrity attribute. It is pinned to
   the same version as the verified `pdf.min.js`.
-- **Pyodide and the Python wheels.** The runtime is loaded with `importScripts()`
-  in `assets/js/pdf_worker.js`, and `importScripts` has no SRI equivalent. Even
+- **Pyodide and the Python wheels.** The runtime is loaded with a dynamic
+  `import()` inside the module worker in `assets/js/pdf_worker.js`, and module
+  imports have no integrity option there: import maps can carry integrity
+  metadata, but workers don't support import maps. Even
   with one, Pyodide then fetches its own `.wasm` payload and the package wheels
   without verifying them, so hashing only the loader would give a misleading
   impression of coverage. Package versions are pinned (see `requirements.txt`),

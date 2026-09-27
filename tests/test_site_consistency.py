@@ -238,6 +238,39 @@ class TestBrowserDependencyPins(unittest.TestCase):
                 )
 
 
+class TestWorkerIsAModuleWorker(unittest.TestCase):
+    """Pyodide no longer runs in classic workers: its loader throws "Classic web
+    workers are not supported". Loaded cross-origin, Chromium hides that message
+    and reports only "NetworkError: failed to load", and a failure at the top of a
+    worker happens before any error handler exists, so the page just waits
+    forever. Reverting either side of this contract would break every tool while
+    looking like a network problem."""
+
+    def test_app_creates_the_worker_as_a_module(self):
+        self.assertRegex(
+            read("assets/js/app.js"),
+            r"new Worker\(\s*'\./assets/js/pdf_worker\.js[^']*'\s*,\s*\{\s*type:\s*'module'\s*\}\s*\)",
+            "pdf_worker.js must be created with { type: 'module' }",
+        )
+
+    def test_worker_does_not_use_importScripts(self):
+        # Comments are stripped first: the worker's own header explains why
+        # importScripts() can't be used, and that must not count as a call.
+        code = re.sub(r"/\*.*?\*/", "", read("assets/js/pdf_worker.js"), flags=re.DOTALL)
+        code = re.sub(r"^\s*//.*$", "", code, flags=re.MULTILINE)
+        self.assertFalse(
+            re.search(r"\bimportScripts\s*\(", code),
+            "pdf_worker.js calls importScripts, which is unavailable in module workers; "
+            "Pyodide also rejects classic workers",
+        )
+
+    def test_pyodide_version_has_a_single_source_of_truth(self):
+        worker = read("assets/js/pdf_worker.js")
+        pinned = re.findall(r"cdn\.jsdelivr\.net/pyodide/(v[\d.]+)/", worker)
+        self.assertFalse(pinned, f"Pyodide URL hardcodes {pinned}; build it from PYODIDE_VERSION instead")
+        self.assertRegex(worker, r"const PYODIDE_VERSION = 'v[\d.]+';")
+
+
 class TestWorkerActionWiring(unittest.TestCase):
     """Every process_* function pdf_worker.js dispatches to must actually
     exist in core/pdf_engine.py — this is exactly the class of bug a typo'd

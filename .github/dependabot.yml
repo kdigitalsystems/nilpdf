@@ -7,7 +7,7 @@ updates:
     open-pull-requests-limit: 5
     ignore:
       # cryptography and Pillow are not ours to choose. They load in the browser
-      # as compiled WASM wheels baked into Pyodide v0.25.0's lockfile, and
+      # as compiled WASM wheels baked into Pyodide v314.0.7's lockfile, and
       # requirements.txt pins them to those exact versions so CI tests what users
       # actually run. A Dependabot bump here would only make the test job diverge
       # from production. They move when PYODIDE_VERSION in assets/js/pdf_worker.js
