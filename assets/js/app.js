@@ -272,16 +272,16 @@
     const TOOL_META = {
         merge:    { title: 'Merge PDF',               desc: 'Combine multiple PDF files into one. Runs privately in your browser, zero uploads.' },
         compress: { title: 'Compress PDF',            desc: 'Optimize PDF structure and embedded resources to reduce file size. Results vary by document.' },
-        anonymize:{ title: 'Remove Metadata',         desc: 'Strip all hidden metadata from a PDF privately. Zero uploads. Zero tracking.' },
+        anonymize:{ title: 'Remove Metadata',         desc: 'Strip all hidden metadata from a PDF privately. Zero uploads.' },
         split:    { title: 'Split PDF',               desc: 'Extract specific pages from a PDF. Runs locally in your browser. No uploads.' },
-        reorder:  { title: 'Reorder PDF Pages',       desc: 'Drag and drop to reorder pages in any PDF. No uploads. 100% private.' },
+        reorder:  { title: 'Reorder PDF Pages',       desc: 'Drag and drop to reorder pages in any PDF. Your file never leaves your device.' },
         rotate:   { title: 'Rotate PDF Pages',        desc: 'Rotate any pages in a PDF. Runs entirely in your browser.' },
         remove:   { title: 'Remove PDF Pages',        desc: 'Delete unwanted pages from a PDF privately. No uploads.' },
         totext:   { title: 'PDF to Text',             desc: 'Extract all text from a PDF privately. Zero uploads. Runs in your browser.' },
         topng:    { title: 'PDF to Images',           desc: 'Convert PDF pages to PNG images. Runs locally. No uploads.' },
-        topdf:    { title: 'Images to PDF',           desc: 'Combine images into a PDF file. No uploads. 100% private.' },
+        topdf:    { title: 'Images to PDF',           desc: 'Combine images into a PDF file. Your images never leave your device.' },
         watermark:{ title: 'Add Watermark',           desc: 'Add a custom text watermark to any PDF. Runs in your browser.' },
-        pagenums: { title: 'Add Page Numbers to PDF', desc: 'Stamp page numbers onto a PDF. No uploads. Zero tracking.' },
+        pagenums: { title: 'Add Page Numbers to PDF', desc: 'Stamp page numbers onto a PDF. Your file never leaves your device.' },
         inspect:  { title: 'Inspect PDF',             desc: 'View PDF metadata, page count, fonts and more. Zero uploads.' },
         repair:   { title: 'Repair PDF',              desc: 'Attempt to recover pages from a corrupted or truncated PDF. Runs privately in your browser.' },
         redact:   { title: 'Redact PDF',              desc: 'Permanently black out sensitive areas of a PDF and add custom text notes. Runs privately in your browser.' },
@@ -343,11 +343,11 @@
         document.getElementById('workspace').style.display = 'none';
         document.getElementById('landing').style.display = '';
         document.getElementById('site-footer').style.display = '';
-        document.title = 'NilPDF: Free PDF Tools. Zero Uploads. 100% Private.';
+        document.title = 'NilPDF: Free PDF Tools. Zero Uploads.';
         document.querySelector('meta[property="og:title"]').setAttribute('content', 'NilPDF: Free PDF Tools. Zero Uploads.');
-        document.querySelector('meta[property="og:description"]').setAttribute('content', '21 PDF tools. Your files never leave your device. Zero uploads. Zero tracking.');
+        document.querySelector('meta[property="og:description"]').setAttribute('content', '21 PDF tools. Zero uploads. Your files never leave your device.');
         document.querySelector('meta[name="twitter:title"]').setAttribute('content', 'NilPDF: Free PDF Tools. Zero Uploads.');
-        document.querySelector('meta[name="twitter:description"]').setAttribute('content', '21 PDF tools in your browser. Zero uploads. Zero tracking. 100% private.');
+        document.querySelector('meta[name="twitter:description"]').setAttribute('content', '21 PDF tools in your browser. Zero uploads. Your files never leave your device.');
     }
 
     // DOM-only: show workspace for a tool (no history change)
@@ -3052,7 +3052,7 @@
         const title = meta ? `NilPDF: ${meta.title}` : 'NilPDF: Free PDF Tools';
         const text  = meta
             ? `${meta.title}, free, no uploads, runs in your browser: ${url}`
-            : 'NilPDF: 21 free PDF tools that run entirely in your browser. Zero uploads. 100% private: https://nilpdf.com/';
+            : 'NilPDF: 21 free PDF tools that run entirely in your browser. Zero uploads: https://nilpdf.com/';
         return { title, text, url };
     }
 

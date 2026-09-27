@@ -887,7 +887,7 @@ PAGE_TEMPLATE = '''<!DOCTYPE html>
         </ul>
         <p class="body-text">{body_text}</p>
         <div class="privacy-strip">
-            <strong>100% private.</strong> Your files are processed entirely inside your browser using WebAssembly.
+            <strong>Your files stay on your device.</strong> They are processed entirely inside your browser using WebAssembly.
             Nothing is uploaded to any server. NilPDF has no backend, there is no server to send your files to.
         </div>
         <section class="faq">
