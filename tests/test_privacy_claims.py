@@ -17,9 +17,9 @@ The ban is conditional on analytics actually being present. If the site ever
 drops Google Analytics, "zero tracking" becomes true, and this test stops
 objecting without anyone having to remember it exists.
 """
+import glob
 import os
 import re
-import subprocess
 import unittest
 
 BASE = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
@@ -44,11 +44,16 @@ def read(relative_path):
 def public_text_files():
     """Everything a visitor can read: every HTML page, the SPA script that
     rewrites meta tags at runtime, the PWA manifest, and the README (the
-    project's public face on GitHub)."""
-    html = subprocess.run(
-        ["git", "ls-files", "*.html"], cwd=BASE, capture_output=True, text=True, check=True
-    ).stdout.split()
-    return sorted(html) + ["assets/js/app.js", "manifest.json", "README.md"]
+    project's public face on GitHub).
+
+    Pages are found from the site's layout (index.html plus one
+    <section>/index.html per page) rather than `git ls-files`: CI runs the tests
+    in a container where git rejects the checkout as having dubious ownership,
+    and tests shouldn't need a git checkout in the first place."""
+    html = ["index.html"] + sorted(
+        os.path.relpath(p, BASE) for p in glob.glob(os.path.join(BASE, "*", "index.html"))
+    )
+    return html + ["assets/js/app.js", "manifest.json", "README.md"]
 
 
 def site_loads_analytics():
