@@ -142,6 +142,11 @@
             }
 
         } else if (type === 'SUCCESS') {
+            if (id === 'checkredact-status') {
+                renderRedactionReport(JSON.parse(new TextDecoder().decode(result)));
+                incrementCounter('checkredact');
+                return;
+            }
             if (pendingFooters[id] && !isZip && !isText) {
                 pendingFooters[id] = false;
                 const transferBuf = result instanceof Uint8Array ? result : new Uint8Array(result);
@@ -286,6 +291,7 @@
         inspect:  { title: 'Inspect PDF',             desc: 'View PDF metadata, page count, fonts and more. Zero uploads.' },
         repair:   { title: 'Repair PDF',              desc: 'Attempt to recover pages from a corrupted or truncated PDF. Runs privately in your browser.' },
         redact:   { title: 'Redact PDF',              desc: 'Black out sensitive content so it is removed from the file, not just covered. Runs in your browser.' },
+        checkredact: { title: 'Check Redaction',      desc: 'Find text still hiding under black boxes in a redacted PDF. Your file never leaves your device.' },
         edit:     { title: 'Edit PDF',                desc: 'Click anywhere to write text onto a PDF page. Runs privately in your browser.' },
         sign:     { title: 'Sign PDF',                desc: 'Draw, type, or upload a signature and place it on any page. Runs privately in your browser.' },
         fillform: { title: 'Fill PDF Forms',          desc: 'Fill in PDF form fields and optionally flatten them. Runs privately in your browser.' },
@@ -294,7 +300,7 @@
         unlock:   { title: 'Unlock PDF',              desc: 'Permanently remove password encryption from a PDF you have the password for. Runs privately in your browser.' },
     };
 
-    const SINGLE_FILE_TOOLS = ['split','reorder','rotate','remove','totext','topng','watermark','pagenums','inspect','repair','redact','edit','sign','fillform','protect','fillsign','unlock'];
+    const SINGLE_FILE_TOOLS = ['split','reorder','rotate','remove','totext','topng','watermark','pagenums','inspect','repair','redact','checkredact','edit','sign','fillform','protect','fillsign','unlock'];
 
     /** Category filter **/
     let _activeCategory = 'all';
@@ -346,9 +352,9 @@
         document.getElementById('site-footer').style.display = '';
         document.title = 'NilPDF: Free PDF Tools. Zero Uploads.';
         document.querySelector('meta[property="og:title"]').setAttribute('content', 'NilPDF: Free PDF Tools. Zero Uploads.');
-        document.querySelector('meta[property="og:description"]').setAttribute('content', '21 PDF tools. Zero uploads. Your files never leave your device.');
+        document.querySelector('meta[property="og:description"]').setAttribute('content', '22 PDF tools. Zero uploads. Your files never leave your device.');
         document.querySelector('meta[name="twitter:title"]').setAttribute('content', 'NilPDF: Free PDF Tools. Zero Uploads.');
-        document.querySelector('meta[name="twitter:description"]').setAttribute('content', '21 PDF tools in your browser. Zero uploads. Your files never leave your device.');
+        document.querySelector('meta[name="twitter:description"]').setAttribute('content', '22 PDF tools in your browser. Zero uploads. Your files never leave your device.');
     }
 
     // DOM-only: show workspace for a tool (no history change)
@@ -1421,6 +1427,63 @@
             worker.postMessage({ id: 'repair-status', action: 'REPAIR', payload: { buffer, password } }, [buffer.buffer]);
         });
     };
+
+    /** ════ CHECK REDACTION ═══════════════════════════════════════════════════ */
+    const checkredactInput = document.getElementById('checkredact-upload');
+    checkredactInput.onchange = () => {
+        if (checkredactInput.files[0]) {
+            lastLoadedFile = checkredactInput.files[0]; lastLoadedTool = 'checkredact';
+            document.getElementById('checkredact-results').innerHTML = '';
+            updateStatus('checkredact-status', `Loaded: ${checkredactInput.files[0].name}`, 'text-green');
+        }
+    };
+    bindSimpleDrop('drop-zone-checkredact', checkredactInput);
+
+    document.getElementById('checkredact-btn').onclick = async () => {
+        if (!checkredactInput.files[0]) { updateStatus('checkredact-status', 'Select a PDF first.', 'text-red'); return; }
+        const check = validateFileSizes([checkredactInput.files[0]]);
+        if (!check.ok) { updateStatus('checkredact-status', check.msg, 'text-red'); return; }
+        if (check.warn) updateStatus('checkredact-status', check.warn, '');
+        document.getElementById('checkredact-results').innerHTML = '';
+        const password = document.getElementById('checkredact-password').value;
+        const buffer   = await toUint8(checkredactInput.files[0]);
+        runWhenReady('checkredact-status', () => {
+            updateStatus('checkredact-status', 'Checking for hidden text…', '');
+            worker.postMessage({ id: 'checkredact-status', action: 'CHECK_REDACTION', payload: { buffer, password } }, [buffer.buffer]);
+        });
+    };
+
+    // Everything in the report came out of an untrusted PDF, including the
+    // hidden text itself, so every value is escaped before it touches the DOM.
+    function renderRedactionReport(report) {
+        const KIND = {
+            covered_text:        'Hidden under a box',
+            unapplied_redaction: 'Redaction not applied',
+            earlier_revision:    'In an earlier saved version',
+        };
+        const rows = (report.findings || []).map(f => `
+            <div class="inspect-row">
+                <span class="inspect-key">Page ${escHtml(f.page)} · ${escHtml(KIND[f.kind] || f.kind)}</span>
+                <span class="inspect-val"><strong class="redaction-hit">${escHtml(f.text || '(text under the mark)')}</strong><br>${escHtml(f.detail)}</span>
+            </div>`).join('');
+        const meta = Object.entries(report.metadata || {}).map(([k, v]) => `
+            <div class="inspect-row"><span class="inspect-key">${escHtml(k)}</span><span class="inspect-val">${escHtml(v)}</span></div>`).join('');
+        const found = report.hidden_text_found;
+        const n = (report.findings || []).length;
+        document.getElementById('checkredact-results').innerHTML = `
+            <div class="redaction-verdict ${found ? 'is-leak' : 'is-clean'}" role="status">
+                <strong>${found ? `Hidden text found: ${n} place${n === 1 ? '' : 's'}` : 'No hidden text found'}</strong>
+                <span>${found
+                    ? 'This text is invisible on the page but still in the file. Anyone can copy, search or extract it.'
+                    : `Checked ${escHtml(report.pages)} page${report.pages === 1 ? '' : 's'}: nothing is hiding under boxes, unapplied redactions or earlier saved versions.`}</span>
+            </div>
+            ${rows ? `<div class="inspect-section-title">What's still in the file</div>${rows}` : ''}
+            ${meta ? `<div class="inspect-section-title">Document properties (also visible to anyone)</div>${meta}` : ''}
+            ${(report.invisible_text_pages || []).length ? `<div class="inspect-section-title">Invisible text layer</div>
+                <div class="inspect-row"><span class="inspect-val">Pages ${escHtml(report.invisible_text_pages.join(', '))} carry an invisible text layer, typical of scanned documents with OCR. If something was blacked out in the scan itself, the matching words may still be in this layer.</span></div>` : ''}
+            <p class="redaction-limits">${(report.limitations || []).map(escHtml).join(' ')}</p>`;
+        updateStatus('checkredact-status', found ? 'Done: hidden text found.' : 'Done: no hidden text found.', found ? 'text-red' : 'text-green');
+    }
 
     /** ════ REDACT / EDIT (shared page-editor: click to add text, optionally draw redaction boxes) ════ */
     function initPageEditor({ prefix, allowBoxes, suffix, emptyEditsMsg }) {
@@ -3070,7 +3133,7 @@
         const title = meta ? `NilPDF: ${meta.title}` : 'NilPDF: Free PDF Tools';
         const text  = meta
             ? `${meta.title}, free, no uploads, runs in your browser: ${url}`
-            : 'NilPDF: 21 free PDF tools that run entirely in your browser. Zero uploads: https://nilpdf.com/';
+            : 'NilPDF: 22 free PDF tools that run entirely in your browser. Zero uploads: https://nilpdf.com/';
         return { title, text, url };
     }
 
