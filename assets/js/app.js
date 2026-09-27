@@ -171,7 +171,7 @@
 
             a.click();
             URL.revokeObjectURL(url);
-            incrementCounter();
+            incrementCounter(toolForJob(id));
             if (!sessionStorage.getItem('nilpdf_nudged')) {
                 sessionStorage.setItem('nilpdf_nudged', '1');
                 setTimeout(showShareNudge, 1800);
@@ -1120,7 +1120,7 @@
                 const a   = document.createElement('a');
                 a.href = url; a.download = `${topngBase}_page_1.${ext}`; a.click();
                 URL.revokeObjectURL(url);
-                incrementCounter();
+                incrementCounter('topng');
                 if (!sessionStorage.getItem('nilpdf_nudged')) {
                     sessionStorage.setItem('nilpdf_nudged', '1');
                     setTimeout(showShareNudge, 1800);
@@ -1135,7 +1135,7 @@
                 const a   = document.createElement('a');
                 a.href = url; a.download = `${topngBase}_images.zip`; a.click();
                 URL.revokeObjectURL(url);
-                incrementCounter();
+                incrementCounter('topng');
                 if (!sessionStorage.getItem('nilpdf_nudged')) {
                     sessionStorage.setItem('nilpdf_nudged', '1');
                     setTimeout(showShareNudge, 1800);
@@ -1232,7 +1232,7 @@
                 : 'images_combined.pdf';
             a.href = url; a.download = topdfName; a.click();
             URL.revokeObjectURL(url);
-            incrementCounter();
+            incrementCounter('topdf');
             if (!sessionStorage.getItem('nilpdf_nudged')) {
                 sessionStorage.setItem('nilpdf_nudged', '1');
                 setTimeout(showShareNudge, 1800);
@@ -3027,7 +3027,24 @@
         setTimeout(() => { t.classList.remove('toast-visible'); setTimeout(() => t.remove(), 400); }, 2800);
     }
 
-    function incrementCounter() {
+    // Aggregate usage: which tool finished, and nothing else. Without this,
+    // analytics only sees page views and can't tell a visitor from someone who
+    // actually processed a file. The payload is deliberately a single field,
+    // taken from the fixed TOOL_META allowlist, so no file name, size, page
+    // count or content can ever reach it, even by mistake at a call site.
+    function recordToolUse(tool) {
+        if (typeof gtag !== 'function' || !Object.prototype.hasOwnProperty.call(TOOL_META, tool)) return;
+        gtag('event', 'tool_complete', { tool });
+    }
+
+    // Worker jobs are keyed by their status element id: 'status' for merge,
+    // '<tool>-status' for every other tool.
+    function toolForJob(id) {
+        return id === 'status' ? 'merge' : String(id).replace(/-status$/, '');
+    }
+
+    function incrementCounter(tool) {
+        recordToolUse(tool);
         const n = (parseInt(localStorage.getItem('nilpdf_count') || '0')) + 1;
         localStorage.setItem('nilpdf_count', n);
         const el = document.getElementById('counter-display');

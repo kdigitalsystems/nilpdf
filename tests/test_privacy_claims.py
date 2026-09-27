@@ -81,5 +81,63 @@ class TestNoFalsePrivacyClaims(unittest.TestCase):
         self.assertGreater(len(files), 25, "Expected every landing page to be scanned")
 
 
+def tool_meta_ids(app_js):
+    m = re.search(r"const TOOL_META = \{(.*?)\n\s*\};", app_js, re.DOTALL)
+    assert m, "Could not find TOOL_META in app.js"
+    return set(re.findall(r"^\s*(\w+):\s*\{", m.group(1), re.MULTILINE))
+
+
+class TestUsageEventsCarryNoFileData(unittest.TestCase):
+    """The one analytics event the app sends records which tool finished, and
+    must never carry anything about the file. These tests pin that down
+    structurally rather than trusting every future call site to be careful."""
+
+    @classmethod
+    def setUpClass(cls):
+        cls.app = read("assets/js/app.js")
+        cls.tools = tool_meta_ids(cls.app)
+
+    def test_exactly_one_event_call_and_it_sends_only_the_tool(self):
+        calls = re.findall(r"gtag\(\s*['\"]event['\"]\s*,\s*['\"](\w+)['\"]\s*,\s*(\{[^}]*\})\s*\)", self.app)
+        self.assertEqual(
+            len(calls), 1,
+            f"Expected one gtag('event', ...) call site (recordToolUse), found {len(calls)}. "
+            f"Route new usage events through recordToolUse so the payload stays controlled.",
+        )
+        name, payload = calls[0]
+        self.assertEqual(name, "tool_complete")
+        self.assertEqual(
+            re.sub(r"\s", "", payload), "{tool}",
+            f"The usage event payload must be exactly {{ tool }}; found {payload}. "
+            f"Anything else risks sending file-derived data to analytics.",
+        )
+        self.assertEqual(self.app.count("gtag("), 1, "gtag is called somewhere other than recordToolUse")
+
+    def test_event_is_gated_on_the_tool_allowlist(self):
+        fn = re.search(r"function recordToolUse\(tool\) \{(.*?)\n    \}", self.app, re.DOTALL)
+        self.assertIsNotNone(fn, "recordToolUse not found")
+        self.assertIn("TOOL_META", fn.group(1), "recordToolUse must only send ids present in TOOL_META")
+
+    def test_every_counted_operation_names_its_tool(self):
+        self.assertNotIn(
+            "incrementCounter();", self.app,
+            "A call to incrementCounter() passes no tool, so that tool's usage is silently uncounted",
+        )
+        for tool in re.findall(r"incrementCounter\('(\w+)'\)", self.app):
+            with self.subTest(tool=tool):
+                self.assertIn(tool, self.tools, f"incrementCounter('{tool}') is not a TOOL_META id")
+
+    def test_every_worker_job_resolves_to_a_real_tool(self):
+        """Mirrors toolForJob: 'status' is merge, otherwise strip '-status'."""
+        job_ids = set(re.findall(r"postMessage\(\s*\{\s*id:\s*'([\w-]+)'", self.app))
+        prefixes = set(re.findall(r"prefix:\s*'(\w+)'", self.app))
+        job_ids |= {f"{p}-status" for p in prefixes}
+        self.assertGreater(len(job_ids), 15, "Worker job ids not found; regex may be stale")
+        for job in sorted(job_ids):
+            tool = "merge" if job == "status" else re.sub(r"-status$", "", job)
+            with self.subTest(job=job):
+                self.assertIn(tool, self.tools, f"Worker job '{job}' maps to '{tool}', which is not a tool")
+
+
 if __name__ == "__main__":
     unittest.main()
