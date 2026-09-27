@@ -99,6 +99,30 @@ def make_form_pdf(password=None):
     return out.getvalue()
 
 
+def make_pdf_with_raw_image(width=300, height=200):
+    """A page carrying an uncompressed (Flate, not JPEG) RGB image: the case
+    Compress exists for, and the only one that reaches the Pillow path.
+    Noise keeps JPEG from being larger than the raw pixels, which Compress
+    would otherwise correctly skip."""
+    import random
+    from PIL import Image
+    from reportlab.pdfgen import canvas
+    from reportlab.lib.utils import ImageReader
+    rnd = random.Random(1)
+    img = Image.new("RGB", (width, height))
+    img.putdata([(rnd.randrange(256), rnd.randrange(256), rnd.randrange(256)) for _ in range(width * height)])
+    buf = io.BytesIO()
+    c = canvas.Canvas(buf, pagesize=(width + 100, height + 100))
+    c.drawImage(ImageReader(img), 50, 50, width=width, height=height)
+    c.save()
+    return buf.getvalue()
+
+
+def image_filters(data):
+    xobjects = read_pdf(data).pages[0]["/Resources"]["/XObject"]
+    return [str(xobjects[k].get_object().get("/Filter")) for k in xobjects]
+
+
 def read_pdf(data):
     return PdfReader(io.BytesIO(data))
 
@@ -158,6 +182,23 @@ class TestMerge(unittest.TestCase):
 # ── Compress ───────────────────────────────────────────────────────────────
 
 class TestCompress(unittest.TestCase):
+    def test_recompresses_raw_image_to_jpeg(self):
+        """Every other Compress test uses blank pages, which never reach the
+        image path, so a crash on any real image went unnoticed."""
+        original = make_pdf_with_raw_image()
+        self.assertNotIn("DCTDecode", " ".join(image_filters(original)), "fixture must start uncompressed")
+        result = process_compress(original)
+        self.assertEqual(image_filters(result), ["/DCTDecode"])
+        self.assertLess(len(result), len(original))
+
+    def test_recompressed_image_still_decodes(self):
+        """The JPEG must be a real, readable image of the original size, not
+        just bytes with a JPEG label on them."""
+        result = process_compress(make_pdf_with_raw_image(width=300, height=200))
+        images = read_pdf(result).pages[0].images
+        self.assertEqual(len(images), 1)
+        self.assertEqual(images[0].image.size, (300, 200))
+
     def test_produces_valid_pdf(self):
         result = process_compress(make_pdf(3))
         self.assertEqual(len(read_pdf(result).pages), 3)
