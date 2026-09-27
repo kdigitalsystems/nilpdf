@@ -477,9 +477,45 @@ TOOLS = [
             ('Will my redacted PDF still have selectable text?', "Not on the pages you redact. Redacting a page flattens it into an image, so text on that page is no longer selectable or searchable. Pages you don't redact keep their original, fully selectable text."),
         ],
         'related': [
+            ('check-pdf-redaction', 'Check Redaction'),
             ('protect-pdf', 'Protect PDF'),
             ('remove-pdf-metadata', 'Remove Metadata'),
-            ('watermark-pdf', 'Watermark PDF'),
+        ],
+    },
+    {
+        'slug': 'check-pdf-redaction',
+        'tool_id': 'checkredact',
+        'title': 'Is a PDF Really Redacted? Check Without Uploading | NilPDF',
+        'h1': 'Check a Redacted PDF',
+        'tagline': 'Find text still hiding under black boxes before you send a PDF, or after you receive one.',
+        'description': 'A black box on a PDF often hides nothing: the text underneath can still be copied. Check any redacted PDF for hidden text, free, in your browser, without uploading it.',
+        'keywords': 'check pdf redaction, is my pdf redacted, redacted text still visible, find hidden text in pdf, verify pdf redaction, black box redaction check',
+        'bullets': [
+            'Finds text still in the file under black boxes, white-out and pasted images',
+            'Spots redactions that were marked but never applied',
+            'Finds text that survives in earlier saved versions of the same file',
+            'Needs only the redacted PDF, not the original',
+            'The PDF never leaves your device, so it is safe to check sensitive documents',
+        ],
+        'body_text': 'Most failed redactions look perfect. Someone draws a black rectangle over a name or a number, the page looks blacked out, and the file is sent. But the rectangle is only drawn on top: the text underneath is still in the PDF, and anyone can select it, copy it, or search for it. NilPDF Check Redaction reads the document the way a script would and reports any text that is covered by a shape or image drawn over it, any redaction mark that was never applied, and any text kept in an earlier saved version of the file. It works on the redacted file alone, so you can check a document before you send it or one you have been sent. Everything runs in your browser, so the file you are checking is never uploaded.',
+        'how_to_name': 'How to check whether a PDF is really redacted',
+        'how_to_steps': [
+            ('Open NilPDF Check Redaction', 'Visit nilpdf.com and select the Check Redaction tool.'),
+            ('Add the PDF', 'Drop the redacted PDF or click Browse. Nothing is uploaded.'),
+            ('Run the check', 'Click Check PDF. Each page is checked for text hidden under boxes, unapplied redactions and earlier versions.'),
+            ('Read the report', 'Any hidden text is listed with its page number. If some is found, redact the file properly and check again.'),
+        ],
+        'faq': [
+            ('How can text still be there after I blacked it out?', 'Drawing a black box, whether with a shape tool, a highlighter set to black, or a comment, only adds a rectangle on top of the page. The text it covers is still stored in the file underneath, so it can be selected, copied or extracted even though you cannot see it. This is how redacted material has repeatedly leaked from court filings.'),
+            ('Do I need the original, unredacted file?', 'No. The checker works from the redacted file alone. It looks at what is drawn on top of what, so it can tell when text is sitting underneath a box.'),
+            ('Is it safe to check a sensitive document?', 'Yes. The check runs entirely in your browser. The PDF is never uploaded to any server, which matters here more than anywhere: the file may contain exactly the information you are trying to protect.'),
+            ('If the check finds nothing, is the PDF definitely safe?', 'It means no text is hiding under boxes, in unapplied redactions, or in earlier saved versions. It cannot see inside images, so if a scanned page was blacked out in the scan itself, those pixels are simply gone or simply there. Also review the document properties it lists, which can reveal names or titles.'),
+            ('How do I fix a PDF that fails the check?', 'Redact it with a tool that removes the content rather than covering it. NilPDF Redact rebuilds each marked page so the covered text is no longer in the file, and you can run this check again afterwards to confirm.'),
+        ],
+        'related': [
+            ('redact-pdf', 'Redact PDF'),
+            ('remove-pdf-metadata', 'Remove Metadata'),
+            ('inspect-pdf', 'Inspect PDF'),
         ],
     },
     {
@@ -900,7 +936,7 @@ PAGE_TEMPLATE = '''<!DOCTYPE html>
 {related_items}
         </nav>
         <footer>
-            <p>Part of <a href="https://nilpdf.com/">NilPDF</a>: 21 free PDF tools, zero uploads.</p>
+            <p>Part of <a href="https://nilpdf.com/">NilPDF</a>: 22 free PDF tools, zero uploads.</p>
         </footer>
     </div>
 </body>

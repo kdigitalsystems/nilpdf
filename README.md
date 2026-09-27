@@ -46,6 +46,7 @@ runtime is cached the tools do not touch the network at all.
 | **Repair** | Recover pages from corrupted or truncated PDFs |
 | **Inspect** | View metadata and page information |
 | **Redact** | Black out sensitive areas and add text notes to a PDF |
+| **Check Redaction** | Find text still hiding under black boxes, unapplied redactions, or earlier saved versions of a "redacted" PDF |
 
 All tools support password-protected PDFs.
 

@@ -32,9 +32,9 @@
     </script>
 
     <!-- SEO & Social -->
-    <meta name="description" content="NilPDF: 21 free PDF tools that run entirely in your browser. Merge, split, compress, rotate, watermark and more. Zero uploads. Your files never leave your device.">
+    <meta name="description" content="NilPDF: 22 free PDF tools that run entirely in your browser. Merge, split, compress, rotate, watermark and more. Zero uploads. Your files never leave your device.">
     <meta property="og:title" content="NilPDF: Free PDF Tools. Zero Uploads.">
-    <meta property="og:description" content="21 PDF tools. Zero uploads. Your files never leave your device.">
+    <meta property="og:description" content="22 PDF tools. Zero uploads. Your files never leave your device.">
     <meta property="og:type" content="website">
     <meta property="og:url" content="https://nilpdf.com/">
     <meta property="og:image" content="https://nilpdf.com/assets/og-image.png">
@@ -42,7 +42,7 @@
     <meta property="og:image:height" content="630">
     <meta name="twitter:card" content="summary_large_image">
     <meta name="twitter:title" content="NilPDF: Free PDF Tools. Zero Uploads.">
-    <meta name="twitter:description" content="21 PDF tools in your browser. Zero uploads. Your files never leave your device.">
+    <meta name="twitter:description" content="22 PDF tools in your browser. Zero uploads. Your files never leave your device.">
     <meta name="twitter:image" content="https://nilpdf.com/assets/og-image.png">
     <link rel="canonical" href="https://nilpdf.com/">
     <link rel="manifest" href="./manifest.json">
@@ -54,7 +54,7 @@
       "@type": "WebApplication",
       "name": "NilPDF",
       "url": "https://nilpdf.com/",
-      "description": "21 free PDF tools that run entirely in your browser. Merge, split, compress, rotate, watermark and more. Zero uploads. Your files never leave your device.",
+      "description": "22 free PDF tools that run entirely in your browser. Merge, split, compress, rotate, watermark and more. Zero uploads. Your files never leave your device.",
       "applicationCategory": "UtilitiesApplication",
       "operatingSystem": "Any (browser-based)",
       "browserRequirements": "Requires a modern browser with JavaScript enabled",
@@ -130,7 +130,7 @@
             <span class="hero-badge-dot"></span>
             ZERO UPLOADS &middot; RUNS ON YOUR DEVICE
         </div>
-        <h1 class="hero-title">Twenty-one ways to handle a PDF,<br>none of them <em>leave the room.</em></h1>
+        <h1 class="hero-title">Twenty-two ways to handle a PDF,<br>none of them <em>leave the room.</em></h1>
         <p class="hero-sub">Merge, sign, redact, and rebuild documents entirely in your browser. No server ever sees the file, because there isn't one in the loop.</p>
         <button class="hero-cta" onclick="document.querySelector('.tools-section').scrollIntoView({behavior:'smooth'})">
             Browse all tools
@@ -390,6 +390,19 @@
                 </div>
             </div>
 
+            <div class="tool-card" data-category="secure" onclick="openTool('checkredact')" role="button" tabindex="0">
+                <div class="tool-card-top">
+                    <div class="tool-card-icon">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="16" rx="2"/><line x1="7" y1="10" x2="14" y2="10" stroke-width="3"/><circle cx="15.5" cy="14.5" r="3"/><line x1="17.7" y1="16.7" x2="20" y2="19"/></svg>
+                </div>
+                    <span class="tool-card-tag">Secure</span>
+                </div>
+                <div class="tool-card-body">
+                    <h3>Check Redaction</h3>
+                    <p>Find text still hiding under black boxes in a "redacted" PDF.</p>
+                </div>
+            </div>
+
             <div class="tool-card" data-category="secure" onclick="openTool('protect')" role="button" tabindex="0">
                 <div class="tool-card-top">
                     <div class="tool-card-icon">
@@ -557,6 +570,7 @@
             <button class="tab-btn" onclick="switchTab(event, 'inspect')">Inspect PDF</button>
             <button class="tab-btn" onclick="switchTab(event, 'repair')">Repair PDF</button>
             <button class="tab-btn" onclick="switchTab(event, 'redact')">Redact PDF</button>
+            <button class="tab-btn" onclick="switchTab(event, 'checkredact')">Check Redaction</button>
             <button class="tab-btn" onclick="switchTab(event, 'protect')">Protect PDF</button>
             <button class="tab-btn" onclick="switchTab(event, 'unlock')">Unlock PDF</button>
             <button class="tab-btn" onclick="switchTab(event, 'edit')">Edit PDF</button>
@@ -927,6 +941,20 @@
             <div id="edit-status" class="status-message" role="status" aria-live="polite" aria-atomic="true">Waiting for a PDF.</div>
         </div>
 
+        <!-- CHECK REDACTION -->
+        <div id="tool-checkredact" class="tool-section hidden-tool">
+            <div id="drop-zone-checkredact" class="file-drop" aria-label="Drop zone">
+                <svg class="drop-icon" width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
+                <p>Drop a redacted PDF to find text still hiding under the boxes</p>
+                <button onclick="document.getElementById('checkredact-upload').click()" class="secondary-btn">Browse</button>
+                <input type="file" id="checkredact-upload" accept="application/pdf" hidden aria-label="Select a PDF to check">
+            </div>
+            <input type="password" id="checkredact-password" class="text-input password-input" placeholder="🔒 Password (if encrypted)">
+            <button id="checkredact-btn" class="primary-btn">Check PDF</button>
+            <div id="checkredact-results" class="inspect-results"></div>
+            <div id="checkredact-status" class="status-message" role="status" aria-live="polite" aria-atomic="true">Waiting for a PDF.</div>
+        </div>
+
         <!-- SIGN -->
         <div id="tool-sign" class="tool-section hidden-tool">
             <div class="notice-strip">
@@ -1231,6 +1259,7 @@
                 <a href="#remove"    onclick="event.preventDefault(); openTool('remove')">Remove Pages</a>
                 <a href="#repair"    onclick="event.preventDefault(); openTool('repair')">Repair PDF</a>
                 <a href="#redact"    onclick="event.preventDefault(); openTool('redact')">Redact PDF</a>
+                <a href="#checkredact" onclick="event.preventDefault(); openTool('checkredact')">Check Redaction</a>
                 <a href="#protect"   onclick="event.preventDefault(); openTool('protect')">Protect PDF</a>
                 <a href="#unlock"    onclick="event.preventDefault(); openTool('unlock')">Unlock PDF</a>
                 <a href="#edit"      onclick="event.preventDefault(); openTool('edit')">Edit PDF</a>

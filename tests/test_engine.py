@@ -25,6 +25,7 @@ from core.pdf_engine import (
     process_protect,
     process_unlock,
     process_fill_and_sign,
+    process_check_redaction,
 )
 
 
@@ -998,3 +999,175 @@ class TestFillAndSign(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
+
+
+# ── Redaction checker ──────────────────────────────────────────────────────
+
+SECRET = "SECRET-123-45-6789"
+
+
+def make_line_pdf(draw=None, before=None, text=f"Page 1. SSN {SECRET}"):
+    """A 400x300 page with one line of text at (40, 200). `before` paints
+    things under the text; `draw` paints things on top of it."""
+    from reportlab.pdfgen import canvas
+    buf = io.BytesIO()
+    c = canvas.Canvas(buf, pagesize=(400, 300))
+    if before:
+        before(c)
+    c.setFillColorRGB(0, 0, 0)
+    c.drawString(40, 200, text)
+    if draw:
+        draw(c)
+    c.showPage()
+    c.drawString(40, 200, "Page 2. nothing sensitive here")
+    c.save()
+    return buf.getvalue()
+
+
+def box(r, g, b, x=30, y=190, w=250, h=30, alpha=None):
+    def paint(c):
+        c.setFillColorRGB(r, g, b)
+        if alpha is not None:
+            c.setFillAlpha(alpha)
+        c.rect(x, y, w, h, fill=1, stroke=0)
+    return paint
+
+
+def check(data, password=""):
+    import json
+    return json.loads(process_check_redaction(data, password=password))
+
+
+def with_annotation(data, subtype, **extra):
+    from pypdf.generic import ArrayObject, DictionaryObject, FloatObject, NameObject
+    writer = PdfWriter(clone_from=io.BytesIO(data))
+    annot = DictionaryObject({
+        NameObject("/Type"): NameObject("/Annot"),
+        NameObject("/Subtype"): NameObject(subtype),
+        NameObject("/Rect"): ArrayObject([FloatObject(v) for v in (30, 190, 280, 220)]),
+    })
+    for k, v in extra.items():
+        annot[NameObject("/" + k)] = ArrayObject([FloatObject(x) for x in v])
+    writer.add_annotation(page_number=0, annotation=annot)
+    out = io.BytesIO()
+    writer.write(out)
+    return out.getvalue()
+
+
+class TestCheckRedaction(unittest.TestCase):
+    """The checker must catch every way text survives under a "redaction", and
+    must not cry wolf at ordinary layouts. A false all-clear is the worst
+    outcome, so the leak cases are asserted as strictly as the clean ones."""
+
+    # ---- the leaks it exists to catch ----
+
+    def test_black_box_over_text_is_found(self):
+        r = check(make_line_pdf(draw=box(0, 0, 0)))
+        self.assertTrue(r["hidden_text_found"])
+        f = r["findings"][0]
+        self.assertEqual((f["kind"], f["page"]), ("covered_text", 1))
+        self.assertIn(SECRET, f["text"])
+        self.assertIn("black", f["detail"])
+
+    def test_white_out_over_text_is_found(self):
+        r = check(make_line_pdf(draw=box(1, 1, 1)))
+        self.assertTrue(r["hidden_text_found"])
+        self.assertIn(SECRET, r["findings"][0]["text"])
+        self.assertIn("white", r["findings"][0]["detail"])
+
+    def test_box_over_only_the_secret_reports_the_secret_not_the_whole_line(self):
+        # Covers roughly x 112..236, where the secret sits; "Page 1." is left of it.
+        r = check(make_line_pdf(draw=box(0, 0, 0, x=112, w=124)))
+        self.assertTrue(r["hidden_text_found"])
+        self.assertIn(SECRET, r["findings"][0]["text"])
+        self.assertNotIn("Page", r["findings"][0]["text"])
+
+    def test_image_pasted_over_text_is_found(self):
+        from PIL import Image
+        from reportlab.lib.utils import ImageReader
+        patch = ImageReader(Image.new("RGB", (50, 10), "black"))
+        r = check(make_line_pdf(draw=lambda c: c.drawImage(patch, 30, 190, width=250, height=30)))
+        self.assertTrue(r["hidden_text_found"])
+        self.assertIn("image", r["findings"][0]["detail"])
+
+    def test_unapplied_redact_annotation_is_found(self):
+        r = check(with_annotation(make_line_pdf(), "/Redact"))
+        kinds = {f["kind"] for f in r["findings"]}
+        self.assertIn("unapplied_redaction", kinds)
+        self.assertIn(SECRET, next(f for f in r["findings"] if f["kind"] == "unapplied_redaction")["text"])
+
+    def test_black_square_annotation_over_text_is_found(self):
+        r = check(with_annotation(make_line_pdf(), "/Square", IC=(0, 0, 0), C=(0, 0, 0)))
+        self.assertIn("unapplied_redaction", {f["kind"] for f in r["findings"]})
+
+    def test_text_kept_in_an_earlier_saved_version_is_found(self):
+        """Incremental saves append, so a secret deleted in a later save stays
+        in the file. Here the second save replaces page 1 with harmless text."""
+        from pypdf.generic import DecodedStreamObject, NameObject
+        original = make_line_pdf()
+        writer = PdfWriter(io.BytesIO(original), incremental=True)
+        stream = DecodedStreamObject()
+        stream.set_data(b"BT /F1 12 Tf 40 200 Td (Page 1. nothing here now) Tj ET")
+        writer.pages[0][NameObject("/Contents")] = writer._add_object(stream)
+        out = io.BytesIO()
+        writer.write(out)
+        data = out.getvalue()
+        self.assertGreater(data.count(b"%%EOF"), 1, "fixture must really be an incremental update")
+        self.assertNotIn(SECRET, read_pdf(data).pages[0].extract_text())
+        r = check(data)
+        f = [f for f in r["findings"] if f["kind"] == "earlier_revision"]
+        self.assertTrue(f, f"expected an earlier_revision finding, got {r['findings']}")
+        self.assertIn(SECRET, f[0]["text"])
+
+    # ---- ordinary layouts it must not flag ----
+
+    def test_plain_text_is_clean(self):
+        self.assertFalse(check(make_line_pdf())["hidden_text_found"])
+
+    def test_background_painted_under_text_is_clean(self):
+        """Table cells and highlighted rows paint the fill first, text second."""
+        self.assertFalse(check(make_line_pdf(before=box(0.9, 0.9, 0.2)))["hidden_text_found"])
+
+    def test_white_text_on_a_dark_bar_is_clean(self):
+        """A dark header bar with light text on top is design, not redaction:
+        the text is painted after the bar, so it is visible."""
+        from reportlab.pdfgen import canvas
+        buf = io.BytesIO()
+        c = canvas.Canvas(buf, pagesize=(400, 300))
+        c.setFillColorRGB(0, 0, 0)
+        c.rect(30, 190, 250, 30, fill=1, stroke=0)
+        c.setFillColorRGB(1, 1, 1)
+        c.drawString(40, 200, "Quarterly report")
+        c.save()
+        self.assertFalse(check(buf.getvalue())["hidden_text_found"])
+
+    def test_translucent_highlight_is_clean(self):
+        """A highlighter lets the text show through, so nothing is hidden."""
+        self.assertFalse(check(make_line_pdf(draw=box(1, 1, 0, alpha=0.35)))["hidden_text_found"])
+
+    def test_box_in_empty_space_is_clean(self):
+        self.assertFalse(check(make_line_pdf(draw=box(0, 0, 0, x=40, y=40, w=100, h=30)))["hidden_text_found"])
+
+    def test_nilpdf_redaction_output_is_clean(self):
+        """End to end: a file redacted by NilPDF passes NilPDF's own checker."""
+        redacted = process_redact(make_line_pdf(), {0: make_flat_page_png_base64(800, 600)})
+        self.assertFalse(check(redacted)["hidden_text_found"])
+
+    # ---- plumbing ----
+
+    def test_report_shape(self):
+        r = check(make_line_pdf())
+        self.assertEqual(r["pages"], 2)
+        for key in ("hidden_text_found", "findings", "metadata", "invisible_text_pages", "limitations"):
+            self.assertIn(key, r)
+
+    def test_encrypted_pdf_needs_the_password(self):
+        enc = make_encrypted_pdf(password="pw")
+        with self.assertRaises(ValueError):
+            process_check_redaction(enc, password="wrong")
+        self.assertEqual(check(enc, password="pw")["pages"], 1)
+
+    def test_file_is_not_modified_or_returned(self):
+        """The checker only reads; its output is a JSON report, not a PDF."""
+        out = process_check_redaction(make_line_pdf(draw=box(0, 0, 0)))
+        self.assertFalse(out.startswith(b"%PDF"))

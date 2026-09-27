@@ -203,6 +203,9 @@ self.onmessage = async (event) => {
             result_py = self.pyodide.globals.get('process_protect')(payload.buffer, payload.newPassword, id, password);
         } else if (action === 'UNLOCK') {
             result_py = self.pyodide.globals.get('process_unlock')(payload.buffer, id, password);
+        } else if (action === 'CHECK_REDACTION') {
+            result_py = self.pyodide.globals.get('process_check_redaction')(payload.buffer, id, password);
+            isText = true;
         } else if (action === 'FILL_AND_SIGN') {
             result_py = self.pyodide.globals.get('process_fill_and_sign')(payload.buffer, payload.fields, payload.edits, payload.signatures, payload.flatten, id, password);
         } else {
