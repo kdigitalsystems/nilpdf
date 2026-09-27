@@ -3146,16 +3146,60 @@
     // FEEDBACK_ENDPOINT Actions variable; unstamped builds disable the form.
     const _FEEDBACK_ENDPOINT = '__FEEDBACK_ENDPOINT__';
 
+    // When the relay is not configured, feedback falls back to a pre-filled GitHub
+    // issue that the visitor reviews and submits from their own account. No
+    // credential and no server are involved: the page only builds a URL. The
+    // labels are applied only for accounts with triage access and are otherwise
+    // ignored by GitHub, which is harmless.
+    const _FEEDBACK_ISSUE_URL = 'https://github.com/kdigitalsystems/nilpdf/issues/new';
+    const _FEEDBACK_LABELS = { bug: 'bug', feature: 'enhancement', general: '' };
+    const _FEEDBACK_TYPE_NAMES = { bug: 'Bug report', feature: 'Feature request', general: 'General feedback' };
+
+    function _feedbackRelayConfigured() {
+        return /^https:\/\//.test(_FEEDBACK_ENDPOINT);
+    }
+
+    function _buildFeedbackIssueUrl(type, name, message) {
+        const typeName = _FEEDBACK_TYPE_NAMES[type] || _FEEDBACK_TYPE_NAMES.general;
+        const title = `[${typeName}] ${message.slice(0, 72)}${message.length > 72 ? '...' : ''}`;
+        const body = [
+            `**Type:** ${typeName}`,
+            ...(name ? [`**From:** ${name}`] : []),
+            '',
+            '**Message:**',
+            message,
+            '',
+            '---',
+            '*Submitted from the NilPDF in-app feedback form*',
+        ].join('\n');
+        const params = new URLSearchParams({ title, body });
+        const label = _FEEDBACK_LABELS[type];
+        if (label) params.set('labels', label);
+        return `${_FEEDBACK_ISSUE_URL}?${params.toString()}`;
+    }
+
     function openFeedback() {
         document.getElementById('feedback-form-state').hidden    = false;
         document.getElementById('feedback-success-state').hidden = true;
+        document.getElementById('feedback-github-state').hidden  = true;
         document.getElementById('feedback-form').reset();
+        // Say which path this submission takes before the visitor types anything,
+        // since the GitHub fallback produces a public issue.
+        const viaGitHub = !_feedbackRelayConfigured();
+        document.getElementById('feedback-subtitle').textContent = viaGitHub
+            ? 'This opens a public GitHub issue for you to review and submit.'
+            : 'Your thoughts help us improve NilPDF.';
+        document.getElementById('feedback-submit-text').textContent = viaGitHub
+            ? 'Continue on GitHub'
+            : 'Send Feedback';
         const errDiv = document.getElementById('feedback-error');
         errDiv.hidden = true;
         errDiv.textContent = '';
         document.getElementById('feedback-submit').disabled = false;
         document.getElementById('feedback-submit-text').hidden    = false;
-        document.getElementById('feedback-submit-spinner').hidden = true;
+        // The spinner is an <svg>, and SVG elements have no `hidden` property, so
+        // assigning .hidden is a silent no-op. Toggle the attribute instead.
+        document.getElementById('feedback-submit-spinner').toggleAttribute('hidden', true);
         document.getElementById('feedback-modal').hidden = false;
         document.body.style.overflow = 'hidden';
         requestAnimationFrame(() => document.getElementById('feedback-type').focus());
@@ -3171,7 +3215,7 @@
         const message = document.getElementById('feedback-message').value.trim();
         if (!message) return;
 
-        // Guard: endpoint not stamped yet (local / dev build) — checked before any UI change.
+        // Relay not configured (unstamped build): fall back to a pre-filled GitHub issue.
         //
         // Test the *shape* of the value rather than comparing it to the placeholder
         // literal. The deploy step does a plain replace-all, so a second copy of the
@@ -3183,9 +3227,18 @@
         // submission. An unstamped build still holds the placeholder, which is not a
         // URL, so this check catches it.
         if (!/^https:\/\//.test(_FEEDBACK_ENDPOINT)) {
-            const errDiv = document.getElementById('feedback-error');
-            errDiv.textContent = 'Feedback is not available in this environment. Visit nilpdf.com to send feedback.';
-            errDiv.hidden = false;
+            const url = _buildFeedbackIssueUrl(
+                document.getElementById('feedback-type').value,
+                document.getElementById('feedback-name').value.trim(),
+                message,
+            );
+            // Opened synchronously, inside the submit gesture, so popup blockers
+            // allow it. The link in the next state covers the case where it is
+            // blocked anyway.
+            window.open(url, '_blank', 'noopener');
+            document.getElementById('feedback-github-link').href = url;
+            document.getElementById('feedback-form-state').hidden   = true;
+            document.getElementById('feedback-github-state').hidden = false;
             return;
         }
 
@@ -3196,7 +3249,7 @@
 
         submitBtn.disabled   = true;
         submitText.hidden    = true;
-        submitSpinner.hidden = false;
+        submitSpinner.toggleAttribute('hidden', false);
         errDiv.hidden        = true;
 
         const type = document.getElementById('feedback-type').value;
@@ -3221,7 +3274,7 @@
             errDiv.hidden      = false;
             submitBtn.disabled   = false;
             submitText.hidden    = false;
-            submitSpinner.hidden = true;
+            submitSpinner.toggleAttribute('hidden', true);
         }
     }
 

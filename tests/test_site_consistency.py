@@ -238,6 +238,39 @@ class TestBrowserDependencyPins(unittest.TestCase):
                 )
 
 
+class TestSvgVisibilityToggles(unittest.TestCase):
+    """SVG elements have no `hidden` property, so `svgEl.hidden = x` in app.js
+    is a silent no-op that sets an expando and never touches the attribute.
+
+    The feedback button's spinner was toggled that way, and CSS gave it
+    display:block, which also overrode the [hidden] attribute it started with.
+    Together they left the spinner visible and spinning next to "Send Feedback"
+    on the live site at all times, making the form look permanently stuck.
+    Nothing errored, so nothing noticed. SVGs must be toggled with
+    toggleAttribute/setAttribute/removeAttribute instead.
+    """
+
+    def test_no_svg_is_toggled_via_the_hidden_property(self):
+        html = read("index.html")
+        app = read("assets/js/app.js")
+        svg_ids = re.findall(r'<svg\b[^>]*\bid="([^"]+)"', html)
+        self.assertTrue(svg_ids, "No <svg id=...> found in index.html; regex may be stale")
+
+        for svg_id in svg_ids:
+            lookup = rf"document\.getElementById\(['\"]{re.escape(svg_id)}['\"]\)"
+            # Direct form:   document.getElementById('x').hidden = ...
+            targets = [lookup]
+            # Via a variable: const v = document.getElementById('x'); ... v.hidden = ...
+            targets += [re.escape(v) for v in re.findall(rf"\b(?:const|let|var)\s+(\w+)\s*=\s*{lookup}", app)]
+            for target in targets:
+                with self.subTest(svg=svg_id, via=target):
+                    self.assertIsNone(
+                        re.search(rf"{target}\.hidden\s*=(?!=)", app),
+                        f"app.js sets .hidden on <svg id=\"{svg_id}\">, which does nothing. "
+                        f"Use toggleAttribute('hidden', bool) instead.",
+                    )
+
+
 class TestWorkerActionWiring(unittest.TestCase):
     """Every process_* function pdf_worker.js dispatches to must actually
     exist in core/pdf_engine.py — this is exactly the class of bug a typo'd

@@ -1296,7 +1296,7 @@
                 </div>
                 <div>
                     <h2 id="feedback-modal-title" class="modal-title">Send Feedback</h2>
-                    <p class="modal-subtitle">Your thoughts help us improve NilPDF.</p>
+                    <p class="modal-subtitle" id="feedback-subtitle">Your thoughts help us improve NilPDF.</p>
                 </div>
             </div>
 
@@ -1322,6 +1322,7 @@
                     <textarea id="feedback-message" class="form-textarea" placeholder="Describe your feedback, bug, or idea…" rows="5" required maxlength="2000"></textarea>
                 </div>
                 <div id="feedback-error" class="form-error" hidden></div>
+                <p class="form-note">Found a security issue? <a href="https://github.com/kdigitalsystems/nilpdf/security/advisories/new" target="_blank" rel="noopener">Report it privately</a> instead.</p>
                 <div class="form-actions">
                     <button type="button" class="modal-btn-secondary" onclick="closeFeedback()">Cancel</button>
                     <button type="submit" id="feedback-submit" class="modal-btn-primary">
@@ -1340,6 +1341,18 @@
                 </div>
                 <h2 class="modal-title">Thanks for your feedback!</h2>
                 <p class="modal-subtitle" style="margin-top:0.5rem">Your message has been received. We'll look into it soon.</p>
+                <div class="form-actions form-actions--centered">
+                    <button type="button" class="modal-btn-primary" onclick="closeFeedback()">Done</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- ── Finish-on-GitHub state (used when the feedback relay is not configured) ── -->
+        <div id="feedback-github-state" hidden>
+            <div class="modal-success">
+                <h2 class="modal-title">Finish on GitHub</h2>
+                <p class="modal-subtitle" style="margin-top:0.5rem">A pre-filled issue has opened in a new tab. Review it and press <strong>Submit new issue</strong> to send it. GitHub issues are public, so leave out anything private.</p>
+                <p class="modal-subtitle" style="margin-top:0.5rem"><a id="feedback-github-link" href="https://github.com/kdigitalsystems/nilpdf/issues/new" target="_blank" rel="noopener">Tab didn't open? Continue on GitHub</a></p>
                 <div class="form-actions form-actions--centered">
                     <button type="button" class="modal-btn-primary" onclick="closeFeedback()">Done</button>
                 </div>
