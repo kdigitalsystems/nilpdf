@@ -284,7 +284,7 @@
         pagenums: { title: 'Add Page Numbers to PDF', desc: 'Stamp page numbers onto a PDF. Your file never leaves your device.' },
         inspect:  { title: 'Inspect PDF',             desc: 'View PDF metadata, page count, fonts and more. Zero uploads.' },
         repair:   { title: 'Repair PDF',              desc: 'Attempt to recover pages from a corrupted or truncated PDF. Runs privately in your browser.' },
-        redact:   { title: 'Redact PDF',              desc: 'Permanently black out sensitive areas of a PDF and add custom text notes. Runs privately in your browser.' },
+        redact:   { title: 'Redact PDF',              desc: 'Black out sensitive content so it is removed from the file, not just covered. Runs in your browser.' },
         edit:     { title: 'Edit PDF',                desc: 'Click anywhere to write text onto a PDF page. Runs privately in your browser.' },
         sign:     { title: 'Sign PDF',                desc: 'Draw, type, or upload a signature and place it on any page. Runs privately in your browser.' },
         fillform: { title: 'Fill PDF Forms',          desc: 'Fill in PDF form fields and optionally flatten them. Runs privately in your browser.' },

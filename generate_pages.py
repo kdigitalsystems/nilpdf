@@ -6,7 +6,7 @@ TOOLS = [
     {
         'slug': 'merge-pdf',
         'tool_id': 'merge',
-        'title': 'Merge PDF Files Free Online | NilPDF',
+        'title': 'Merge PDF Online Free, Without Uploading | NilPDF',
         'h1': 'Merge PDF Files',
         'tagline': 'Combine multiple PDFs into one file, instantly, privately, for free.',
         'description': 'Free online PDF merger. Combine multiple PDF files into one. No uploads, no account, runs entirely in your browser.',
@@ -38,7 +38,7 @@ TOOLS = [
     {
         'slug': 'compress-pdf',
         'tool_id': 'compress',
-        'title': 'Compress PDF Online Free | NilPDF',
+        'title': 'Compress PDF Online Free, Without Uploading | NilPDF',
         'h1': 'Compress PDF Online',
         'tagline': 'Optimize PDF structure and embedded resources to reduce file size, free and private.',
         'description': 'Free online PDF compressor. Shrink PDF files for email or upload. No server uploads, runs entirely in your browser.',
@@ -69,7 +69,7 @@ TOOLS = [
     {
         'slug': 'split-pdf',
         'tool_id': 'split',
-        'title': 'Split PDF Online Free | NilPDF',
+        'title': 'Split PDF Online Free, Without Uploading | NilPDF',
         'h1': 'Split PDF Online',
         'tagline': 'Extract pages or split a PDF into multiple files, free and private.',
         'description': 'Free online PDF splitter. Extract specific pages or split into separate files. No uploads, runs in your browser.',
@@ -101,7 +101,7 @@ TOOLS = [
     {
         'slug': 'pdf-to-images',
         'tool_id': 'topng',
-        'title': 'PDF to Images: Convert PDF to JPG/PNG Free | NilPDF',
+        'title': 'PDF to JPG/PNG Free, Without Uploading | NilPDF',
         'h1': 'PDF to Images',
         'tagline': 'Convert every page of a PDF to JPG or PNG images, free, instant, private.',
         'description': 'Free online PDF to image converter. Export each page as JPG or PNG. No uploads, runs entirely in your browser.',
@@ -133,7 +133,7 @@ TOOLS = [
     {
         'slug': 'images-to-pdf',
         'tool_id': 'topdf',
-        'title': 'Images to PDF: Convert JPG/PNG to PDF Free | NilPDF',
+        'title': 'JPG/PNG to PDF Free, Without Uploading | NilPDF',
         'h1': 'Images to PDF',
         'tagline': 'Combine JPG or PNG images into a single PDF, free and private.',
         'description': 'Free online image to PDF converter. Turn JPG and PNG files into a PDF. No uploads, runs entirely in your browser.',
@@ -164,7 +164,7 @@ TOOLS = [
     {
         'slug': 'rotate-pdf',
         'tool_id': 'rotate',
-        'title': 'Rotate PDF Pages Online Free | NilPDF',
+        'title': 'Rotate PDF Pages Free, Without Uploading | NilPDF',
         'h1': 'Rotate PDF Pages',
         'tagline': 'Rotate any pages in a PDF by 90° or 180°, free and private.',
         'description': 'Free online PDF page rotator. Rotate specific pages or the entire document. No uploads, runs in your browser.',
@@ -196,7 +196,7 @@ TOOLS = [
     {
         'slug': 'pdf-to-text',
         'tool_id': 'totext',
-        'title': 'Extract Text from PDF Free Online | NilPDF',
+        'title': 'Extract Text from PDF Without Uploading | NilPDF',
         'h1': 'PDF to Text',
         'tagline': 'Extract all text content from any PDF, free, private, no uploads.',
         'description': 'Free online PDF text extractor. Copy all text from a PDF file. No server uploads, runs entirely in your browser.',
@@ -227,7 +227,7 @@ TOOLS = [
     {
         'slug': 'watermark-pdf',
         'tool_id': 'watermark',
-        'title': 'Add Watermark to PDF Free Online | NilPDF',
+        'title': 'Watermark a PDF Free, Without Uploading | NilPDF',
         'h1': 'Add Watermark to PDF',
         'tagline': 'Stamp a diagonal text watermark on any PDF, free and private.',
         'description': 'Free online PDF watermark tool. Add CONFIDENTIAL, DRAFT, or any custom text. No uploads, runs in your browser.',
@@ -259,7 +259,7 @@ TOOLS = [
     {
         'slug': 'remove-pdf-pages',
         'tool_id': 'remove',
-        'title': 'Remove Pages from PDF Free Online | NilPDF',
+        'title': 'Remove PDF Pages Free, Without Uploading | NilPDF',
         'h1': 'Remove PDF Pages',
         'tagline': 'Delete unwanted pages from any PDF, free, instant, private.',
         'description': 'Free online PDF page remover. Delete specific pages from a PDF file. No uploads, runs entirely in your browser.',
@@ -291,7 +291,7 @@ TOOLS = [
     {
         'slug': 'reorder-pdf-pages',
         'tool_id': 'reorder',
-        'title': 'Reorder PDF Pages Online Free | NilPDF',
+        'title': 'Reorder PDF Pages Free, Without Uploading | NilPDF',
         'h1': 'Reorder PDF Pages',
         'tagline': 'Drag and drop to rearrange pages in any PDF, free and private.',
         'description': 'Free online PDF page reorder tool. Drag thumbnails to change page order. No uploads, runs in your browser.',
@@ -323,7 +323,7 @@ TOOLS = [
     {
         'slug': 'add-page-numbers-pdf',
         'tool_id': 'pagenums',
-        'title': 'Add Page Numbers to PDF Free Online | NilPDF',
+        'title': 'Add Page Numbers to PDF Without Uploading | NilPDF',
         'h1': 'Add Page Numbers to PDF',
         'tagline': 'Stamp page numbers onto any PDF, choose position and starting number.',
         'description': 'Free online tool to add page numbers to PDF files. No uploads, runs entirely in your browser.',
@@ -355,7 +355,7 @@ TOOLS = [
     {
         'slug': 'remove-pdf-metadata',
         'tool_id': 'anonymize',
-        'title': 'Remove PDF Metadata Online Free | NilPDF',
+        'title': 'Remove PDF Metadata Without Uploading | NilPDF',
         'h1': 'Remove PDF Metadata',
         'tagline': 'Strip hidden author, title, and tracking data from any PDF, privately.',
         'description': 'Free online PDF metadata remover. Strip author, title, creator, and all hidden data. No uploads, runs in your browser.',
@@ -386,7 +386,7 @@ TOOLS = [
     {
         'slug': 'inspect-pdf',
         'tool_id': 'inspect',
-        'title': 'Inspect PDF Metadata Online Free | NilPDF',
+        'title': 'View PDF Metadata Without Uploading | NilPDF',
         'h1': 'Inspect PDF',
         'tagline': 'View PDF metadata, page count, fonts, and document properties, instantly.',
         'description': 'Free online PDF inspector. See author, title, creator, creation date, page count, and embedded fonts. No uploads.',
@@ -417,7 +417,7 @@ TOOLS = [
     {
         'slug': 'repair-pdf',
         'tool_id': 'repair',
-        'title': 'Repair PDF Online Free | NilPDF',
+        'title': 'Repair a Corrupted PDF Without Uploading | NilPDF',
         'h1': 'Repair PDF',
         'tagline': 'Recover pages from corrupted or damaged PDF files, free and private.',
         'description': 'Free online PDF repair tool. Recover pages from corrupted or truncated PDF files. No uploads, runs entirely in your browser.',
@@ -449,11 +449,11 @@ TOOLS = [
     {
         'slug': 'redact-pdf',
         'tool_id': 'redact',
-        'title': 'Redact PDF Online Free | NilPDF',
-        'h1': 'Redact PDF',
-        'tagline': 'Permanently black out sensitive areas of a PDF. Free and private.',
-        'description': 'Free online PDF redaction tool. Black out sensitive text or images and add custom notes. The page is rebuilt from a flattened image, so the underlying content is actually removed, not just covered. No uploads, runs entirely in your browser.',
-        'keywords': 'redact pdf, black out pdf, censor pdf, permanent pdf redaction, secure pdf redaction free',
+        'title': 'Redact PDF Properly: Text Removed, Not Covered | NilPDF',
+        'h1': 'Redact a PDF Properly',
+        'tagline': 'Black out sensitive content so it is removed from the file, not just hidden. Free, no uploads.',
+        'description': 'Redact a PDF so the hidden text is actually removed, not just covered by a black box it can still be copied from. Free, no uploads, runs entirely in your browser.',
+        'keywords': 'redact pdf, redact pdf properly, redact pdf without uploading, redacted text still visible, can redacted pdf text be copied, black out pdf, permanent pdf redaction, secure pdf redaction free',
         'bullets': [
             'Click and drag to black out any area on a page',
             'Add custom text notes anywhere on a page',
@@ -470,6 +470,7 @@ TOOLS = [
             ('Apply', 'Click "Apply & Download". Pages with a redaction are flattened and rebuilt, then your PDF downloads automatically.'),
         ],
         'faq': [
+            ('Why can I still copy text from a redacted PDF?', 'Because it was never really redacted. The most common way to redact is to draw a black rectangle over the text, but that rectangle is only one more drawing instruction layered on top of the page. The text underneath is still in the file, so it can be selected, copied, searched, or extracted even though you cannot see it, which is how supposedly redacted material has repeatedly leaked from court filings. NilPDF does not draw on top of the original page. It renders the marked page to an image with the black boxes burned in, then replaces the page with that image alone, so the covered text is no longer in the file at all.'),
             ('Is redacting a PDF really free?', 'Yes. Completely free, unlimited use, no account required.'),
             ('Are my PDF files safe when I redact them?', 'Yes. Your files never leave your device. Everything runs in your browser using WebAssembly. NilPDF has no backend server.'),
             ('Does redaction actually remove the underlying content?', 'Yes. Any page with a black box is re-rendered at high resolution with the box permanently baked in, then rebuilt as a brand new page containing only that image, nothing from the original page carries over. The text under a black box cannot be selected, copied, or extracted afterward.'),
@@ -484,7 +485,7 @@ TOOLS = [
     {
         'slug': 'edit-pdf',
         'tool_id': 'edit',
-        'title': 'Edit PDF Online Free: Add Text | NilPDF',
+        'title': 'Add Text to a PDF Free, Without Uploading | NilPDF',
         'h1': 'Edit PDF: Add Text',
         'tagline': 'Click anywhere to write text onto a PDF page, free and private.',
         'description': 'Free online PDF editor. Click anywhere on a page to add text, no uploads, runs entirely in your browser.',
@@ -516,7 +517,7 @@ TOOLS = [
     {
         'slug': 'fill-pdf-forms',
         'tool_id': 'fillform',
-        'title': 'Fill PDF Forms Online Free | NilPDF',
+        'title': 'Fill PDF Forms Free, Without Uploading | NilPDF',
         'h1': 'Fill PDF Forms',
         'tagline': 'Fill in PDF form fields directly on the page, free and private.',
         'description': 'Free online PDF form filler. Fill in text fields, checkboxes, and radio buttons directly on the page, then optionally flatten the form. No uploads, runs entirely in your browser.',
@@ -564,7 +565,7 @@ TOOLS = [
     {
         'slug': 'protect-pdf',
         'tool_id': 'protect',
-        'title': 'Protect PDF with a Password Online Free | NilPDF',
+        'title': 'Password Protect a PDF Without Uploading | NilPDF',
         'h1': 'Protect PDF with a Password',
         'tagline': 'Encrypt a PDF with AES-256 so only people who know the password can open it, free and private.',
         'description': 'Free online PDF password protector. Encrypt any PDF with strong, standards-compatible AES-256 encryption. No uploads, runs entirely in your browser.',
@@ -613,7 +614,7 @@ TOOLS = [
     {
         'slug': 'unlock-pdf',
         'tool_id': 'unlock',
-        'title': 'Unlock PDF: Remove Password Online Free | NilPDF',
+        'title': 'Remove a PDF Password Without Uploading | NilPDF',
         'h1': 'Unlock PDF',
         'tagline': 'Permanently remove password encryption from a PDF you have the password for, free and private.',
         'description': 'Free online PDF password remover. Permanently strip encryption from a PDF once you supply the correct password. No uploads, runs entirely in your browser. Cannot crack, guess, or bypass an unknown password.',
@@ -662,7 +663,7 @@ TOOLS = [
     {
         'slug': 'sign-pdf',
         'tool_id': 'sign',
-        'title': 'Sign PDF Online Free | NilPDF',
+        'title': 'Sign a PDF Free, Without Uploading | NilPDF',
         'h1': 'Sign PDF',
         'tagline': 'Draw, type, or upload a signature and place it on any page. Free and private.',
         'description': 'Free online PDF signer. Draw a signature, type your name, or upload an image, then place it on any page. No uploads, runs entirely in your browser. This creates a visual signature, not a certificate-based digital signature.',
@@ -713,7 +714,7 @@ TOOLS = [
     {
         'slug': 'fill-and-sign-pdf',
         'tool_id': 'fillsign',
-        'title': 'Fill & Sign PDF Online Free | NilPDF',
+        'title': 'Fill and Sign a PDF Without Uploading | NilPDF',
         'h1': 'Fill & Sign PDF',
         'tagline': 'Fill in form fields, write in blanks or dates, and sign, all in one pass. Free and private.',
         'description': 'Free online tool to fill in a PDF, write text anywhere on the page, and sign it, all in one workspace. No uploads, runs entirely in your browser.',
