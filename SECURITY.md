@@ -20,9 +20,14 @@ document data to be transmitted anywhere, an XSS vector, or a dependency with
 a known exploitable vulnerability), please report it privately rather than
 opening a public issue:
 
-- Use the feedback form on [nilpdf.com](https://nilpdf.com/) and select "Bug report."
+- **[Report a vulnerability privately](https://github.com/kdigitalsystems/nilpdf/security/advisories/new)**
+  through GitHub's private vulnerability reporting. Only the maintainers can
+  see the report, and it can be discussed and fixed before anything is public.
 - Please include enough detail to reproduce the issue and, if applicable, a
   minimal test PDF that triggers it (redact any sensitive content first).
+
+Please **don't** use the in-app feedback form or a regular GitHub issue for
+security reports. Both create a public issue that anyone can read.
 
 Please avoid publicly disclosing a vulnerability until it has been addressed.
 
