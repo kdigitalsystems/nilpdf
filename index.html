@@ -11,7 +11,7 @@
     </script>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>NilPDF: Free PDF Tools. Zero Uploads. 100% Private.</title>
+    <title>NilPDF: Free PDF Tools. Zero Uploads.</title>
 
     <!-- PWA service worker (also sets COOP/COEP for Pyodide SharedArrayBuffer) -->
     <script>
@@ -32,9 +32,9 @@
     </script>
 
     <!-- SEO & Social -->
-    <meta name="description" content="NilPDF: 21 free PDF tools that run entirely in your browser. Merge, split, compress, rotate, watermark and more. Zero uploads. Zero tracking. 100% private.">
+    <meta name="description" content="NilPDF: 21 free PDF tools that run entirely in your browser. Merge, split, compress, rotate, watermark and more. Zero uploads. Your files never leave your device.">
     <meta property="og:title" content="NilPDF: Free PDF Tools. Zero Uploads.">
-    <meta property="og:description" content="21 PDF tools. Your files never leave your device. Zero uploads. Zero tracking.">
+    <meta property="og:description" content="21 PDF tools. Zero uploads. Your files never leave your device.">
     <meta property="og:type" content="website">
     <meta property="og:url" content="https://nilpdf.com/">
     <meta property="og:image" content="https://nilpdf.com/assets/og-image.png">
@@ -42,7 +42,7 @@
     <meta property="og:image:height" content="630">
     <meta name="twitter:card" content="summary_large_image">
     <meta name="twitter:title" content="NilPDF: Free PDF Tools. Zero Uploads.">
-    <meta name="twitter:description" content="21 PDF tools in your browser. Zero uploads. Zero tracking. 100% private.">
+    <meta name="twitter:description" content="21 PDF tools in your browser. Zero uploads. Your files never leave your device.">
     <meta name="twitter:image" content="https://nilpdf.com/assets/og-image.png">
     <link rel="canonical" href="https://nilpdf.com/">
     <link rel="manifest" href="./manifest.json">
@@ -54,7 +54,7 @@
       "@type": "WebApplication",
       "name": "NilPDF",
       "url": "https://nilpdf.com/",
-      "description": "21 free PDF tools that run entirely in your browser. Merge, split, compress, rotate, watermark and more. Zero uploads. Zero tracking. 100% private.",
+      "description": "21 free PDF tools that run entirely in your browser. Merge, split, compress, rotate, watermark and more. Zero uploads. Your files never leave your device.",
       "applicationCategory": "UtilitiesApplication",
       "operatingSystem": "Any (browser-based)",
       "browserRequirements": "Requires a modern browser with JavaScript enabled",
@@ -164,8 +164,8 @@
                 <div class="feature-icon green">
                     <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19"/><line x1="1" y1="1" x2="23" y2="23"/></svg>
                 </div>
-                <h3>Zero tracking, zero uploads</h3>
-                <p>No cookies on your files, no account required, no server logs. NilPDF has no idea what you process, by design.</p>
+                <h3>Zero uploads, no account</h3>
+                <p>No account, no upload, and no server that could ever receive your files. NilPDF never learns what you process, by design.</p>
             </div>
             <div class="feature-card">
                 <div class="feature-icon purple">
@@ -1211,7 +1211,7 @@
     <div class="site-footer-inner">
         <div class="site-footer-brand">
             <strong>NilPDF</strong>
-            <p>Free PDF tools that never leave your browser. Zero uploads. Zero tracking.</p>
+            <p>Free PDF tools that never leave your browser. Zero uploads.</p>
         </div>
         <div class="site-footer-tools">
             <h4>Tools</h4>
@@ -1296,7 +1296,7 @@
                 </div>
                 <div>
                     <h2 id="feedback-modal-title" class="modal-title">Send Feedback</h2>
-                    <p class="modal-subtitle">Your thoughts help us improve NilPDF.</p>
+                    <p class="modal-subtitle" id="feedback-subtitle">Your thoughts help us improve NilPDF.</p>
                 </div>
             </div>
 
@@ -1322,6 +1322,7 @@
                     <textarea id="feedback-message" class="form-textarea" placeholder="Describe your feedback, bug, or idea…" rows="5" required maxlength="2000"></textarea>
                 </div>
                 <div id="feedback-error" class="form-error" hidden></div>
+                <p class="form-note">Found a security issue? <a href="https://github.com/kdigitalsystems/nilpdf/security/advisories/new" target="_blank" rel="noopener">Report it privately</a> instead.</p>
                 <div class="form-actions">
                     <button type="button" class="modal-btn-secondary" onclick="closeFeedback()">Cancel</button>
                     <button type="submit" id="feedback-submit" class="modal-btn-primary">
@@ -1340,6 +1341,18 @@
                 </div>
                 <h2 class="modal-title">Thanks for your feedback!</h2>
                 <p class="modal-subtitle" style="margin-top:0.5rem">Your message has been received. We'll look into it soon.</p>
+                <div class="form-actions form-actions--centered">
+                    <button type="button" class="modal-btn-primary" onclick="closeFeedback()">Done</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- ── Finish-on-GitHub state (used when the feedback relay is not configured) ── -->
+        <div id="feedback-github-state" hidden>
+            <div class="modal-success">
+                <h2 class="modal-title">Finish on GitHub</h2>
+                <p class="modal-subtitle" style="margin-top:0.5rem">A pre-filled issue has opened in a new tab. Review it and press <strong>Submit new issue</strong> to send it. GitHub issues are public, so leave out anything private.</p>
+                <p class="modal-subtitle" style="margin-top:0.5rem"><a id="feedback-github-link" href="https://github.com/kdigitalsystems/nilpdf/issues/new" target="_blank" rel="noopener">Tab didn't open? Continue on GitHub</a></p>
                 <div class="form-actions form-actions--centered">
                     <button type="button" class="modal-btn-primary" onclick="closeFeedback()">Done</button>
                 </div>

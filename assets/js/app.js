@@ -171,7 +171,7 @@
 
             a.click();
             URL.revokeObjectURL(url);
-            incrementCounter();
+            incrementCounter(toolForJob(id));
             if (!sessionStorage.getItem('nilpdf_nudged')) {
                 sessionStorage.setItem('nilpdf_nudged', '1');
                 setTimeout(showShareNudge, 1800);
@@ -272,19 +272,19 @@
     const TOOL_META = {
         merge:    { title: 'Merge PDF',               desc: 'Combine multiple PDF files into one. Runs privately in your browser, zero uploads.' },
         compress: { title: 'Compress PDF',            desc: 'Optimize PDF structure and embedded resources to reduce file size. Results vary by document.' },
-        anonymize:{ title: 'Remove Metadata',         desc: 'Strip all hidden metadata from a PDF privately. Zero uploads. Zero tracking.' },
+        anonymize:{ title: 'Remove Metadata',         desc: 'Strip all hidden metadata from a PDF privately. Zero uploads.' },
         split:    { title: 'Split PDF',               desc: 'Extract specific pages from a PDF. Runs locally in your browser. No uploads.' },
-        reorder:  { title: 'Reorder PDF Pages',       desc: 'Drag and drop to reorder pages in any PDF. No uploads. 100% private.' },
+        reorder:  { title: 'Reorder PDF Pages',       desc: 'Drag and drop to reorder pages in any PDF. Your file never leaves your device.' },
         rotate:   { title: 'Rotate PDF Pages',        desc: 'Rotate any pages in a PDF. Runs entirely in your browser.' },
         remove:   { title: 'Remove PDF Pages',        desc: 'Delete unwanted pages from a PDF privately. No uploads.' },
         totext:   { title: 'PDF to Text',             desc: 'Extract all text from a PDF privately. Zero uploads. Runs in your browser.' },
         topng:    { title: 'PDF to Images',           desc: 'Convert PDF pages to PNG images. Runs locally. No uploads.' },
-        topdf:    { title: 'Images to PDF',           desc: 'Combine images into a PDF file. No uploads. 100% private.' },
+        topdf:    { title: 'Images to PDF',           desc: 'Combine images into a PDF file. Your images never leave your device.' },
         watermark:{ title: 'Add Watermark',           desc: 'Add a custom text watermark to any PDF. Runs in your browser.' },
-        pagenums: { title: 'Add Page Numbers to PDF', desc: 'Stamp page numbers onto a PDF. No uploads. Zero tracking.' },
+        pagenums: { title: 'Add Page Numbers to PDF', desc: 'Stamp page numbers onto a PDF. Your file never leaves your device.' },
         inspect:  { title: 'Inspect PDF',             desc: 'View PDF metadata, page count, fonts and more. Zero uploads.' },
         repair:   { title: 'Repair PDF',              desc: 'Attempt to recover pages from a corrupted or truncated PDF. Runs privately in your browser.' },
-        redact:   { title: 'Redact PDF',              desc: 'Permanently black out sensitive areas of a PDF and add custom text notes. Runs privately in your browser.' },
+        redact:   { title: 'Redact PDF',              desc: 'Black out sensitive content so it is removed from the file, not just covered. Runs in your browser.' },
         edit:     { title: 'Edit PDF',                desc: 'Click anywhere to write text onto a PDF page. Runs privately in your browser.' },
         sign:     { title: 'Sign PDF',                desc: 'Draw, type, or upload a signature and place it on any page. Runs privately in your browser.' },
         fillform: { title: 'Fill PDF Forms',          desc: 'Fill in PDF form fields and optionally flatten them. Runs privately in your browser.' },
@@ -343,11 +343,11 @@
         document.getElementById('workspace').style.display = 'none';
         document.getElementById('landing').style.display = '';
         document.getElementById('site-footer').style.display = '';
-        document.title = 'NilPDF: Free PDF Tools. Zero Uploads. 100% Private.';
+        document.title = 'NilPDF: Free PDF Tools. Zero Uploads.';
         document.querySelector('meta[property="og:title"]').setAttribute('content', 'NilPDF: Free PDF Tools. Zero Uploads.');
-        document.querySelector('meta[property="og:description"]').setAttribute('content', '21 PDF tools. Your files never leave your device. Zero uploads. Zero tracking.');
+        document.querySelector('meta[property="og:description"]').setAttribute('content', '21 PDF tools. Zero uploads. Your files never leave your device.');
         document.querySelector('meta[name="twitter:title"]').setAttribute('content', 'NilPDF: Free PDF Tools. Zero Uploads.');
-        document.querySelector('meta[name="twitter:description"]').setAttribute('content', '21 PDF tools in your browser. Zero uploads. Zero tracking. 100% private.');
+        document.querySelector('meta[name="twitter:description"]').setAttribute('content', '21 PDF tools in your browser. Zero uploads. Your files never leave your device.');
     }
 
     // DOM-only: show workspace for a tool (no history change)
@@ -1120,7 +1120,7 @@
                 const a   = document.createElement('a');
                 a.href = url; a.download = `${topngBase}_page_1.${ext}`; a.click();
                 URL.revokeObjectURL(url);
-                incrementCounter();
+                incrementCounter('topng');
                 if (!sessionStorage.getItem('nilpdf_nudged')) {
                     sessionStorage.setItem('nilpdf_nudged', '1');
                     setTimeout(showShareNudge, 1800);
@@ -1135,7 +1135,7 @@
                 const a   = document.createElement('a');
                 a.href = url; a.download = `${topngBase}_images.zip`; a.click();
                 URL.revokeObjectURL(url);
-                incrementCounter();
+                incrementCounter('topng');
                 if (!sessionStorage.getItem('nilpdf_nudged')) {
                     sessionStorage.setItem('nilpdf_nudged', '1');
                     setTimeout(showShareNudge, 1800);
@@ -1232,7 +1232,7 @@
                 : 'images_combined.pdf';
             a.href = url; a.download = topdfName; a.click();
             URL.revokeObjectURL(url);
-            incrementCounter();
+            incrementCounter('topdf');
             if (!sessionStorage.getItem('nilpdf_nudged')) {
                 sessionStorage.setItem('nilpdf_nudged', '1');
                 setTimeout(showShareNudge, 1800);
@@ -3027,7 +3027,24 @@
         setTimeout(() => { t.classList.remove('toast-visible'); setTimeout(() => t.remove(), 400); }, 2800);
     }
 
-    function incrementCounter() {
+    // Aggregate usage: which tool finished, and nothing else. Without this,
+    // analytics only sees page views and can't tell a visitor from someone who
+    // actually processed a file. The payload is deliberately a single field,
+    // taken from the fixed TOOL_META allowlist, so no file name, size, page
+    // count or content can ever reach it, even by mistake at a call site.
+    function recordToolUse(tool) {
+        if (typeof gtag !== 'function' || !Object.prototype.hasOwnProperty.call(TOOL_META, tool)) return;
+        gtag('event', 'tool_complete', { tool });
+    }
+
+    // Worker jobs are keyed by their status element id: 'status' for merge,
+    // '<tool>-status' for every other tool.
+    function toolForJob(id) {
+        return id === 'status' ? 'merge' : String(id).replace(/-status$/, '');
+    }
+
+    function incrementCounter(tool) {
+        recordToolUse(tool);
         const n = (parseInt(localStorage.getItem('nilpdf_count') || '0')) + 1;
         localStorage.setItem('nilpdf_count', n);
         const el = document.getElementById('counter-display');
@@ -3052,7 +3069,7 @@
         const title = meta ? `NilPDF: ${meta.title}` : 'NilPDF: Free PDF Tools';
         const text  = meta
             ? `${meta.title}, free, no uploads, runs in your browser: ${url}`
-            : 'NilPDF: 21 free PDF tools that run entirely in your browser. Zero uploads. 100% private: https://nilpdf.com/';
+            : 'NilPDF: 21 free PDF tools that run entirely in your browser. Zero uploads: https://nilpdf.com/';
         return { title, text, url };
     }
 
@@ -3146,16 +3163,60 @@
     // FEEDBACK_ENDPOINT Actions variable; unstamped builds disable the form.
     const _FEEDBACK_ENDPOINT = '__FEEDBACK_ENDPOINT__';
 
+    // When the relay is not configured, feedback falls back to a pre-filled GitHub
+    // issue that the visitor reviews and submits from their own account. No
+    // credential and no server are involved: the page only builds a URL. The
+    // labels are applied only for accounts with triage access and are otherwise
+    // ignored by GitHub, which is harmless.
+    const _FEEDBACK_ISSUE_URL = 'https://github.com/kdigitalsystems/nilpdf/issues/new';
+    const _FEEDBACK_LABELS = { bug: 'bug', feature: 'enhancement', general: '' };
+    const _FEEDBACK_TYPE_NAMES = { bug: 'Bug report', feature: 'Feature request', general: 'General feedback' };
+
+    function _feedbackRelayConfigured() {
+        return /^https:\/\//.test(_FEEDBACK_ENDPOINT);
+    }
+
+    function _buildFeedbackIssueUrl(type, name, message) {
+        const typeName = _FEEDBACK_TYPE_NAMES[type] || _FEEDBACK_TYPE_NAMES.general;
+        const title = `[${typeName}] ${message.slice(0, 72)}${message.length > 72 ? '...' : ''}`;
+        const body = [
+            `**Type:** ${typeName}`,
+            ...(name ? [`**From:** ${name}`] : []),
+            '',
+            '**Message:**',
+            message,
+            '',
+            '---',
+            '*Submitted from the NilPDF in-app feedback form*',
+        ].join('\n');
+        const params = new URLSearchParams({ title, body });
+        const label = _FEEDBACK_LABELS[type];
+        if (label) params.set('labels', label);
+        return `${_FEEDBACK_ISSUE_URL}?${params.toString()}`;
+    }
+
     function openFeedback() {
         document.getElementById('feedback-form-state').hidden    = false;
         document.getElementById('feedback-success-state').hidden = true;
+        document.getElementById('feedback-github-state').hidden  = true;
         document.getElementById('feedback-form').reset();
+        // Say which path this submission takes before the visitor types anything,
+        // since the GitHub fallback produces a public issue.
+        const viaGitHub = !_feedbackRelayConfigured();
+        document.getElementById('feedback-subtitle').textContent = viaGitHub
+            ? 'This opens a public GitHub issue for you to review and submit.'
+            : 'Your thoughts help us improve NilPDF.';
+        document.getElementById('feedback-submit-text').textContent = viaGitHub
+            ? 'Continue on GitHub'
+            : 'Send Feedback';
         const errDiv = document.getElementById('feedback-error');
         errDiv.hidden = true;
         errDiv.textContent = '';
         document.getElementById('feedback-submit').disabled = false;
         document.getElementById('feedback-submit-text').hidden    = false;
-        document.getElementById('feedback-submit-spinner').hidden = true;
+        // The spinner is an <svg>, and SVG elements have no `hidden` property, so
+        // assigning .hidden is a silent no-op. Toggle the attribute instead.
+        document.getElementById('feedback-submit-spinner').toggleAttribute('hidden', true);
         document.getElementById('feedback-modal').hidden = false;
         document.body.style.overflow = 'hidden';
         requestAnimationFrame(() => document.getElementById('feedback-type').focus());
@@ -3171,7 +3232,7 @@
         const message = document.getElementById('feedback-message').value.trim();
         if (!message) return;
 
-        // Guard: endpoint not stamped yet (local / dev build) — checked before any UI change.
+        // Relay not configured (unstamped build): fall back to a pre-filled GitHub issue.
         //
         // Test the *shape* of the value rather than comparing it to the placeholder
         // literal. The deploy step does a plain replace-all, so a second copy of the
@@ -3183,9 +3244,18 @@
         // submission. An unstamped build still holds the placeholder, which is not a
         // URL, so this check catches it.
         if (!/^https:\/\//.test(_FEEDBACK_ENDPOINT)) {
-            const errDiv = document.getElementById('feedback-error');
-            errDiv.textContent = 'Feedback is not available in this environment. Visit nilpdf.com to send feedback.';
-            errDiv.hidden = false;
+            const url = _buildFeedbackIssueUrl(
+                document.getElementById('feedback-type').value,
+                document.getElementById('feedback-name').value.trim(),
+                message,
+            );
+            // Opened synchronously, inside the submit gesture, so popup blockers
+            // allow it. The link in the next state covers the case where it is
+            // blocked anyway.
+            window.open(url, '_blank', 'noopener');
+            document.getElementById('feedback-github-link').href = url;
+            document.getElementById('feedback-form-state').hidden   = true;
+            document.getElementById('feedback-github-state').hidden = false;
             return;
         }
 
@@ -3196,7 +3266,7 @@
 
         submitBtn.disabled   = true;
         submitText.hidden    = true;
-        submitSpinner.hidden = false;
+        submitSpinner.toggleAttribute('hidden', false);
         errDiv.hidden        = true;
 
         const type = document.getElementById('feedback-type').value;
@@ -3221,7 +3291,7 @@
             errDiv.hidden      = false;
             submitBtn.disabled   = false;
             submitText.hidden    = false;
-            submitSpinner.hidden = true;
+            submitSpinner.toggleAttribute('hidden', true);
         }
     }
 
