@@ -90,8 +90,17 @@ def _compress_images(writer, quality=75, status_id="", start_pct=62, end_pct=92)
                             if len(jpeg_bytes) >= len(raw):
                                 continue
 
-                            xobj._raw_data = jpeg_bytes
-                            xobj._data = None
+                            # pypdf writes a stream's bytes from ._data, and its public
+                            # set_data() only accepts FlateDecode, so there is no public
+                            # way to store JPEG bytes. This used to set ._raw_data and
+                            # ._data = None, written against older pypdf internals; with
+                            # current pypdf that wrote a stream with no data, and every
+                            # compression of a PDF with a raw image crashed at save.
+                            # TestCompress.test_recompresses_raw_image_to_jpeg now guards
+                            # this against the next internals change.
+                            xobj._data = jpeg_bytes
+                            if hasattr(xobj, "decoded_self"):
+                                xobj.decoded_self = None  # drop the cached decode of the old pixels
                             xobj[NameObject("/Filter")] = NameObject("/DCTDecode")
                             xobj[NameObject("/Length")] = NumberObject(len(jpeg_bytes))
                             xobj.pop(NameObject("/DecodeParms"), None)

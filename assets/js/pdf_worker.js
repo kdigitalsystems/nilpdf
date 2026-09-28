@@ -1,6 +1,8 @@
-importScripts("https://cdn.jsdelivr.net/pyodide/v0.25.0/full/pyodide.js");
-
-const PYODIDE_VERSION = 'v0.25.0';
+// This runs as an ES module worker (see `new Worker(..., { type: 'module' })` in
+// app.js). Pyodide stopped supporting classic workers after 0.25: its loader
+// throws "Classic web workers are not supported", so importScripts() is no longer
+// an option here.
+const PYODIDE_VERSION = 'v314.0.7';
 // Bump the trailing integer whenever packages change so stale caches are evicted.
 const PKG_CACHE_KEY = `nilpdf-pkgs-${PYODIDE_VERSION}-2`;
 
@@ -61,7 +63,15 @@ async function savePackagesToOPFS(pyodide) {
                 else files[full] = pyodide.FS.readFile(full);
             }
         }
-        walk('/lib/python3.11/site-packages');
+        // Ask the interpreter where site-packages is rather than hardcoding a
+        // Python minor version. The old literal '/lib/python3.11/site-packages'
+        // would have pointed at a directory that no longer exists after a runtime
+        // upgrade, and because this function swallows errors, the cache would have
+        // silently stopped saving: every visit would redownload ~11 MB.
+        // sysconfig reports '//lib/python3.X/site-packages' (a doubled leading
+        // slash that posixpath.normpath deliberately keeps), so collapse it here
+        // rather than depend on how the virtual filesystem resolves it on restore.
+        walk(pyodide.runPython("import sysconfig; sysconfig.get_path('purelib')").replace(/^\/+/, '/'));
 
         const enc = new TextEncoder();
         const entries = Object.entries(files);
@@ -95,6 +105,14 @@ async function savePackagesToOPFS(pyodide) {
 
 async function bootEngine() {
     postMessage({ type: 'BOOT_PROGRESS', msg: 'Loading Python runtime…' });
+    // Imported here rather than with a top-level import so that a failure (CDN
+    // down, network blocked) lands in bootEngine's catch and reaches the page as a
+    // BOOT_ERROR. A failing top-level import kills the worker before any handler
+    // exists, and the page just waits forever. It also keeps the version in one
+    // place: PYODIDE_VERSION above.
+    const { loadPyodide } = await withTimeout(
+        import(`https://cdn.jsdelivr.net/pyodide/${PYODIDE_VERSION}/full/pyodide.mjs`), 60000, 'import pyodide'
+    );
     self.pyodide = await withTimeout(loadPyodide(), 60000, 'loadPyodide');
 
     postMessage({ type: 'BOOT_PROGRESS', msg: 'Checking package cache…' });
@@ -112,12 +130,12 @@ async function bootEngine() {
         // to requirements.txt by tests/test_site_consistency.py.
         //
         // cryptography and Pillow are deliberately left unpinned: both ship as
-        // compiled WASM wheels in Pyodide's own lockfile (cryptography 39.0.2,
-        // Pillow 10.0.0 for v0.25.0), which is the only build that can load here.
+        // compiled WASM wheels in Pyodide's own lockfile (cryptography 47.0.0,
+        // Pillow 12.2.0 for v314.0.7), which is the only build that can load here.
         // Their versions are a property of the Pyodide release, not a choice we
         // get to make, and are changed by upgrading PYODIDE_VERSION above.
         await withTimeout(
-            micropip.install(["pypdf==6.15.0", "reportlab==5.0.0", "cryptography", "Pillow"]),
+            micropip.install(["pypdf==6.16.2", "reportlab==5.0.0", "cryptography", "Pillow"]),
             120000,
             'micropip.install'
         );
@@ -150,9 +168,28 @@ let engineBooting = bootEngine().catch(err => {
 
 // ── Message handler ───────────────────────────────────────────────────────────
 
+// Since Pyodide 0.28, a JavaScript null reaches Python as pyodide.ffi.jsnull
+// rather than None, and `jsnull is None` is False. The engine is written against
+// None (e.g. form values of None become "", missing redaction images are
+// skipped), so a null anywhere in a payload would slip past those checks. Convert
+// null to undefined, which still arrives as None, before anything crosses into
+// Python. Only plain objects and arrays are walked, so the transferred
+// ArrayBuffers and typed arrays holding file bytes pass through untouched.
+function nullsToUndefined(value) {
+    if (value === null) return undefined;
+    if (Array.isArray(value)) return value.map(nullsToUndefined);
+    if (value && Object.getPrototypeOf(value) === Object.prototype) {
+        const out = {};
+        for (const [k, v] of Object.entries(value)) out[k] = nullsToUndefined(v);
+        return out;
+    }
+    return value;
+}
+
 self.onmessage = async (event) => {
     await engineBooting;
-    const { id, action, payload } = event.data;
+    const { id, action } = event.data;
+    const payload = nullsToUndefined(event.data.payload);
 
     try {
         let result_py;

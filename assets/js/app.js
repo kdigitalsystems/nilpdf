@@ -49,7 +49,8 @@
 
     function ensureWorker() {
         if (worker) return;
-        worker = new Worker('./assets/js/pdf_worker.js?v=__BUILD_VERSION__');
+        // A module worker is required: Pyodide no longer runs in classic workers.
+        worker = new Worker('./assets/js/pdf_worker.js?v=__BUILD_VERSION__', { type: 'module' });
         worker.onmessage = workerMessageHandler;
     }
 

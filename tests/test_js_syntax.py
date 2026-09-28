@@ -42,9 +42,12 @@ def extract_inline_scripts(html):
     return scripts
 
 
-def node_check(code):
-    """Run `node --check` on a snippet of JS. Returns (ok, stderr)."""
-    with tempfile.NamedTemporaryFile(mode="w", suffix=".js", delete=False, encoding="utf-8") as f:
+def node_check(code, module=False):
+    """Run `node --check` on a snippet of JS. Returns (ok, stderr).
+
+    module=True parses it as an ES module (strict mode, module grammar), which is
+    how the browser loads pdf_worker.js since it became a module worker."""
+    with tempfile.NamedTemporaryFile(mode="w", suffix=".mjs" if module else ".js", delete=False, encoding="utf-8") as f:
         f.write(code)
         path = f.name
     try:
@@ -64,9 +67,9 @@ class TestJavaScriptSyntax(unittest.TestCase):
             self.assertTrue(ok, f"index.html inline <script> block #{i + 1} has a syntax error:\n{stderr}")
 
     def test_standalone_js_files_are_syntactically_valid(self):
-        for path in ("assets/js/app.js", "assets/js/pdf_worker.js", "sw.js"):
+        for path, module in (("assets/js/app.js", False), ("assets/js/pdf_worker.js", True), ("sw.js", False)):
             with self.subTest(path=path):
-                ok, stderr = node_check(read(path))
+                ok, stderr = node_check(read(path), module=module)
                 self.assertTrue(ok, f"{path} has a syntax error:\n{stderr}")
 
 

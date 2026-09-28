@@ -9,16 +9,16 @@
 #                      equal by tests/test_site_consistency.py, so a Dependabot bump
 #                      here fails CI until pdf_worker.js is bumped to match.
 #
-#   cryptography,      Compiled WASM wheels that come from Pyodide v0.25.0's own
+#   cryptography,      Compiled WASM wheels that come from Pyodide v314.0.7's own
 #   Pillow             lockfile and cannot be overridden in the browser. Pinned here
 #                      to exactly what that lockfile ships so CI tests the real
 #                      versions. Do not bump these on their own — they change only
 #                      when PYODIDE_VERSION in pdf_worker.js changes, which is why
 #                      Dependabot is told to ignore them in .github/dependabot.yml.
-pypdf==6.15.0
+pypdf==6.16.2
 reportlab==5.0.0
-cryptography==39.0.2
-Pillow==10.0.0
+cryptography==47.0.0
+Pillow==12.2.0
 
 # Test-runner only; not shipped to the browser, so free to track latest.
 pytest==9.1.1
