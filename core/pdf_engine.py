@@ -979,3 +979,288 @@ def process_fill_and_sign(js_buf, field_values, edits, signatures, flatten=False
     out = io.BytesIO()
     writer.write(out)
     return out.getvalue()
+
+
+# ── Redaction checker ──────────────────────────────────────────────────────
+#
+# Answers "is this PDF really redacted?" without needing the original. The
+# common failure is a box drawn on top of text that is still in the file:
+# invisible on screen, but copy, search and extraction all still find it. It
+# looks for three ways text can survive:
+#
+#   covered_text          text painted first, then an opaque shape or image
+#                         painted over it (black box, white-out, image patch)
+#   unapplied_redaction   a /Redact annotation marked but never applied, or a
+#                         dark annotation box sitting over live text
+#   earlier_revision      text present in an earlier saved version of the file
+#                         (incremental updates) but not in the final one
+#
+# Paint order is what separates a redaction box from a table background: a
+# shape only hides text drawn *before* it. Semi-transparent shapes (highlighter
+# style, fill alpha < 1) are ignored since the text shows through.
+
+_FILL_OPS = {b"f", b"F", b"f*", b"B", b"B*", b"b", b"b*"}
+_CHAR_WIDTH_EM = 0.5          # average glyph advance, as a fraction of font size
+_COVER_RATIO = 0.6            # a character counts as hidden if its sample point is inside
+
+
+def _matmul(m1, m2):
+    a1, b1, c1, d1, e1, f1 = m1
+    a2, b2, c2, d2, e2, f2 = m2
+    return [a1 * a2 + b1 * c2, a1 * b2 + b1 * d2, c1 * a2 + d1 * c2,
+            c1 * b2 + d1 * d2, e1 * a2 + f1 * c2 + e2, e1 * b2 + f1 * d2 + f2]
+
+
+def _apply(m, x, y):
+    return (m[0] * x + m[2] * y + m[4], m[1] * x + m[3] * y + m[5])
+
+
+def _bbox(points):
+    xs = [p[0] for p in points]
+    ys = [p[1] for p in points]
+    return (min(xs), min(ys), max(xs), max(ys))
+
+
+def _inside(box, x, y, pad=0.5):
+    return box[0] - pad <= x <= box[2] + pad and box[1] - pad <= y <= box[3] + pad
+
+
+def _color_name(rgb):
+    if rgb is None:
+        return "unknown"
+    lum = 0.299 * rgb[0] + 0.587 * rgb[1] + 0.114 * rgb[2]
+    return "black" if lum < 0.2 else "white" if lum > 0.9 else "coloured"
+
+
+def _to_rgb(args):
+    vals = [float(a) for a in args if hasattr(a, "__float__")]
+    if len(vals) == 1:
+        return (vals[0],) * 3
+    if len(vals) == 3:
+        return tuple(vals)
+    if len(vals) == 4:
+        c, m, y, k = vals
+        return ((1 - c) * (1 - k), (1 - m) * (1 - k), (1 - y) * (1 - k))
+    return None
+
+
+def _page_paint_events(page):
+    """Walk a page's content in paint order and return (texts, covers).
+
+    texts:  [(order, text, [(x, y) sample point per character], font_size)]
+    covers: [(order, bbox, kind, colour)] for opaque filled shapes and images
+    """
+    texts, covers = [], []
+    order = [0]
+    state = {"fill": (0.0, 0.0, 0.0), "alpha": 1.0}
+    stack = []
+    path = []
+
+    ext_gstates = {}
+    xobjects = {}
+    try:
+        res = page.get("/Resources")
+        res = res.get_object() if res is not None else {}
+        gs = res.get("/ExtGState")
+        ext_gstates = gs.get_object() if gs is not None else {}
+        xo = res.get("/XObject")
+        xobjects = xo.get_object() if xo is not None else {}
+    except Exception:
+        pass
+
+    def before(op, args, cm, tm):
+        order[0] += 1
+        if op == b"q":
+            stack.append(dict(state))
+        elif op == b"Q":
+            if stack:
+                state.update(stack.pop())
+        elif op in (b"rg", b"g", b"k", b"sc", b"scn"):
+            rgb = _to_rgb(args)
+            if rgb is not None:
+                state["fill"] = rgb
+        elif op == b"gs" and args:
+            try:
+                g = ext_gstates[args[0]].get_object()
+                if "/ca" in g:
+                    state["alpha"] = float(g["/ca"])
+            except Exception:
+                pass
+        elif op == b"re" and len(args) == 4:
+            x, y, w, h = (float(a) for a in args)
+            path.append(_bbox([_apply(cm, x, y), _apply(cm, x + w, y), _apply(cm, x, y + h), _apply(cm, x + w, y + h)]))
+        elif op in _FILL_OPS:
+            if state["alpha"] >= 0.99:
+                for box in path:
+                    covers.append((order[0], box, "shape", _color_name(state["fill"])))
+            path.clear()
+        elif op in (b"n", b"S", b"s", b"W", b"W*"):
+            if op != b"W" and op != b"W*":
+                path.clear()
+        elif op == b"Do" and args:
+            try:
+                xobj = xobjects[args[0]].get_object()
+                if str(xobj.get("/Subtype")) == "/Image" and "/SMask" not in xobj and state["alpha"] >= 0.99:
+                    box = _bbox([_apply(cm, 0, 0), _apply(cm, 1, 0), _apply(cm, 0, 1), _apply(cm, 1, 1)])
+                    covers.append((order[0], box, "image", "image"))
+            except Exception:
+                pass
+
+    def on_text(text, cm, tm, font_dict, font_size):
+        text = text.rstrip("\n")
+        if not text.strip():
+            return
+        order[0] += 1
+        m = _matmul(tm, cm)
+        scale_x = (m[0] ** 2 + m[1] ** 2) ** 0.5 or 1.0
+        scale_y = (m[2] ** 2 + m[3] ** 2) ** 0.5 or 1.0
+        size = float(font_size or 12)
+        adv = size * _CHAR_WIDTH_EM
+        mid = size * 0.35              # sample at roughly mid x-height
+        points = [_apply(m, (i + 0.5) * adv / 1.0, mid) for i in range(len(text))]
+        texts.append((order[0], text, points, size * scale_y))
+
+    page.extract_text(visitor_operand_before=before, visitor_text=on_text)
+    return texts, covers
+
+
+def _hidden_spans(text, points, boxes):
+    """Return the runs of characters whose sample points fall inside any box,
+    widened to whole words so a report reads 'SECRET-123' not 'CRET-12'."""
+    hidden = [any(_inside(b, x, y) for b in boxes) for (x, y) in points]
+    if sum(hidden) < max(2, int(len(text) * 0.1)):
+        return []
+    spans, i = [], 0
+    while i < len(text):
+        if hidden[i]:
+            j = i
+            while j < len(text) and hidden[j]:
+                j += 1
+            while i > 0 and not text[i - 1].isspace():
+                i -= 1
+            while j < len(text) and not text[j].isspace():
+                j += 1
+            span = text[i:j].strip()
+            if span and (not spans or spans[-1] != span):
+                spans.append(span)
+            i = j
+        else:
+            i += 1
+    return spans
+
+
+def _annotation_findings(page, texts, page_no):
+    findings = []
+    annots = page.get("/Annots")
+    if annots is None:
+        return findings
+    for ref in annots.get_object():
+        try:
+            a = ref.get_object()
+            sub = str(a.get("/Subtype"))
+            rect = [float(v) for v in a.get("/Rect", [0, 0, 0, 0])]
+            box = (min(rect[0], rect[2]), min(rect[1], rect[3]), max(rect[0], rect[2]), max(rect[1], rect[3]))
+            colour = _to_rgb(a.get("/IC") or a.get("/C") or [])
+            opaque = float(a.get("/CA", 1)) >= 0.99
+        except Exception:
+            continue
+        if sub == "/Redact":
+            kind, detail = "unapplied_redaction", "A redaction was marked here but never applied, so the text underneath is still in the file."
+        elif sub in ("/Square", "/Highlight", "/Polygon", "/FreeText") and opaque and _color_name(colour) == "black":
+            kind, detail = "unapplied_redaction", f"A black {sub[1:].lower()} annotation is drawn over this text; the text underneath is still in the file."
+        else:
+            continue
+        spans = []
+        for _order, text, points, _size in texts:
+            spans += _hidden_spans(text, points, [box])
+        findings.append({"kind": kind, "page": page_no, "text": " ... ".join(spans) if spans else "",
+                         "detail": detail})
+    return findings
+
+
+def _earlier_revision_findings(buf, final_words):
+    """Incremental saves append to a file rather than rewriting it, so every
+    earlier version stays inside. Re-read each one and report words that were
+    removed in a later version."""
+    ends, start = [], 0
+    while True:
+        i = buf.find(b"%%EOF", start)
+        if i < 0:
+            break
+        ends.append(i + 5)
+        start = i + 5
+    findings = []
+    for rev, end in enumerate(ends[:-1], start=1):
+        try:
+            old = PdfReader(io.BytesIO(buf[:end]), strict=False)
+            for page_no, pg in enumerate(old.pages, start=1):
+                words = {w for w in (pg.extract_text() or "").split() if len(w) >= 3}
+                gone = sorted(words - final_words)
+                if gone:
+                    findings.append({"kind": "earlier_revision", "page": page_no, "text": " ".join(gone[:40]),
+                                     "detail": f"Present in saved version {rev} of {len(ends)}, removed later, but still in the file."})
+        except Exception:
+            continue
+    return findings
+
+
+def process_check_redaction(js_buf, status_id="", password=""):
+    """Report text that is still in a PDF but hidden from view. Returns a JSON
+    report as UTF-8 bytes. Nothing about the file is modified."""
+    import json
+    buf = bytes(_ensure_py(js_buf))
+    reader = _open_reader(buf, password)
+    total = max(len(reader.pages), 1)
+    findings, final_words, invisible_pages = [], set(), []
+
+    for page_no, page in enumerate(reader.pages, start=1):
+        _post_progress(status_id, int(page_no / total * 80), f"Checking page {page_no} of {total}...")
+        try:
+            texts, covers = _page_paint_events(page)
+        except Exception:
+            continue
+        for order, text, points, _size in texts:
+            final_words |= {w for w in text.split() if len(w) >= 3}
+            later = [(box, kind, colour) for (c_order, box, kind, colour) in covers if c_order > order]
+            if not later:
+                continue
+            spans = _hidden_spans(text, points, [b for b, _k, _c in later])
+            if spans:
+                kinds = sorted({f"{c} {k}" if k == "shape" else "image" for _b, k, c in later})
+                findings.append({"kind": "covered_text", "page": page_no, "text": " ... ".join(spans),
+                                 "detail": f"Drawn over by a {', '.join(kinds)} but still in the file: it can be selected, copied and searched."})
+        findings += _annotation_findings(page, texts, page_no)
+        try:
+            content = page.get_contents()
+            if content is not None and b"3 Tr" in content.get_data():
+                invisible_pages.append(page_no)
+        except Exception:
+            pass
+
+    _post_progress(status_id, 90, "Checking earlier saved versions...")
+    findings += _earlier_revision_findings(buf, final_words)
+
+    meta = {}
+    try:
+        for key in ("/Title", "/Author", "/Subject", "/Keywords", "/Creator"):
+            val = (reader.metadata or {}).get(key)
+            if val and str(val).strip():
+                meta[key[1:].lower()] = str(val)[:200]
+    except Exception:
+        pass
+
+    report = {
+        "pages": len(reader.pages),
+        "hidden_text_found": bool(findings),
+        "findings": findings[:200],
+        "metadata": meta,
+        "invisible_text_pages": invisible_pages,
+        "limitations": [
+            "Text that was never in the file as text, such as a scanned image with a black bar burned into it, "
+            "can't be checked this way; its pixels are simply gone or simply there.",
+            "Positions are estimated from average character widths, so a reported phrase can include a neighbouring "
+            "word or miss one at the very edge of a box.",
+        ],
+    }
+    _post_progress(status_id, 99, "Done.")
+    return json.dumps(report, ensure_ascii=False).encode("utf-8")

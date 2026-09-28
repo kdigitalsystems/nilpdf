@@ -948,6 +948,17 @@ select.text-input {
 }
 
 .inspect-val.empty { color: var(--text-muted); font-style: italic; }
+
+/* Redaction checker verdict */
+.redaction-verdict {
+    display: flex; flex-direction: column; gap: 0.25rem;
+    padding: 0.875rem 1rem; margin-bottom: 1rem;
+    border-radius: 6px; border-left: 4px solid;
+}
+.redaction-verdict.is-leak  { border-color: #dc2626; background: rgba(220, 38, 38, 0.08); }
+.redaction-verdict.is-clean { border-color: #059669; background: rgba(5, 150, 105, 0.08); }
+.redaction-hit { font-family: 'IBM Plex Mono', ui-monospace, monospace; word-break: break-word; }
+.redaction-limits { font-size: 0.8125rem; color: var(--text-muted); margin: 0; padding: 0.75rem 0.75rem 0.875rem; }
 .inspect-val.highlight { color: var(--accent); font-weight: 700; }
 .inspect-val.warn { color: #d97706; font-weight: 600; }
 
