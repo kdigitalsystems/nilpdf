@@ -10,7 +10,7 @@ were, on the machine running the code.
 import json as _json
 import os as _os
 
-__version__ = "0.1.0"
+__version__ = "0.1.1"
 
 __all__ = ["check_redaction", "__version__"]
 

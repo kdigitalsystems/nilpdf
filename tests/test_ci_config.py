@@ -184,6 +184,19 @@ class TestPipelineShape(unittest.TestCase):
         self.assertIn("--cov", read(".github/workflows/static.yml"))
 
 
+class TestBrowserTestsWaitProperly(unittest.TestCase):
+    def test_no_async_predicate_is_passed_to_wait_for_function(self):
+        """Playwright's wait_for_function() treats the Promise an async function
+        returns as truthy, so it returns without waiting. That made the warm-boot
+        test reload before the package cache was saved, and fail on slow runners.
+        Use wait_until() in tests/e2e/test_browser.py for async checks."""
+        for path in glob.glob(os.path.join(BASE, "tests", "e2e", "*.py")):
+            source = read(os.path.relpath(path, BASE))
+            for m in re.finditer(r"wait_for_function\(\s*(?:\"\"\"|\"|')\s*async\b", source):
+                line = source.count("\n", 0, m.start()) + 1
+                self.fail(f"{os.path.relpath(path, BASE)}:{line} passes an async predicate to wait_for_function")
+
+
 class TestReleaseWorkflow(unittest.TestCase):
     def setUp(self):
         self.wf, self.text = WORKFLOWS["release.yml"]

@@ -15,7 +15,7 @@ updates:
       - dependency-name: "cryptography"
       - dependency-name: "Pillow"
       # pypdf and reportlab bumps ARE wanted, but must be mirrored into the
-      # micropip.install() pins in assets/js/pdf_worker.js. CI enforces that:
+      # PACKAGES pins in assets/js/pdf_worker.js. CI enforces that:
       # tests/test_site_consistency.py fails while the two disagree, so such a PR
       # stays red until pdf_worker.js is updated in the same change.
 

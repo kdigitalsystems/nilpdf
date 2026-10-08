@@ -34,7 +34,10 @@ classifiers = [
 # the checker installs without them, and without their attack surface.
 # pypdf is capped below the next major version because parts of the engine
 # depend on pypdf internals that a major release may change.
-dependencies = ["pypdf[crypto]>=6.16.2,<7"]
+# The floor is the version CI tests. Earlier versions have open denial-of-service
+# advisories, and check-redaction is run on PDFs from other people.
+# tests/test_package.py keeps the floor equal to the pin in requirements.txt.
+dependencies = ["pypdf[crypto]>=6.19.0,<7"]
 
 [project.optional-dependencies]
 full = ["Pillow>=12.2", "reportlab>=5.0"]

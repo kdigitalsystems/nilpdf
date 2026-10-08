@@ -66,7 +66,7 @@ Fail a build when a PDF in the repository still has hidden text:
 # .pre-commit-config.yaml
 repos:
   - repo: https://github.com/kdigitalsystems/nilpdf
-    rev: v0.1.0
+    rev: v0.1.1
     hooks:
       - id: check-redaction
 ```
