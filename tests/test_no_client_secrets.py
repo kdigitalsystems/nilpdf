@@ -103,10 +103,18 @@ class TestDeployPipelineStampsNoSecret(unittest.TestCase):
             "__FEEDBACK_ENDPOINT__" in read("assets/js/app.js"),
             "app.js no longer contains the __FEEDBACK_ENDPOINT__ placeholder the deploy job replaces",
         )
+        # The replacement itself lives in scripts/stamp_build.py; the workflow
+        # has to run it with the endpoint variable passed in.
         self.assertTrue(
-            "__FEEDBACK_ENDPOINT__" in read(".github/workflows/static.yml"),
-            "static.yml no longer stamps __FEEDBACK_ENDPOINT__, so the deployed form would stay disabled",
+            "__FEEDBACK_ENDPOINT__" in read("scripts/stamp_build.py"),
+            "scripts/stamp_build.py no longer stamps __FEEDBACK_ENDPOINT__, so the deployed form would stay disabled",
         )
+        workflow = read(".github/workflows/static.yml")
+        self.assertRegex(
+            workflow, r"FEEDBACK_ENDPOINT:\s*\$\{\{\s*vars\.FEEDBACK_ENDPOINT\s*\}\}",
+            "the deploy job no longer passes the FEEDBACK_ENDPOINT variable to the stamping step",
+        )
+        self.assertIn("scripts/stamp_build.py", workflow, "the deploy job no longer runs the stamping script")
 
 
 class TestStampingSurvivesDeploy(unittest.TestCase):

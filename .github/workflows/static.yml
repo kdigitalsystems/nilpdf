@@ -7,47 +7,72 @@ on:
     branches: ["main"]
   workflow_dispatch:
 
+# Least privilege by default. Pull requests run on our own hardware, so the
+# jobs that run their code get read-only access and nothing else. Only the
+# deploy job, which never runs for a pull request, asks for more.
 permissions:
   contents: read
-  pages: write
-  id-token: write
 
-# Serialize deploys instead of racing: GitHub Pages only allows one active
-# deployment at a time, so when several pushes land close together (e.g. a
-# burst of Dependabot merges), overlapping deploy-pages runs fail with
-# "in progress deployment" errors. cancel-in-progress: false means each
-# push still gets deployed, just queued rather than dropped.
+# A new push to a pull request cancels its superseded run, which matters on a
+# small pool of shared self-hosted runners. Runs on main are keyed by commit, so
+# a merge is never cancelled by the next one: every merge is tested.
 concurrency:
-  group: "pages-deploy"
-  cancel-in-progress: false
+  group: ci-${{ github.event_name == 'pull_request' && github.ref || github.sha }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
 
-# Both jobs run on self-hosted runners inside a Docker container, rather than
-# directly on the runner host. The host machine is shared across several
-# other projects' CI, each with their own tool versions; running in a
-# container gives this pipeline a clean, reproducible environment (fixed
-# Python 3.14 + Node 20, nothing left over from a previous job) instead of
-# depending on whatever happens to be globally installed on the shared host.
+# Every job runs on our self-hosted runners, inside a container: the hosts are
+# shared with other projects, and a container gives each job a clean, pinned
+# environment instead of whatever is installed on the host. Container jobs ask
+# for the `docker` label so they can only land on runners able to run them.
+# tests/test_ci_config.py enforces all of this, and that actions stay pinned to
+# commit SHAs.
 jobs:
-  test:
-    runs-on: self-hosted
+  lint:
+    name: Lint (ruff, actionlint)
+    runs-on: [self-hosted, docker]
     container:
       image: python:3.14-slim
     timeout-minutes: 10
     steps:
-      - name: Install git and Node.js (bare Python image has neither)
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+
+      - name: ruff (undefined names, unused imports, syntax errors)
+        run: |
+          pip install --quiet "$(grep -E '^ruff==' requirements.txt)"
+          ruff check .
+
+      - name: actionlint (workflow syntax and expressions)
+        run: |
+          apt-get update -qq && apt-get install -y --no-install-recommends -qq curl ca-certificates >/dev/null
+          curl -fsSL -o /tmp/actionlint.tar.gz \
+            https://github.com/rhysd/actionlint/releases/download/v1.7.12/actionlint_1.7.12_linux_amd64.tar.gz
+          echo "8aca8db96f1b94770f1b0d72b6dddcb1ebb8123cb3712530b08cc387b349a3d8  /tmp/actionlint.tar.gz" | sha256sum -c -
+          tar -xzf /tmp/actionlint.tar.gz -C /usr/local/bin actionlint
+          actionlint -color
+
+  test:
+    name: Tests (Python 3.14, as in the browser)
+    runs-on: [self-hosted, docker]
+    container:
+      image: python:3.14-slim
+    timeout-minutes: 15
+    steps:
+      - name: Install git and Node.js (the JS syntax checks need Node)
         run: |
           apt-get update -qq
-          apt-get install -y --no-install-recommends git curl ca-certificates gnupg
-          curl -fsSL https://deb.nodesource.com/setup_20.x | bash -
-          apt-get install -y --no-install-recommends nodejs
+          apt-get install -y --no-install-recommends -qq git curl ca-certificates gnupg >/dev/null
+          curl -fsSL https://deb.nodesource.com/setup_24.x | bash - >/dev/null
+          apt-get install -y --no-install-recommends -qq nodejs >/dev/null
 
-      - uses: actions/checkout@v7
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
 
       - name: Install Python dependencies
         run: pip install -r requirements.txt
 
-      - name: Run tests with verbose output
-        run: python -m pytest tests/ -v --tb=short
+      - name: Unit tests, with an engine coverage floor
+        # The floor (fail_under in pyproject.toml) fails the build if tests are
+        # deleted or a large untested path is added to core/pdf_engine.py.
+        run: python -m pytest tests/ --ignore=tests/e2e -v --tb=short --cov --cov-report=term
 
       - name: Verify SEO landing pages are in sync with generate_pages.py
         run: |
@@ -59,75 +84,102 @@ jobs:
             exit 1
           fi
 
+  compat:
+    name: Tests (Python ${{ matrix.python }})
+    # The pip package supports Python 3.10 and up, but the browser only ever
+    # runs 3.14. These cover the rest of the supported range.
+    strategy:
+      fail-fast: false
+      matrix:
+        python: ["3.10", "3.12"]
+    runs-on: [self-hosted, docker]
+    container:
+      image: python:${{ matrix.python }}-slim
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - name: Install Python dependencies
+        run: pip install -r requirements.txt
+      - name: Unit tests
+        run: python -m pytest tests/ --ignore=tests/e2e -q --tb=short
+
+  e2e:
+    name: Browser tests (Chromium, real Pyodide)
+    # The bugs unit tests can't see: a worker that never boots, a service worker
+    # that breaks offline mode, UI state, the deploy stamping, and the engine
+    # running on the actual WebAssembly builds of its libraries.
+    runs-on: [self-hosted, docker]
+    container:
+      image: mcr.microsoft.com/playwright/python:v1.63.0-noble
+    timeout-minutes: 25
+    env:
+      # The image's system Python is externally managed; this throwaway
+      # container is the only thing pip writes to.
+      PIP_BREAK_SYSTEM_PACKAGES: "1"
+      NILPDF_E2E: "1"
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - name: Prefer IPv4 for downloads
+        # PyPI's hosts resolve to IPv6 as well as IPv4. On a host without an IPv6
+        # route, pip sometimes picks the IPv6 address and fails outright instead
+        # of falling back. Seen with Docker under WSL, which one of our runners is.
+        run: echo 'precedence ::ffff:0:0/96  100' >> /etc/gai.conf
+      - name: Install Python dependencies
+        run: pip install -r requirements-e2e.txt
+      - name: Browser tests
+        run: python -m pytest tests/e2e -v --tb=short
+      - name: Keep screenshots of failures
+        if: failure()
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: e2e-failures
+          path: e2e-artifacts/
+          if-no-files-found: ignore
+          retention-days: 4
+
   deploy:
-    needs: test
+    name: Deploy to GitHub Pages
+    # Every check has to pass before anything reaches nilpdf.com.
+    needs: [lint, test, compat, e2e]
     if: github.ref == 'refs/heads/main' && github.event_name != 'pull_request'
+    permissions:
+      contents: read
+      pages: write
+      id-token: write
+    # GitHub Pages allows one deployment at a time. Queue deploys rather than
+    # race them; the newest queued deploy wins, and it contains every earlier
+    # commit.
+    concurrency:
+      group: pages-deploy
+      cancel-in-progress: false
     environment:
       name: github-pages
       url: ${{ steps.deployment.outputs.page_url }}
-    runs-on: self-hosted
+    runs-on: [self-hosted, docker]
     container:
       image: python:3.14-slim
     timeout-minutes: 10
     steps:
-      - name: Install git (bare Python image doesn't have it, checkout needs it)
-        run: apt-get update -qq && apt-get install -y --no-install-recommends git
+      - name: Install git (checkout needs it)
+        run: apt-get update -qq && apt-get install -y --no-install-recommends -qq git >/dev/null
 
-      - name: Checkout
-        uses: actions/checkout@v7
-      - name: Setup Pages
-        uses: actions/configure-pages@v6
-      - name: Stamp build version and feedback endpoint into index.html, app.js and sw.js
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+
+      - uses: actions/configure-pages@45bfe0192ca1faeb007ade9deae92b16b8254a0d # v6.0.0
+
+      - name: Stamp the build version, cache name and feedback endpoint
+        # The logic lives in scripts/stamp_build.py so tests/test_stamp_build.py
+        # can test exactly what runs here.
         env:
           COMMIT_SHA: ${{ github.sha }}
           FEEDBACK_ENDPOINT: ${{ vars.FEEDBACK_ENDPOINT }}
-        run: |
-          python3 - <<'EOF'
-          import os, datetime
-          sha  = os.environ['COMMIT_SHA'][:7]
-          date = datetime.date.today().isoformat()
-          ver  = f'{sha} {date}'
+        run: python3 scripts/stamp_build.py
 
-          # Stamp __BUILD_VERSION__ into index.html (the CSS link and the app.js
-          # script tag) and into assets/js/app.js (the version const and the
-          # pdf_worker.js URL). Both files must carry it, so a missing placeholder
-          # in either one is a hard failure rather than a silently stale asset URL.
-          for path in ('index.html', 'assets/js/app.js'):
-              text = open(path).read()
-              if '__BUILD_VERSION__' not in text:
-                  print(f'ERROR: __BUILD_VERSION__ placeholder not found in {path}'); exit(1)
-              open(path, 'w').write(text.replace('__BUILD_VERSION__', ver))
-              print(f'{path} stamped: {ver}')
-
-          # Stamp the feedback relay endpoint (__FEEDBACK_ENDPOINT__) into app.js.
-          # This is the public URL of the Cloudflare Worker in feedback-worker/, which
-          # is what actually holds the GitHub token. No credential is ever stamped into
-          # the deployed site: everything served to a browser is world-readable, so a
-          # token in the page would be a published token. If the variable is not set,
-          # the placeholder stays and the modal shows an "unavailable" message.
-          endpoint = os.environ.get('FEEDBACK_ENDPOINT', '').strip()
-          app = open('assets/js/app.js').read()
-          if endpoint:
-              if '__FEEDBACK_ENDPOINT__' not in app:
-                  print('ERROR: __FEEDBACK_ENDPOINT__ placeholder not found in assets/js/app.js'); exit(1)
-              open('assets/js/app.js', 'w').write(app.replace('__FEEDBACK_ENDPOINT__', endpoint))
-              print(f'Feedback endpoint stamped: {endpoint}')
-          else:
-              print('WARNING: FEEDBACK_ENDPOINT variable not set — feedback form will show unavailable message.')
-
-          # Stamp sw.js (__SW_VERSION__ is the cache name — changing it on every
-          # deploy forces browsers to delete the old cache and fetch fresh files)
-          sw = open('sw.js').read()
-          if '__SW_VERSION__' not in sw:
-              print('ERROR: __SW_VERSION__ placeholder not found in sw.js'); exit(1)
-          open('sw.js', 'w').write(sw.replace('__SW_VERSION__', sha))
-          print(f'sw.js cache name stamped: nilpdf-{sha}')
-          EOF
-          
       - name: Upload artifact
-        uses: actions/upload-pages-artifact@v3
+        uses: actions/upload-pages-artifact@56afc609e74202658d3ffba0e8f6dda462b719fa # v3.0.1
         with:
           path: '.'
+
       - name: Deploy to GitHub Pages
         id: deployment
-        uses: actions/deploy-pages@v5
+        uses: actions/deploy-pages@368f82528645a54fb793d4d04e342629a3f51346 # v5.0.1

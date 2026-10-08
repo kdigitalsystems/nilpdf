@@ -42,6 +42,18 @@ def source_version():
     return re.search(r'^__version__ = "([^"]+)"', read("python/nilpdf/__init__.py"), re.M).group(1)
 
 
+def console_scripts():
+    """[project.scripts] from pyproject.toml. tomllib only exists from Python
+    3.11, and the package supports 3.10, so fall back to reading the table."""
+    text = read("pyproject.toml")
+    try:
+        import tomllib
+    except ModuleNotFoundError:
+        table = re.search(r"^\[project\.scripts\]\n(.*?)(?=^\[|\Z)", text, re.M | re.S).group(1)
+        return dict(re.findall(r'^([\w-]+)\s*=\s*"([^"]+)"', table, re.M))
+    return tomllib.loads(text)["project"]["scripts"]
+
+
 def build(kind, outdir, project_dir=BASE):
     """Call the PEP 517 hook directly, in a subprocess so the build runs from
     the project directory exactly as pip would run it."""
@@ -270,9 +282,8 @@ class TestIntegrationFiles(unittest.TestCase):
     """The pre-commit hook and the docs must agree with the package."""
 
     def test_pre_commit_hook_runs_the_real_command(self):
-        import tomllib
         hook = read(".pre-commit-hooks.yaml")
-        scripts = tomllib.loads(read("pyproject.toml"))["project"]["scripts"]
+        scripts = console_scripts()
         entry = re.search(r"^\s*entry:\s*(.+)$", hook, re.M).group(1).split()
         self.assertIn(entry[0], scripts, "the hook's entry must be a console script the package installs")
         self.assertEqual(entry[1:], ["check-redaction"])

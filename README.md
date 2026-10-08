@@ -164,12 +164,26 @@ tell you.
 
 ### Running the tests
 
-The test suite runs the Python engine directly — no browser required.
+Unit tests run the Python engine directly, with no browser:
 
 ```bash
 pip install -r requirements.txt
-pytest tests/ -v --tb=short
+pytest tests/ --ignore=tests/e2e
 ```
+
+Browser tests run the stamped site in Chromium against the real Pyodide runtime:
+every worker action, the package cache on a second visit, the engine's whole
+unit suite inside Pyodide, and the UI (redaction checker, feedback, offline
+mode, the analytics payload). They need Playwright and network access to the
+CDNs. The simplest way to match CI exactly is its container:
+
+```bash
+docker run --rm --network host -v "$PWD":/repo:ro -w /repo -e PIP_BREAK_SYSTEM_PACKAGES=1 -e NILPDF_E2E=1 \
+  mcr.microsoft.com/playwright/python:v1.63.0-noble \
+  bash -c "pip install -q -r requirements-e2e.txt && python -m pytest -p no:cacheprovider tests/e2e -v"
+```
+
+Lint: `ruff check .` (configured in `pyproject.toml`).
 
 ### Adding a new tool
 
@@ -191,25 +205,59 @@ through the UI to confirm a new tool is wired up.
 
 ### CI / CD
 
-The GitHub Actions workflow ([`.github/workflows/static.yml`](.github/workflows/static.yml)) runs on every push:
+Everything runs on our **self-hosted runners**, inside containers, and only on
+runners labelled `docker`. `tests/test_ci_config.py` enforces that, along with
+the other rules below.
 
-1. **Test job** — installs pinned dependencies from `requirements.txt`, runs `pytest tests/ -v --tb=short`, then re-runs `generate_pages.py` and fails the build if it produces any diff (catches the SEO landing pages drifting out of sync with the generator script).
-2. **Deploy job** (main branch only, after tests pass) — stamps the build version into `index.html` and `assets/js/app.js`, the feedback endpoint into `assets/js/app.js`, and the cache name into `sw.js`, then uploads to GitHub Pages.
+**[`static.yml`](.github/workflows/static.yml)**, on every push and pull request:
 
-Both jobs have a 10-minute timeout so a hung step (e.g. a stalled `pip install`) fails fast instead of burning CI minutes.
+| Job | What it catches |
+|---|---|
+| **Lint** | `ruff` (undefined names, unused imports) and `actionlint` (workflow syntax), with actionlint's download checksum-verified |
+| **Tests (Python 3.14)** | The unit suite on the browser's Python, with a coverage floor on the engine (`fail_under` in `pyproject.toml`), plus the SEO pages being out of sync with `generate_pages.py` |
+| **Tests (Python 3.10, 3.12)** | The rest of the range the pip package supports |
+| **Browser tests** | What unit tests can't see: the worker failing to boot, a broken offline mode, UI state, the deploy stamping, and the engine on the real WebAssembly libraries |
+| **Deploy** | `main` only, and only after **every** job above passes. Stamps the build with [`scripts/stamp_build.py`](scripts/stamp_build.py), then publishes to GitHub Pages |
+
+Pull requests from outside contributors need approval before any of this runs,
+because it runs on our hardware. Jobs that run pull-request code are
+read-only; only the deploy and publish jobs get elevated permissions. Actions
+are pinned to commit SHAs, which Dependabot keeps current.
 
 **The deploy job stamps no credentials.** Everything it writes into the site is
-served to browsers and is therefore public, so the only values it injects are
-public ones: the build version, the Worker URL, the cache name. The GitHub token
-used by the feedback form lives in the Cloudflare Worker
-([`feedback-worker/`](feedback-worker/index.js)) and is set with
-`wrangler secret put`. `tests/test_no_client_secrets.py` fails the build if a
-credential, or a `${{ secrets.* }}` reference, reappears in the deploy path.
+served to browsers and is therefore public, so it only injects public values:
+the build version, the cache name, and the feedback Worker's URL. The GitHub
+token used by feedback lives in the Cloudflare Worker
+([`feedback-worker/`](feedback-worker/index.js)). `tests/test_no_client_secrets.py`
+fails the build if a credential reappears in the deploy path.
 
 **Repository configuration:** set `FEEDBACK_ENDPOINT` (Settings → Secrets and
-variables → Actions → **Variables**) to the deployed Worker URL. Leave it unset
-and the in-app feedback form shows an "unavailable" message; everything else
-works normally.
+variables → Actions → **Variables**) to the deployed Worker URL. Until it's set,
+feedback opens a pre-filled GitHub issue instead.
+
+### Releasing the pip package
+
+[`release.yml`](.github/workflows/release.yml) publishes `nilpdf` to PyPI when a
+version tag is pushed:
+
+1. Bump `__version__` in `python/nilpdf/__init__.py` and the `rev:` in
+   `python/README.md` (a test checks they match), and merge to `main`.
+2. Tag the merge commit and push the tag:
+   `git tag -a v0.2.0 -m "nilpdf 0.2.0" && git push origin v0.2.0`
+
+The workflow refuses to publish unless the tag matches `__version__` and is on
+`main`. It runs the unit tests at that commit, builds the sdist and wheel,
+checks them with `twine check --strict`, installs the exact wheel in a clean
+environment and runs it, and only then uploads, using PyPI **trusted publishing**:
+no token is stored anywhere.
+
+To dry-run a release, or to publish a tag that already exists, run the workflow
+by hand from `main` (Actions → Release to PyPI → Run workflow), giving the tag.
+Leave *publish* unticked for a dry run.
+
+**One-time PyPI setup.** On pypi.org, under *Publishing*, add a trusted
+publisher: owner `kdigitalsystems`, repository `nilpdf`, workflow
+`release.yml`, environment `pypi`.
 
 ### Search engines
 
