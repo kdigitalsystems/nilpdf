@@ -64,3 +64,24 @@ packages = ["python/nilpdf"]
 # would include every page, script and image on nilpdf.com.
 [tool.hatch.build.targets.sdist]
 only-include = ["pyproject.toml", "LICENSE", "python", "core/pdf_engine.py"]
+
+# ── Development tooling (not part of the package) ───────────────────────────
+
+[tool.coverage.run]
+source = ["core"]
+
+[tool.coverage.report]
+# The engine is at ~90%. A drop below this means tests were deleted or a large
+# untested path was added; either should be a conscious decision.
+fail_under = 89
+show_missing = true
+skip_covered = true
+
+[tool.ruff]
+target-version = "py310"
+
+[tool.ruff.lint]
+# Pyflakes and syntax errors only: undefined names, unused imports and the like.
+# Those turn into runtime errors on paths a test might not reach, and in the
+# browser they surface only as a failed tool.
+select = ["F", "E9"]

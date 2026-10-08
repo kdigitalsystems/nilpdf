@@ -10,7 +10,7 @@ permissions:
 
 jobs:
   cleanup:
-    runs-on: [self-hosted, terrascout-ci]
+    runs-on: [self-hosted, docker]
     container:
       image: debian:bookworm-slim
     timeout-minutes: 10

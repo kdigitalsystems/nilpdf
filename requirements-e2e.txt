@@ -1,0 +1,7 @@
+# Browser tests (tests/e2e), run in CI inside mcr.microsoft.com/playwright/python.
+# The playwright version must match that image's tag, or the browsers it ships
+# won't be the ones this driver expects. tests/test_ci_config.py fails the build
+# if they drift apart, so a Dependabot bump here stays red until the image in
+# .github/workflows/static.yml is bumped to match.
+-r requirements.txt
+playwright==1.63.0

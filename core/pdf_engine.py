@@ -1112,7 +1112,6 @@ def _page_paint_events(page):
             return
         order[0] += 1
         m = _matmul(tm, cm)
-        scale_x = (m[0] ** 2 + m[1] ** 2) ** 0.5 or 1.0
         scale_y = (m[2] ** 2 + m[3] ** 2) ** 0.5 or 1.0
         size = float(font_size or 12)
         adv = size * _CHAR_WIDTH_EM

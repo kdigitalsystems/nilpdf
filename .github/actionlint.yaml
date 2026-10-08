@@ -1,0 +1,6 @@
+# Labels our self-hosted runners carry beyond the built-in ones. `docker`
+# marks the runners that can run container jobs. Only labels the workflows
+# actually use are listed, so a typo'd or unexpected label is still an error.
+self-hosted-runner:
+  labels:
+    - docker
