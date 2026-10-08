@@ -341,8 +341,10 @@ def test_redaction_checker(page, site_url):
     def check(name, data):
         page.set_input_files("#checkredact-upload", {"name": name, "mimeType": "application/pdf", "buffer": data})
         page.click("#checkredact-btn")
-        page.wait_for_function("() => /^Done/.test(document.getElementById('checkredact-status').textContent)",
-                               timeout=120_000)
+        # Wait for the report itself, not the status line: that reads "Done." from
+        # the engine's last progress message just before the report is drawn.
+        # Choosing a file clears the report, so the previous one can't match.
+        page.wait_for_selector("#checkredact-results .redaction-verdict", timeout=120_000)
         return page.evaluate("""() => ({
             verdict: document.querySelector('#checkredact-results .redaction-verdict strong').textContent,
             hits: [...document.querySelectorAll('#checkredact-results .redaction-hit')].map(e => e.textContent),
