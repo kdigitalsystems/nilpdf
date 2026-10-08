@@ -77,6 +77,25 @@ class TestRunners(unittest.TestCase):
                     with self.subTest(workflow=name, job=job_id):
                         self.assertIn("docker", labels(job))
 
+    def test_container_jobs_that_need_git_install_it_before_checkout(self):
+        """Without git in the container, checkout downloads a plain tarball with
+        no .git directory. git commands then fail, and so does actionlint, which
+        finds the project by its .git. The slim Python images ship without git."""
+        uses_git = re.compile(r"\bgit\s|actionlint")
+        for name, (wf, _) in WORKFLOWS.items():
+            for job_id, job in wf["jobs"].items():
+                steps = job.get("steps", [])
+                checkout = next((i for i, s in enumerate(steps) if "actions/checkout" in s.get("uses", "")), None)
+                if "container" not in job or checkout is None:
+                    continue
+                after = " ".join(s.get("run", "") for s in steps[checkout + 1:])
+                if not uses_git.search(after):
+                    continue
+                with self.subTest(workflow=name, job=job_id):
+                    before = " ".join(s.get("run", "") for s in steps[:checkout])
+                    self.assertRegex(before, r"apt-get install[^\n]*\bgit\b",
+                                     f"{job_id} uses git after checkout but never installs it before")
+
     def test_every_job_has_a_timeout(self):
         for name, (wf, _) in WORKFLOWS.items():
             for job_id, job in wf["jobs"].items():
