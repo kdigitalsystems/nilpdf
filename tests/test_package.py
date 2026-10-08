@@ -128,6 +128,11 @@ class TestWhatGetsShipped(PackageTestCase):
         base = [r for r in requires if "extra ==" not in r]
         self.assertEqual(len(base), 1, f"unexpected unconditional dependencies: {base}")
         self.assertTrue(base[0].startswith("pypdf[crypto]"), base)
+        # The floor is the version CI tests. A lower one would let pip pair the
+        # checker with a pypdf nobody tested and that has known advisories.
+        tested = re.search(r"(?m)^pypdf==(\S+)$", read("requirements.txt")).group(1)
+        self.assertRegex(base[0], rf">={re.escape(tested)}(,|$)",
+                         f"the pypdf floor must be the version requirements.txt tests ({tested})")
         for heavy in ("pillow", "reportlab"):
             matches = [r for r in requires if r.lower().startswith(heavy)]
             self.assertTrue(matches, f"{heavy} should be offered through the full extra")

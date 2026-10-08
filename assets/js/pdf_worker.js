@@ -3,8 +3,26 @@
 // throws "Classic web workers are not supported", so importScripts() is no longer
 // an option here.
 const PYODIDE_VERSION = 'v314.0.7';
-// Bump the trailing integer whenever packages change so stale caches are evicted.
-const PKG_CACHE_KEY = `nilpdf-pkgs-${PYODIDE_VERSION}-2`;
+
+// pypdf and reportlab are pure-Python wheels that micropip fetches from PyPI, so
+// without an explicit pin every visitor gets whatever version is latest on the
+// day of their first visit — a breaking upstream release would take the site
+// down with no deploy of ours, and CI would still be green because it tests
+// different versions. Pinned here, and kept equal to requirements.txt by
+// tests/test_site_consistency.py.
+//
+// cryptography and Pillow are deliberately left unpinned: both ship as compiled
+// WASM wheels in Pyodide's own lockfile (cryptography 47.0.0, Pillow 12.2.0 for
+// v314.0.7), which is the only build that can load here. Their versions are a
+// property of the Pyodide release, not a choice we get to make, and are changed
+// by upgrading PYODIDE_VERSION above.
+const PACKAGES = ["pypdf==6.19.0", "reportlab==5.0.0", "cryptography", "Pillow"];
+
+// Returning visitors load packages from this cache instead of the network. Its
+// key names the runtime and every pin, so changing either one evicts the cache.
+// It used to be a counter bumped by hand; forgetting the bump would have left
+// returning visitors on the old versions while CI tested the new ones.
+const PKG_CACHE_KEY = `nilpdf-pkgs-${PYODIDE_VERSION}-${PACKAGES.join(',')}`;
 
 function withTimeout(promise, ms, label) {
     return Promise.race([
@@ -122,20 +140,8 @@ async function bootEngine() {
         postMessage({ type: 'BOOT_PROGRESS', msg: 'Installing Python packages (first visit only, ~11 MB)…' });
         await withTimeout(self.pyodide.loadPackage("micropip"), 30000, 'loadPackage micropip');
         const micropip = self.pyodide.pyimport("micropip");
-        // pypdf and reportlab are pure-Python wheels that micropip fetches from
-        // PyPI, so without an explicit pin every visitor gets whatever version is
-        // latest on the day of their first visit — a breaking upstream release
-        // would take the site down with no deploy of ours, and CI would still be
-        // green because it tests different versions. Pinned here, and kept equal
-        // to requirements.txt by tests/test_site_consistency.py.
-        //
-        // cryptography and Pillow are deliberately left unpinned: both ship as
-        // compiled WASM wheels in Pyodide's own lockfile (cryptography 47.0.0,
-        // Pillow 12.2.0 for v314.0.7), which is the only build that can load here.
-        // Their versions are a property of the Pyodide release, not a choice we
-        // get to make, and are changed by upgrading PYODIDE_VERSION above.
         await withTimeout(
-            micropip.install(["pypdf==6.16.2", "reportlab==5.0.0", "cryptography", "Pillow"]),
+            micropip.install(PACKAGES),
             120000,
             'micropip.install'
         );

@@ -26,6 +26,7 @@ from pypdf import PdfReader, PdfWriter
 
 from test_engine import (box, make_encrypted_pdf, make_flat_page_png_base64, make_form_pdf, make_line_pdf,
                          make_pdf, make_pdf_with_raw_image, make_signature_png_base64)
+from test_site_consistency import worker_packages
 
 BASE = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 SECRET = "SECRET-123-45-6789"
@@ -266,7 +267,8 @@ def test_engine_unit_suite_passes_inside_pyodide(page, site_url):
     with exactly the packages the worker installs."""
     worker = read("assets/js/pdf_worker.js")
     version = re.search(r"const PYODIDE_VERSION = '([^']+)'", worker).group(1)
-    pins = re.findall(r'"([^"]+)"', re.search(r"micropip\.install\(\[(.*?)\]", worker, re.S).group(1))
+    pins = worker_packages()
+    assert pins, "no PACKAGES list found in pdf_worker.js"
     page.goto(site_url + "/index.html", wait_until="load")
     summary = page.evaluate("""async ({ version, pins }) => {
         const { loadPyodide } = await import(`https://cdn.jsdelivr.net/pyodide/${version}/full/pyodide.mjs`);
@@ -280,11 +282,15 @@ def test_engine_unit_suite_passes_inside_pyodide(page, site_url):
 import io, json, sys, unittest
 sys.path.insert(0, '/work')
 res = unittest.TextTestRunner(stream=io.StringIO()).run(unittest.defaultTestLoader.loadTestsFromName('test_engine'))
-json.dumps({'ran': res.testsRun, 'problems': [f"{t.id()}: {tb.strip().splitlines()[-1]}" for t, tb in res.failures + res.errors]})
+import pypdf
+json.dumps({'ran': res.testsRun, 'pypdf': pypdf.__version__,
+            'problems': [f"{t.id()}: {tb.strip().splitlines()[-1]}" for t, tb in res.failures + res.errors]})
 `);
     }""", {"version": version, "pins": pins})
     summary = json.loads(summary)
     assert summary["ran"] > 100, summary
+    tested = re.search(r"(?m)^pypdf==(\S+)$", read("requirements.txt")).group(1)
+    assert summary["pypdf"] == tested, f"Pyodide loaded pypdf {summary['pypdf']}, CI tests {tested}"
     assert not summary["problems"], "\n".join(summary["problems"])
 
 

@@ -13,14 +13,24 @@ the required spots.
 import importlib.util
 import os
 import re
+import shutil
+import subprocess
 import unittest
 
 BASE = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+NODE = shutil.which("node") or shutil.which("nodejs")
 
 
 def read(relative_path):
     with open(os.path.join(BASE, relative_path), encoding="utf-8") as f:
         return f.read()
+
+
+def worker_packages():
+    """The requirement strings pdf_worker.js installs, e.g. "pypdf==6.19.0".
+    The browser tests import this too, so there is one parser to keep current."""
+    m = re.search(r"^const PACKAGES = \[(.*?)\];", read("assets/js/pdf_worker.js"), re.M)
+    return re.findall(r"[\"']([^\"']+)[\"']", m.group(1)) if m else []
 
 
 def load_generate_pages():
@@ -169,7 +179,7 @@ class TestBrowserDependencyPins(unittest.TestCase):
 
     pypdf and reportlab are pure-Python wheels micropip pulls from PyPI at the
     user's first visit, so they are pinned in two places: requirements.txt (what
-    the test job installs) and the micropip.install() call in pdf_worker.js (what
+    the test job installs) and the PACKAGES list in pdf_worker.js (what
     every visitor installs). If those drift, the suite is validating the engine
     against libraries nobody actually runs, and a breaking upstream release ships
     to users with CI still green. A Dependabot PR bumping requirements.txt alone
@@ -193,11 +203,10 @@ class TestBrowserDependencyPins(unittest.TestCase):
         return pins
 
     def _worker_pins(self):
-        worker = read("assets/js/pdf_worker.js")
-        m = re.search(r"micropip\.install\(\[(.*?)\]", worker, re.DOTALL)
-        self.assertIsNotNone(m, "Could not find the micropip.install([...]) call in pdf_worker.js")
+        specs = worker_packages()
+        self.assertTrue(specs, "Could not find `const PACKAGES = [...];` in pdf_worker.js")
         pins = {}
-        for spec in re.findall(r"[\"']([^\"']+)[\"']", m.group(1)):
+        for spec in specs:
             if "==" in spec:
                 name, version = spec.split("==", 1)
                 pins[name.lower()] = version
@@ -210,7 +219,7 @@ class TestBrowserDependencyPins(unittest.TestCase):
                 self.assertIn(pkg, req, f"{pkg} is not pinned in requirements.txt")
                 self.assertIn(
                     pkg, worker,
-                    f"{pkg} has no ==version pin in pdf_worker.js's micropip.install(); "
+                    f"{pkg} has no ==version pin in pdf_worker.js's PACKAGES; "
                     f"every visitor would get whatever is latest on PyPI that day",
                 )
 
@@ -225,8 +234,40 @@ class TestBrowserDependencyPins(unittest.TestCase):
                     f"different version than the browser installs — bump both together.",
                 )
 
+    def test_the_pinned_list_is_what_gets_installed(self):
+        worker = read("assets/js/pdf_worker.js")
+        self.assertRegex(worker, r"micropip\.install\(PACKAGES\)")
+        self.assertEqual(len(re.findall(r"micropip\.install\(", worker)), 1,
+                         "a second micropip.install() would bypass the pins checked here")
+
+    def test_changing_a_pin_evicts_returning_visitors_package_cache(self):
+        """Returning visitors load packages from OPFS, keyed by PKG_CACHE_KEY. If a
+        pin changes and the key doesn't, they keep the old pypdf indefinitely
+        while CI tests the new one. Evaluates the real constants in Node."""
+        if not NODE:
+            self.skipTest("Node.js is not installed")
+        worker = read("assets/js/pdf_worker.js")
+        consts = re.findall(r"^const (?:PYODIDE_VERSION|PACKAGES|PKG_CACHE_KEY) = .*;$", worker, re.M)
+        self.assertEqual(len(consts), 3, "expected PYODIDE_VERSION, PACKAGES and PKG_CACHE_KEY, one line each")
+        pypdf = self._worker_pins()["pypdf"]
+
+        def key(source_lines):
+            out = subprocess.run([NODE, "-e", "\n".join(source_lines) + "\nconsole.log(PKG_CACHE_KEY)"],
+                                 capture_output=True, text=True, timeout=30)
+            self.assertEqual(out.returncode, 0, out.stderr)
+            return out.stdout.strip()
+
+        current = key(consts)
+        for label, old, new in (("pypdf pin", f"pypdf=={pypdf}", "pypdf==0.0.1"),
+                                ("Pyodide version", "'v", "'v0")):
+            with self.subTest(change=label):
+                changed = [c.replace(old, new, 1) if c.startswith(("const PACKAGES", "const PYODIDE")) else c
+                           for c in consts]
+                self.assertNotEqual(changed, consts, "the substitution did not apply")
+                self.assertNotEqual(key(changed), current)
+
     def test_worker_pins_nothing_pyodide_controls(self):
-        """Pinning cryptography or Pillow in micropip.install() would ask PyPI for a
+        """Pinning cryptography or Pillow in PACKAGES would ask PyPI for a
         version that has no WASM wheel, so boot could fail for every user."""
         worker = self._worker_pins()
         for pkg in ("cryptography", "pillow"):
