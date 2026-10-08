@@ -1,0 +1,66 @@
+[build-system]
+requires = ["hatchling>=1.27"]
+build-backend = "hatchling.build"
+
+[project]
+name = "nilpdf"
+dynamic = ["version"]
+description = "Find text still hiding in a \"redacted\" PDF. Runs locally; nothing is uploaded."
+readme = "python/README.md"
+requires-python = ">=3.10"
+license = "MIT"
+license-files = ["LICENSE"]
+authors = [{ name = "kdigitalsystems" }]
+keywords = ["pdf", "redaction", "redact", "privacy", "security", "legal", "foia"]
+classifiers = [
+    "Development Status :: 4 - Beta",
+    "Environment :: Console",
+    "Intended Audience :: Developers",
+    "Intended Audience :: Legal Industry",
+    "Operating System :: OS Independent",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3 :: Only",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Programming Language :: Python :: 3.13",
+    "Programming Language :: Python :: 3.14",
+    "Topic :: Office/Business",
+    "Topic :: Security",
+    "Topic :: Utilities",
+]
+# check-redaction needs only pypdf (cryptography for encrypted PDFs). Pillow and
+# reportlab are used by the other engine tools and live in the `full` extra, so
+# the checker installs without them, and without their attack surface.
+# pypdf is capped below the next major version because parts of the engine
+# depend on pypdf internals that a major release may change.
+dependencies = ["pypdf[crypto]>=6.16.2,<7"]
+
+[project.optional-dependencies]
+full = ["Pillow>=12.2", "reportlab>=5.0"]
+
+[project.scripts]
+nilpdf = "nilpdf.cli:main"
+
+[project.urls]
+Homepage = "https://nilpdf.com"
+"Web version" = "https://nilpdf.com/check-pdf-redaction/"
+Source = "https://github.com/kdigitalsystems/nilpdf"
+Issues = "https://github.com/kdigitalsystems/nilpdf/issues"
+
+[tool.hatch.version]
+path = "python/nilpdf/__init__.py"
+
+[tool.hatch.build.targets.wheel]
+packages = ["python/nilpdf"]
+
+# The browser loads core/pdf_engine.py directly. Shipping that exact file as
+# nilpdf/engine.py keeps one engine for both, rather than a copy that can
+# drift. tests/test_package.py checks the wheel's engine is byte-identical.
+[tool.hatch.build.targets.wheel.force-include]
+"core/pdf_engine.py" = "nilpdf/engine.py"
+
+# This repository is also the website. Without this, the source distribution
+# would include every page, script and image on nilpdf.com.
+[tool.hatch.build.targets.sdist]
+only-include = ["pyproject.toml", "LICENSE", "python", "core/pdf_engine.py"]
