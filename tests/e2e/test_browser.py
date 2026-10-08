@@ -19,6 +19,7 @@ import io
 import json
 import os
 import re
+import time
 import zipfile
 
 import pytest
@@ -125,6 +126,17 @@ CALL_JS = """async ({ action, payload, binary }) => {
         worker.postMessage({ id, action, payload });
     });
 }"""
+
+
+def wait_until(page, js, timeout_s, what):
+    """Poll an async predicate. page.wait_for_function() can't: it treats the
+    Promise an async function returns as truthy and returns at once, which let
+    the warm-boot test reload before the cache was saved. evaluate() awaits it."""
+    deadline = time.monotonic() + timeout_s
+    while not page.evaluate(js):
+        if time.monotonic() > deadline:
+            raise AssertionError(f"timed out after {timeout_s}s waiting for {what}")
+        page.wait_for_timeout(500)
 
 
 def boot(page):
@@ -246,9 +258,15 @@ def test_wrong_password_reaches_the_page_as_a_clean_message(page, site_url):
 def test_second_visit_boots_from_the_package_cache(page, site_url):
     page.goto(site_url + "/index.html", wait_until="load")
     boot(page)
-    page.wait_for_function("""async () => {
-        try { const d = await navigator.storage.getDirectory(); await d.getFileHandle('packages.bin'); return true; }
-        catch { return false; } }""", timeout=120_000, polling=500)
+    # pkg-version.txt is written last, once packages.bin is complete, so it marks
+    # a finished save. packages.bin exists from the moment the save starts, and
+    # reloading then kills the save midway.
+    wait_until(page, """async () => {
+        try {
+            const d = await navigator.storage.getDirectory();
+            const f = await (await d.getFileHandle('pkg-version.txt')).getFile();
+            return (await f.text()).startsWith('nilpdf-pkgs-');
+        } catch { return false; } }""", 120, "the package cache to be saved")
     page.reload(wait_until="load")
     result = boot(page)
     assert "Packages ready (cached)" in " ".join(result["msgs"]), result
