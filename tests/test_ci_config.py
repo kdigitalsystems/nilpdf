@@ -218,6 +218,15 @@ class TestReleaseWorkflow(unittest.TestCase):
         self.assertTrue(any("gh-action-pypi-publish" in u for u in uses_steps(publish)))
         self.assertNotIn("password:", self.text, "use trusted publishing, not a stored token")
 
+    def test_publish_clears_root_owned_files_before_anything_else(self):
+        """The publish job runs on the host, after container jobs that ran as
+        root in the same workspace. Its first step must clear their files, or
+        the publish action can't write to .github/.tmp."""
+        steps = self.wf["jobs"]["publish"]["steps"]
+        first = steps[0].get("run", "")
+        self.assertRegex(first, r'docker run --rm -v "\$GITHUB_WORKSPACE:/w"')
+        self.assertIn("find /w -mindepth 1 -delete", first)
+
     def test_build_refuses_bad_releases_before_publishing(self):
         steps = " ".join(str(s.get("run", "")) for s in self.jobs["build"]["steps"])
         self.assertIn("__version__", steps, "the tag must be checked against the package version")
