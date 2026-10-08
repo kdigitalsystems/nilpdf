@@ -42,7 +42,7 @@ HTML_FILES = [
     "terms/index.html",
     "browser-compatibility/index.html",
 ]
-PY_FILES = ["generate_pages.py", "core/pdf_engine.py"]
+PY_FILES = ["generate_pages.py", "core/pdf_engine.py", "python/nilpdf/cli.py", "python/nilpdf/__init__.py"]
 
 # Plain JS/JSON files scanned whole (after stripping // and /* */ comments for
 # the JS ones): no HTML markup to strip comments out of, so strip_script_comments'

@@ -22,3 +22,5 @@ Pillow==12.2.0
 
 # Test-runner only; not shipped to the browser, so free to track latest.
 pytest==9.1.1
+# Builds the `nilpdf` pip package in tests/test_package.py, offline.
+hatchling==1.32.4

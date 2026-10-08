@@ -1,0 +1,9 @@
+- id: check-redaction
+  name: Check PDF redactions
+  description: >-
+    Fail if a PDF still contains text hidden under black boxes, white-out or
+    pasted images, under redaction marks that were never applied, or in an
+    earlier saved version of the file. Runs locally; nothing is uploaded.
+  entry: nilpdf check-redaction
+  language: python
+  types: [pdf]

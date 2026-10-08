@@ -50,6 +50,23 @@ runtime is cached the tools do not touch the network at all.
 
 All tools support password-protected PDFs.
 
+### Command line and Python package
+
+The redaction checker also ships as a pip package, `nilpdf`, for scripts, CI
+and pre-commit. It runs locally and makes no network requests:
+
+```bash
+pip install nilpdf
+nilpdf check-redaction filing.pdf      # exit 0 clean, 1 hidden text, 2 couldn't check
+nilpdf check-redaction published/      # every PDF under a directory
+```
+
+It's also a pre-commit hook (`id: check-redaction`) and a Python API
+(`nilpdf.check_redaction(path_or_bytes)`). See [`python/README.md`](python/README.md).
+The package ships `core/pdf_engine.py` itself as `nilpdf.engine`, so the browser
+and the CLI always run the same engine; `tests/test_package.py` builds the
+wheel and checks they're byte-identical.
+
 ---
 
 ## How to Use
