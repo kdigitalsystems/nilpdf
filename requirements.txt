@@ -27,5 +27,5 @@ hatchling==1.32.4
 # CI tooling: the engine coverage floor, the lint gate, and the workflow-config
 # tests in tests/test_ci_config.py.
 pytest-cov==7.1.0
-ruff==0.16.10
+ruff==0.17.0
 PyYAML==6.0.3
