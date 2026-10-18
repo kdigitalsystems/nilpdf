@@ -2,6 +2,10 @@
 
 A free, privacy-first PDF toolkit that runs entirely in your browser — no uploads, no servers, no accounts.
 
+Its redaction checker also runs in CI, as a [GitHub Action](#github-action) and a
+[command-line tool](#command-line-and-python-package): fail a pull request when a
+"redacted" PDF still contains the text it was meant to hide.
+
 [![CI](https://github.com/kdigitalsystems/nilpdf/actions/workflows/static.yml/badge.svg)](https://github.com/kdigitalsystems/nilpdf/actions/workflows/static.yml)
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
 [![Live Site](https://img.shields.io/badge/site-nilpdf.com-green)](https://nilpdf.com)
@@ -66,6 +70,86 @@ It's also a pre-commit hook (`id: check-redaction`) and a Python API
 The package ships `core/pdf_engine.py` itself as `nilpdf.engine`, so the browser
 and the CLI always run the same engine; `tests/test_package.py` builds the
 wheel and checks they're byte-identical.
+
+---
+
+## GitHub Action
+
+Fail a pull request when a "redacted" PDF in it still contains the text it was
+meant to hide: under black boxes or white-out, in redaction marks that were
+never applied, or in an earlier saved version of the file. The check runs on
+your own runner. **No file is uploaded anywhere.**
+
+```yaml
+# .github/workflows/redactions.yml
+name: Check redactions
+on: [pull_request]
+permissions:
+  contents: read
+jobs:
+  redactions:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+      - uses: kdigitalsystems/nilpdf@v0.2.0
+        with:
+          paths: |
+            published/
+            filings/**/*.pdf
+```
+
+Each PDF with hidden text gets an annotation on the pull request, and the job
+summary lists every finding by file, page and kind.
+
+**The hidden text itself is left out of the log, annotations and summary.** It
+is the very information that leaked, and job logs are kept for months and
+readable by anyone with access to the repository. Reviewers see where it is
+and how long it is. To read it, open the file in the
+[browser checker](https://nilpdf.com/check-pdf-redaction/), which runs locally,
+or set `show-text: true`.
+
+| Input | Default | |
+|---|---|---|
+| `paths` | `.` | PDF files, directories (searched recursively) or glob patterns, one per line. Empty checks nothing and passes. |
+| `password` | | Password for encrypted PDFs. Pass it from a secret. |
+| `fail-on-hidden-text` | `true` | `false` reports findings as warnings and passes, e.g. while you clean up existing files. |
+| `fail-on-error` | `true` | Fail when a file can't be checked (unreadable, not a PDF, wrong password) or the paths contain no PDFs. |
+| `show-text` | `false` | Include the hidden text in the log, annotations and summary. |
+
+| Output | |
+|---|---|
+| `hidden-text-found` | `"true"` or `"false"` |
+| `files-checked`, `files-with-hidden-text`, `files-with-errors` | Counts |
+| `report` | Path on the runner to a JSON report with every finding, including the hidden text |
+
+**Check only the PDFs a pull request changes:**
+
+```yaml
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          fetch-depth: 0
+      - id: changed
+        env:
+          BASE_REF: ${{ github.base_ref }}
+        run: |
+          {
+            echo 'pdfs<<EOF'
+            git diff --name-only --diff-filter=AM "origin/$BASE_REF...HEAD" -- '*.pdf' '*.PDF'
+            echo EOF
+          } >> "$GITHUB_OUTPUT"
+      - uses: kdigitalsystems/nilpdf@v0.2.0
+        with:
+          paths: ${{ steps.changed.outputs.pdfs }}
+```
+
+The action needs Python 3.10 or newer on the runner. GitHub-hosted runners
+have it; elsewhere, add `actions/setup-python` first. It installs nilpdf from
+this repository at the tag you name, into its own virtual environment, with
+the PDF library pinned to the version that release was tested with, so it
+doesn't touch the job's Python. It is tested on Linux runners. For the
+strongest supply-chain guarantee, pin the commit instead of the tag:
+`kdigitalsystems/nilpdf@<commit-sha> # v0.2.0`.
 
 ---
 
@@ -217,6 +301,7 @@ the other rules below.
 | **Tests (Python 3.14)** | The unit suite on the browser's Python, with a coverage floor on the engine (`fail_under` in `pyproject.toml`), plus the SEO pages being out of sync with `generate_pages.py` |
 | **Tests (Python 3.10, 3.12)** | The rest of the range the pip package supports |
 | **Browser tests** | What unit tests can't see: the worker failing to boot, a broken offline mode, UI state, the deploy stamping, and the engine on the real WebAssembly libraries |
+| **GitHub Action (Python 3.10, 3.14)** | Runs [`action.yml`](action.yml) itself in clean containers: installs from the checkout, passes a clean PDF, fails on hidden text, and reports without failing when told to. [`tests/test_action.py`](tests/test_action.py) covers the details, including crafted file names and PDF text that try to inject workflow commands or HTML |
 | **Deploy** | `main` only, and only after **every** job above passes. Stamps the build with [`scripts/stamp_build.py`](scripts/stamp_build.py), then publishes to GitHub Pages |
 
 Pull requests from outside contributors need approval before any of this runs,
@@ -235,8 +320,10 @@ fails the build if a credential reappears in the deploy path.
 variables → Actions → **Variables**) to the deployed Worker URL. Until it's set,
 feedback opens a pre-filled GitHub issue instead.
 
-### Releasing the pip package
+### Releasing the pip package and the GitHub Action
 
+The pip package and the GitHub Action share version tags: `uses:
+kdigitalsystems/nilpdf@v0.2.0` installs the package from that same tag.
 [`release.yml`](.github/workflows/release.yml) publishes `nilpdf` to PyPI when a
 version tag is pushed:
 
@@ -258,6 +345,11 @@ Leave *publish* unticked for a dry run.
 **One-time PyPI setup.** On pypi.org, under *Publishing*, add a trusted
 publisher: owner `kdigitalsystems`, repository `nilpdf`, workflow
 `release.yml`, environment `pypi`.
+
+**Listing the action on GitHub Marketplace.** The tag alone makes the action
+usable. To list it, draft a GitHub Release from the tag and tick *Publish this
+Action to the GitHub Marketplace*. The first time, GitHub asks you to accept
+the Marketplace Developer Agreement, which needs two-factor authentication.
 
 ### Search engines
 

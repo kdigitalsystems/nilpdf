@@ -53,7 +53,17 @@ nilpdf check-redaction -v filing.pdf             # also show title, author and o
 
 ### In CI
 
-Fail a build when a PDF in the repository still has hidden text:
+On GitHub Actions, use the action. It annotates each file with hidden text on
+the pull request and keeps the hidden text itself out of the logs:
+
+```yaml
+- uses: kdigitalsystems/nilpdf@v0.2.0
+  with:
+    paths: published/
+```
+
+See [the action's documentation](https://github.com/kdigitalsystems/nilpdf#github-action)
+for its inputs and outputs. Anywhere else, the exit code does the work:
 
 ```yaml
 - run: pip install nilpdf
@@ -66,7 +76,7 @@ Fail a build when a PDF in the repository still has hidden text:
 # .pre-commit-config.yaml
 repos:
   - repo: https://github.com/kdigitalsystems/nilpdf
-    rev: v0.1.1
+    rev: v0.2.0
     hooks:
       - id: check-redaction
 ```

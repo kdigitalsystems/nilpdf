@@ -1,0 +1,92 @@
+# NilPDF Check PDF Redactions: a GitHub Action that fails the build when a
+# "redacted" PDF still contains the text it was meant to hide.
+#
+# It installs nilpdf from this repository at the version the workflow names,
+# into a private virtual environment, and runs `nilpdf check-redaction`.
+# Everything runs on the workflow's own runner: no file is uploaded anywhere.
+# The scripts live in action/; tests/test_action.py tests them, and the
+# "GitHub Action" job in .github/workflows/static.yml runs this file for real.
+#
+# Inputs reach the scripts only through environment variables. Writing
+# ${{ inputs.* }} into a run: script would let an input's value run as shell
+# code; tests/test_action.py fails if that ever happens.
+name: NilPDF Check PDF Redactions
+description: >-
+  Fail the build if a "redacted" PDF still has hidden text: under black
+  boxes, in unapplied redactions or in earlier versions.
+author: kdigitalsystems
+branding:
+  icon: eye-off
+  color: gray-dark
+
+inputs:
+  paths:
+    description: >-
+      PDF files, directories (searched recursively) or glob patterns such as
+      docs/**/*.pdf, one per line. Relative paths start from the workspace.
+      An empty value checks nothing and passes.
+    required: false
+    default: "."
+  password:
+    description: Password for encrypted PDFs, used for every file. Pass it from a secret.
+    required: false
+    default: ""
+  fail-on-hidden-text:
+    description: >-
+      Fail the step when a PDF has hidden text. With false, the step passes
+      and reports the findings as warnings.
+    required: false
+    default: "true"
+  fail-on-error:
+    description: >-
+      Fail the step when a file can't be checked (unreadable, not a PDF,
+      wrong password), or when the paths contain no PDFs.
+    required: false
+    default: "true"
+  show-text:
+    description: >-
+      Include the hidden text itself in the log, annotations and job summary.
+      Off by default: it is the information that leaked, and job logs are kept
+      and readable by anyone with access to the repository. The JSON report
+      always includes it.
+    required: false
+    default: "false"
+
+outputs:
+  hidden-text-found:
+    description: '"true" if any PDF has hidden text, otherwise "false".'
+    value: ${{ steps.check.outputs.hidden-text-found }}
+  files-checked:
+    description: Number of PDF files checked.
+    value: ${{ steps.check.outputs.files-checked }}
+  files-with-hidden-text:
+    description: Number of PDF files with hidden text.
+    value: ${{ steps.check.outputs.files-with-hidden-text }}
+  files-with-errors:
+    description: Number of files that could not be checked.
+    value: ${{ steps.check.outputs.files-with-errors }}
+  report:
+    description: >-
+      Path on the runner to a JSON report with every finding, including the
+      hidden text. Upload it as an artifact only if that is acceptable.
+    value: ${{ steps.check.outputs.report }}
+
+runs:
+  using: composite
+  steps:
+    - name: Install nilpdf
+      id: install
+      shell: bash
+      run: bash "$GITHUB_ACTION_PATH/action/install.sh"
+
+    - name: Check PDFs for hidden text
+      id: check
+      shell: bash
+      env:
+        NILPDF_PATHS: ${{ inputs.paths }}
+        NILPDF_PASSWORD: ${{ inputs.password }}
+        NILPDF_FAIL_ON_HIDDEN_TEXT: ${{ inputs.fail-on-hidden-text }}
+        NILPDF_FAIL_ON_ERROR: ${{ inputs.fail-on-error }}
+        NILPDF_SHOW_TEXT: ${{ inputs.show-text }}
+        NILPDF_PYTHON: ${{ steps.install.outputs.python }}
+      run: '"$NILPDF_PYTHON" -I "$GITHUB_ACTION_PATH/action/check.py"'
