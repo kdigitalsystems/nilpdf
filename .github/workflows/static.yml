@@ -144,10 +144,81 @@ jobs:
           if-no-files-found: ignore
           retention-days: 4
 
+  action:
+    name: GitHub Action (Python ${{ matrix.python }})
+    # Runs action.yml the way a workflow using it would, in clean containers at
+    # both ends of the supported Python range: install from this checkout,
+    # then check generated PDFs. tests/test_action.py covers the details.
+    strategy:
+      fail-fast: false
+      matrix:
+        python: ["3.10", "3.14"]
+    runs-on: [self-hosted, docker]
+    container:
+      image: python:${{ matrix.python }}-slim
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+
+      - name: Make test PDFs, one clean and one with hidden text
+        run: |
+          pip install --quiet "$(grep -E '^pypdf==' requirements.txt)" "$(grep -E '^reportlab==' requirements.txt)"
+          python3 - <<'EOF'
+          import os, sys
+          sys.path[:0] = ["tests", "."]
+          from test_engine import box, make_line_pdf
+          os.makedirs("action-fixtures/leaked", exist_ok=True)
+          with open("action-fixtures/clean.pdf", "wb") as f:
+              f.write(make_line_pdf())
+          with open("action-fixtures/leaked/filing.pdf", "wb") as f:
+              f.write(make_line_pdf(draw=box(0, 0, 0)))
+          EOF
+
+      - name: A clean PDF passes
+        id: clean
+        uses: ./
+        with:
+          paths: action-fixtures/clean.pdf
+
+      - name: Hidden text fails the step
+        id: leaked
+        continue-on-error: true
+        uses: ./
+        with:
+          paths: action-fixtures
+
+      - name: With fail-on-hidden-text false, it reports and passes
+        id: report_only
+        uses: ./
+        with:
+          paths: action-fixtures/**/*.pdf
+          fail-on-hidden-text: "false"
+
+      - name: The outcomes and outputs are as documented
+        env:
+          CLEAN: ${{ toJSON(steps.clean.outputs) }}
+          LEAKED: ${{ toJSON(steps.leaked.outputs) }}
+          LEAKED_OUTCOME: ${{ steps.leaked.outcome }}
+          REPORT_ONLY: ${{ toJSON(steps.report_only.outputs) }}
+        run: |
+          python3 - <<'EOF'
+          import json, os
+          clean, leaked, report_only = (json.loads(os.environ[k]) for k in ("CLEAN", "LEAKED", "REPORT_ONLY"))
+          assert os.environ["LEAKED_OUTCOME"] == "failure", os.environ["LEAKED_OUTCOME"]
+          assert clean["hidden-text-found"] == "false" and clean["files-checked"] == "1", clean
+          assert leaked["hidden-text-found"] == "true" and leaked["files-checked"] == "2", leaked
+          assert leaked["files-with-hidden-text"] == "1", leaked
+          assert report_only["hidden-text-found"] == "true" and report_only["files-checked"] == "2", report_only
+          with open(leaked["report"], encoding="utf-8") as f:
+              report = json.load(f)
+          assert [r["path"] for r in report["files"] if r.get("hidden_text_found")] == ["action-fixtures/leaked/filing.pdf"]
+          print("Outcomes and outputs are as documented.")
+          EOF
+
   deploy:
     name: Deploy to GitHub Pages
     # Every check has to pass before anything reaches nilpdf.com.
-    needs: [lint, test, compat, e2e]
+    needs: [lint, test, compat, e2e, action]
     if: github.ref == 'refs/heads/main' && github.event_name != 'pull_request'
     permissions:
       contents: read
