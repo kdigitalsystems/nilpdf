@@ -4,4 +4,4 @@
 # if they drift apart, so a Dependabot bump here stays red until the image in
 # .github/workflows/static.yml is bumped to match.
 -r requirements.txt
-playwright==1.63.0
+playwright==1.64.0
