@@ -24,6 +24,7 @@ from test_package import BASE, PackageTestCase, read, source_version  # noqa: E4
 ACTION = yaml.safe_load(read("action.yml"))
 CHECK = os.path.join(BASE, "action", "check.py")
 INSTALL = os.path.join(BASE, "action", "install.sh")
+CLEANUP = os.path.join(BASE, "action", "cleanup.sh")
 # Newlines and commas in a file name: legal on Linux, and exactly what a
 # crafted name would use to break out of a log line or an annotation. It can't
 # come through the paths input, which is one path per line, but it can come
@@ -73,8 +74,18 @@ class TestActionMetadata(unittest.TestCase):
         runs = " ".join(s["run"] for s in ACTION["runs"]["steps"])
         self.assertIn("action/install.sh", runs)
         self.assertIn("action/check.py", runs)
+        self.assertIn("action/cleanup.sh", runs)
         for step in ACTION["runs"]["steps"]:
             self.assertEqual(step.get("shell"), "bash", step["name"])
+
+    def test_the_last_step_always_removes_the_virtual_environment(self):
+        """Even when the install or the check fails. In a container job on a
+        self-hosted runner the environment belongs to root, and the runner
+        can't delete it later: CI left 60 of them, 2.7 GB, before this."""
+        last = ACTION["runs"]["steps"][-1]
+        self.assertEqual(last.get("if"), "always()")
+        self.assertIn("action/cleanup.sh", last["run"])
+        self.assertEqual(last["env"], {"NILPDF_VENV": "${{ steps.install.outputs.venv }}"})
 
     def test_no_expression_is_written_into_a_script(self):
         """${{ inputs.paths }} inside run: is pasted into the shell script before
@@ -112,6 +123,13 @@ class TestActionMetadata(unittest.TestCase):
             with self.subTest(module=m.group(1)):
                 self.assertGreater(m.start(), cd)
                 self.assertEqual(script[m.start() - 3:m.start()], "-I ")
+
+    def test_install_records_the_environment_before_it_can_fail(self):
+        """The cleanup step can only remove what the install step reported, so
+        the path is written out before the first pip call."""
+        script = read("action/install.sh")
+        self.assertLess(script.index('echo "venv=$venv" >> "${GITHUB_OUTPUT'), script.index("pip_install hatchling"))
+        self.assertIn("--no-cache-dir", script, "a pip cache would stay in the runner's shared home directory")
 
     def test_install_pins_what_this_release_was_tested_with(self):
         script = read("action/install.sh")
@@ -157,6 +175,40 @@ class TestDocumentation(unittest.TestCase):
         for name in list(ACTION["inputs"]) + ["hidden-text-found", "files-checked", "report"]:
             with self.subTest(name=name):
                 self.assertIn(f"`{name}`", readme)
+
+
+class TestCleanupScript(unittest.TestCase):
+    def setUp(self):
+        self.tmp = tempfile.mkdtemp()
+        self.addCleanup(shutil.rmtree, self.tmp, ignore_errors=True)
+
+    def cleanup(self, venv):
+        return subprocess.run(["bash", CLEANUP], env={"PATH": os.environ["PATH"], "NILPDF_VENV": venv},
+                              capture_output=True, text=True, timeout=30)
+
+    def test_removes_the_environment(self):
+        venv = os.path.join(self.tmp, "nilpdf-action.aB3dE9")
+        os.makedirs(os.path.join(venv, "env", "bin"))
+        open(os.path.join(venv, "env", "bin", "python"), "w").close()
+        r = self.cleanup(venv)
+        self.assertEqual(r.returncode, 0, r.stderr)
+        self.assertFalse(os.path.exists(venv))
+
+    def test_removes_nothing_it_did_not_create(self):
+        """The path comes from a step output. If that is ever empty or wrong,
+        this deletes nothing rather than whatever the path happens to be."""
+        for name in ("", "important", "nilpdf-action.", "nilpdf-action.toolong1", "nilpdf-actionXaB3dE9"):
+            with self.subTest(name=name):
+                target = os.path.join(self.tmp, name) if name else self.tmp
+                os.makedirs(target, exist_ok=True)
+                open(os.path.join(target, "keep"), "w").close()
+                r = self.cleanup(target if name else "")
+                self.assertEqual(r.returncode, 0, r.stderr)
+                self.assertTrue(os.path.exists(os.path.join(target, "keep")))
+
+    def test_a_missing_environment_is_not_an_error(self):
+        """The install step may have failed before creating it."""
+        self.assertEqual(self.cleanup(os.path.join(self.tmp, "nilpdf-action.aB3dE9")).returncode, 0)
 
 
 class TestInstallScript(unittest.TestCase):

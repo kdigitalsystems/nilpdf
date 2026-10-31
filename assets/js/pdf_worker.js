@@ -16,7 +16,7 @@ const PYODIDE_VERSION = 'v314.0.7';
 // v314.0.7), which is the only build that can load here. Their versions are a
 // property of the Pyodide release, not a choice we get to make, and are changed
 // by upgrading PYODIDE_VERSION above.
-const PACKAGES = ["pypdf==6.21.2", "reportlab==5.0.0", "cryptography", "Pillow"];
+const PACKAGES = ["pypdf==6.21.2", "reportlab==5.1.0", "cryptography", "Pillow"];
 
 // Returning visitors load packages from this cache instead of the network. Its
 // key names the runtime and every pin, so changing either one evicts the cache.

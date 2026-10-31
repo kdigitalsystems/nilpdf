@@ -2,7 +2,9 @@
 # "redacted" PDF still contains the text it was meant to hide.
 #
 # It installs nilpdf from this repository at the version the workflow names,
-# into a private virtual environment, and runs `nilpdf check-redaction`.
+# into a private virtual environment, runs `nilpdf check-redaction`, and then
+# removes the environment, even if the check failed, so nothing is left on a
+# self-hosted runner's disk except the small JSON report later steps may want.
 # Everything runs on the workflow's own runner: no file is uploaded anywhere.
 # The scripts live in action/; tests/test_action.py tests them, and the
 # "GitHub Action" job in .github/workflows/static.yml runs this file for real.
@@ -68,7 +70,8 @@ outputs:
   report:
     description: >-
       Path on the runner to a JSON report with every finding, including the
-      hidden text. Upload it as an artifact only if that is acceptable.
+      hidden text, in the runner's temp directory. Upload it as an artifact
+      only if that is acceptable.
     value: ${{ steps.check.outputs.report }}
 
 runs:
@@ -90,3 +93,10 @@ runs:
         NILPDF_SHOW_TEXT: ${{ inputs.show-text }}
         NILPDF_PYTHON: ${{ steps.install.outputs.python }}
       run: '"$NILPDF_PYTHON" -I "$GITHUB_ACTION_PATH/action/check.py"'
+
+    - name: Remove the virtual environment
+      if: always()
+      shell: bash
+      env:
+        NILPDF_VENV: ${{ steps.install.outputs.venv }}
+      run: bash "$GITHUB_ACTION_PATH/action/cleanup.sh"
