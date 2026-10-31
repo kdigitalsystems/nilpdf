@@ -265,7 +265,7 @@ CDNs. The simplest way to match CI exactly is its container:
 
 ```bash
 docker run --rm --network host -v "$PWD":/repo:ro -w /repo -e PIP_BREAK_SYSTEM_PACKAGES=1 -e NILPDF_E2E=1 \
-  mcr.microsoft.com/playwright/python:v1.63.0-noble \
+  mcr.microsoft.com/playwright/python:v1.64.1-noble \
   bash -c "pip install -q -r requirements-e2e.txt && python -m pytest -p no:cacheprovider tests/e2e -v"
 ```
 
