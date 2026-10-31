@@ -37,7 +37,7 @@ classifiers = [
 # The floor is the version CI tests. Earlier versions have open denial-of-service
 # advisories, and check-redaction is run on PDFs from other people.
 # tests/test_package.py keeps the floor equal to the pin in requirements.txt.
-dependencies = ["pypdf[crypto]>=6.19.0,<7"]
+dependencies = ["pypdf[crypto]>=6.21.2,<7"]
 
 [project.optional-dependencies]
 full = ["Pillow>=12.2", "reportlab>=5.0"]
