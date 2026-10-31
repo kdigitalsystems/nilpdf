@@ -28,6 +28,9 @@ concurrency:
 
 env:
   RELEASE_TAG: ${{ inputs.tag || github.ref_name }}
+  # No pip cache on the runner, and each job ends by freeing the runner's disk:
+  # see the note at the top of static.yml.
+  PIP_NO_CACHE_DIR: "1"
 
 jobs:
   build:
@@ -110,6 +113,13 @@ jobs:
           if-no-files-found: error
           retention-days: 4
 
+      - name: Free the runner's disk space
+        if: always()
+        run: |
+          find "${GITHUB_WORKSPACE:?}" -mindepth 1 -delete
+          find "${RUNNER_TEMP:?}" -mindepth 1 -maxdepth 1 -user 0 \
+            \( -name 'nilpdf-*' -o -newer "${GITHUB_EVENT_PATH:?}" \) -exec rm -rf {} +
+
   publish:
     name: Publish to PyPI
     needs: build
@@ -143,3 +153,9 @@ jobs:
           path: dist/
 
       - uses: pypa/gh-action-pypi-publish@dc37677b2e1c63e2034f94d8a5b11f265b73ba33 # v1.14.2
+
+      - name: Free the runner's disk space
+        # The publish action's container writes into the workspace as root, so
+        # this clears it the same way the first step does.
+        if: always()
+        run: docker run --rm -v "$GITHUB_WORKSPACE:/w" python:3.14-slim find /w -mindepth 1 -delete

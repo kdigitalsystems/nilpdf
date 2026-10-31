@@ -302,5 +302,108 @@ class TestReleaseGateBehaviour(unittest.TestCase):
         self.assertEqual(r.returncode, 0, r.stdout + r.stderr)
         self.assertIn("version=1.2.3", out)
 
+class TestRunnerDiskIsFreed(unittest.TestCase):
+    """Container jobs run as root, and the runner doesn't, so the runner can't
+    delete what they leave on its disk. Before this, every CI run left about
+    240 MB in the runner's temp directory, and one root-owned file there stops
+    the runner's own clean-up of everything else in it."""
+
+    STEP = "Free the runner's disk space"
+    HOST_RUN = 'docker run --rm -v "$GITHUB_WORKSPACE:/w" python:3.14-slim find /w -mindepth 1 -delete'
+
+    def container_run(self):
+        runs = {job["steps"][-1]["run"] for wf, _ in WORKFLOWS.values()
+                for job in wf["jobs"].values() if "container" in job}
+        self.assertEqual(len(runs), 1, "every container job should free the disk the same way")
+        return runs.pop()
+
+    def test_every_job_ends_by_freeing_the_disk_even_on_failure(self):
+        for name, (wf, _) in WORKFLOWS.items():
+            for job_id, job in wf["jobs"].items():
+                with self.subTest(workflow=name, job=job_id):
+                    last = job["steps"][-1]
+                    self.assertEqual(last.get("name"), self.STEP)
+                    self.assertEqual(last.get("if"), "always()")
+                    if "container" not in job:
+                        self.assertEqual(last["run"], self.HOST_RUN)
+
+    def test_pip_keeps_no_cache_on_the_runner(self):
+        for name in ("static.yml", "release.yml"):
+            with self.subTest(workflow=name):
+                self.assertEqual(WORKFLOWS[name][0].get("env", {}).get("PIP_NO_CACHE_DIR"), "1")
+
+    def test_a_missing_variable_deletes_nothing(self):
+        """`find ""` would fail anyway, but ${VAR:?} makes the intent explicit:
+        an unset path stops the step before any find runs."""
+        tmp = tempfile.mkdtemp()
+        self.addCleanup(shutil.rmtree, tmp, ignore_errors=True)
+        open(os.path.join(tmp, "keep"), "w").close()
+        env = {"PATH": os.environ["PATH"], "GITHUB_WORKSPACE": "", "RUNNER_TEMP": tmp, "GITHUB_EVENT_PATH": "x"}
+        r = subprocess.run(["bash", "-c", self.container_run()], cwd=tmp, env=env, capture_output=True, text=True)
+        self.assertNotEqual(r.returncode, 0)
+        self.assertTrue(os.path.exists(os.path.join(tmp, "keep")))
+
+    @unittest.skipUnless(hasattr(os, "geteuid") and os.geteuid() == 0,
+                         "needs root, as in CI: it makes files owned by both root and the runner's user")
+    def test_it_removes_what_root_left_and_nothing_else(self):
+        tmp = tempfile.mkdtemp()
+        self.addCleanup(shutil.rmtree, tmp, ignore_errors=True)
+        ws, temp = os.path.join(tmp, "ws"), os.path.join(tmp, "temp")
+        runner_uid = 1000
+        started = 1_700_000_000
+
+        def make(rel, uid=0, age=None, content=b"x"):
+            path = os.path.join(tmp, rel)
+            if rel.endswith("/"):
+                os.makedirs(path, exist_ok=True)
+            else:
+                os.makedirs(os.path.dirname(path), exist_ok=True)
+                with open(path, "wb") as f:
+                    f.write(content)
+            os.chown(path, uid, uid)
+            return path
+
+        for rel in ("ws/.git/config", "ws/index.html", "ws/sub/deep/file.pdf", "ws/.hidden"):
+            make(rel)
+        event = make("temp/_github_workflow/event.json", runner_uid)
+        kept = {
+            "temp/_github_workflow/": runner_uid,      # the runner's own files, made during the job
+            "temp/_runner_file_commands/": runner_uid,
+            "temp/step-script.sh": runner_uid,
+            "temp/_github_home/": runner_uid,
+            "temp/_github_home/.cache/": 0,            # another job's cache, below the top level
+            "temp/other-project-data/": 0,             # root-owned, but from before this job
+        }
+        removed = {
+            "temp/nilpdf-action.aB3dE9/": 0,           # left by an older run of the action
+            "temp/nilpdf-report-x1.json": 0,
+            "temp/artifact.tar": 0,                     # made by root during this job
+            "temp/new-dir/": 0,
+            "temp/new-dir/nested/file": 0,
+        }
+        for rel, uid in {**kept, **removed}.items():
+            make(rel, uid)
+        # Timestamps last: creating entries inside a directory updates its mtime.
+        os.utime(event, (started, started))
+        for rel in ("temp/other-project-data/", "temp/nilpdf-action.aB3dE9/", "temp/nilpdf-report-x1.json"):
+            os.utime(os.path.join(tmp, rel), (started - 3600, started - 3600))
+        for rel in ("temp/artifact.tar", "temp/new-dir/", "temp/_runner_file_commands/", "temp/step-script.sh",
+                    "temp/_github_home/"):
+            os.utime(os.path.join(tmp, rel), (started + 60, started + 60))
+
+        env = {"PATH": os.environ["PATH"], "GITHUB_WORKSPACE": ws, "RUNNER_TEMP": temp, "GITHUB_EVENT_PATH": event}
+        r = subprocess.run(["bash", "-c", self.container_run()], cwd=ws, env=env, capture_output=True, text=True)
+        self.assertEqual(r.returncode, 0, r.stderr)
+
+        self.assertTrue(os.path.isdir(ws))
+        self.assertEqual(os.listdir(ws), [], "the checkout is gone, the workspace directory stays")
+        for rel in kept:
+            with self.subTest(kept=rel):
+                self.assertTrue(os.path.exists(os.path.join(tmp, rel)))
+        for rel in removed:
+            with self.subTest(removed=rel):
+                self.assertFalse(os.path.exists(os.path.join(tmp, rel)))
+
+
 if __name__ == "__main__":
     unittest.main()
