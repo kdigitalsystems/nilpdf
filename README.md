@@ -291,9 +291,9 @@ through the UI to confirm a new tool is wired up.
 
 ### CI / CD
 
-Everything runs on our **self-hosted runners**, inside containers, and only on
-runners labelled `docker`. `tests/test_ci_config.py` enforces that, along with
-the other rules below.
+Everything runs on our **self-hosted runners**, inside containers. Any of them
+can take any job, so every runner needs Docker. `tests/test_ci_config.py`
+enforces that, along with the other rules below.
 
 **[`static.yml`](.github/workflows/static.yml)**, on every push and pull request:
 

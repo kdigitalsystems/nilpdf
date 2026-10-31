@@ -27,8 +27,8 @@ env:
 
 # Every job runs on our self-hosted runners, inside a container: the hosts are
 # shared with other projects, and a container gives each job a clean, pinned
-# environment instead of whatever is installed on the host. Container jobs ask
-# for the `docker` label so they can only land on runners able to run them.
+# environment instead of whatever is installed on the host. Any of our runners
+# can take any job, so every runner needs Docker.
 #
 # Every job ends by freeing the runner's disk, even when it fails. The
 # container runs as root, and the runner doesn't, so the runner can't delete
@@ -42,7 +42,7 @@ env:
 jobs:
   lint:
     name: Lint (ruff, actionlint)
-    runs-on: [self-hosted, docker]
+    runs-on: self-hosted
     container:
       image: python:3.14-slim
     timeout-minutes: 10
@@ -79,7 +79,7 @@ jobs:
 
   test:
     name: Tests (Python 3.14, as in the browser)
-    runs-on: [self-hosted, docker]
+    runs-on: self-hosted
     container:
       image: python:3.14-slim
     timeout-minutes: 15
@@ -126,7 +126,7 @@ jobs:
       fail-fast: false
       matrix:
         python: ["3.10", "3.12"]
-    runs-on: [self-hosted, docker]
+    runs-on: self-hosted
     container:
       image: python:${{ matrix.python }}-slim
     timeout-minutes: 15
@@ -149,7 +149,7 @@ jobs:
     # The bugs unit tests can't see: a worker that never boots, a service worker
     # that breaks offline mode, UI state, the deploy stamping, and the engine
     # running on the actual WebAssembly builds of its libraries.
-    runs-on: [self-hosted, docker]
+    runs-on: self-hosted
     container:
       image: mcr.microsoft.com/playwright/python:v1.63.0-noble
     timeout-minutes: 25
@@ -194,7 +194,7 @@ jobs:
       fail-fast: false
       matrix:
         python: ["3.10", "3.14"]
-    runs-on: [self-hosted, docker]
+    runs-on: self-hosted
     container:
       image: python:${{ matrix.python }}-slim
     timeout-minutes: 15
@@ -287,7 +287,7 @@ jobs:
     environment:
       name: github-pages
       url: ${{ steps.deployment.outputs.page_url }}
-    runs-on: [self-hosted, docker]
+    runs-on: self-hosted
     container:
       image: python:3.14-slim
     timeout-minutes: 10

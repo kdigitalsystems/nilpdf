@@ -35,7 +35,7 @@ env:
 jobs:
   build:
     name: Test, build and verify
-    runs-on: [self-hosted, docker]
+    runs-on: self-hosted
     container:
       image: python:3.14-slim
     timeout-minutes: 20
@@ -125,10 +125,10 @@ jobs:
     needs: build
     if: github.event_name == 'push' || inputs.publish
     # Self-hosted like everything else. The publish action starts its own Docker
-    # container, so this job runs on the runner host rather than inside one, and
-    # asks for a runner with Docker. The action's maintainers describe trusted
-    # publishing from self-hosted runners as expected to work but best effort.
-    runs-on: [self-hosted, docker]
+    # container, so this job runs on the runner host rather than inside one. The
+    # action's maintainers describe trusted publishing from self-hosted runners
+    # as expected to work but best effort.
+    runs-on: self-hosted
     timeout-minutes: 15
     # PyPI only accepts tokens from this workflow file running in this
     # environment (the trusted publisher configured on pypi.org), and the

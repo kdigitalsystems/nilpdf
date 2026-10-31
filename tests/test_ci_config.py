@@ -66,16 +66,15 @@ class TestRunners(unittest.TestCase):
                     hosted = [lb for lb in ls if GITHUB_HOSTED.match(str(lb))]
                     self.assertFalse(hosted, f"{job_id} asks for a GitHub-hosted runner: {hosted}")
 
-    def test_jobs_that_need_docker_ask_for_a_docker_runner(self):
-        """Container jobs, and the PyPI publish action (which starts its own
-        container), fail on a runner without Docker. Not every self-hosted
-        runner has it."""
+    def test_any_self_hosted_runner_can_take_any_job(self):
+        """Every runner has Docker, so no job narrows itself to a subset of
+        them. When jobs asked for a `docker` label, one runner going away left
+        a single machine, shared with other projects, to run all of CI while
+        the others sat idle."""
         for name, (wf, _) in WORKFLOWS.items():
             for job_id, job in wf["jobs"].items():
-                needs_docker = "container" in job or any("gh-action-pypi-publish" in u for u in uses_steps(job))
-                if needs_docker:
-                    with self.subTest(workflow=name, job=job_id):
-                        self.assertIn("docker", labels(job))
+                with self.subTest(workflow=name, job=job_id):
+                    self.assertEqual(labels(job), ["self-hosted"])
 
     def test_container_jobs_that_need_git_install_it_before_checkout(self):
         """Without git in the container, checkout downloads a plain tarball with
