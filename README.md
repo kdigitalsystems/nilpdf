@@ -147,7 +147,9 @@ The action needs Python 3.10 or newer on the runner. GitHub-hosted runners
 have it; elsewhere, add `actions/setup-python` first. It installs nilpdf from
 this repository at the tag you name, into its own virtual environment, with
 the PDF library pinned to the version that release was tested with, so it
-doesn't touch the job's Python. It is tested on Linux runners. For the
+doesn't touch the job's Python. It deletes that environment when it finishes,
+pass or fail, and keeps no pip cache, so on a self-hosted runner nothing is
+left behind but the small JSON report. It is tested on Linux runners. For the
 strongest supply-chain guarantee, pin the commit instead of the tag:
 `kdigitalsystems/nilpdf@<commit-sha> # v0.2.0`.
 
@@ -303,6 +305,16 @@ the other rules below.
 | **Browser tests** | What unit tests can't see: the worker failing to boot, a broken offline mode, UI state, the deploy stamping, and the engine on the real WebAssembly libraries |
 | **GitHub Action (Python 3.10, 3.14)** | Runs [`action.yml`](action.yml) itself in clean containers: installs from the checkout, passes a clean PDF, fails on hidden text, and reports without failing when told to. [`tests/test_action.py`](tests/test_action.py) covers the details, including crafted file names and PDF text that try to inject workflow commands or HTML |
 | **Deploy** | `main` only, and only after **every** job above passes. Stamps the build with [`scripts/stamp_build.py`](scripts/stamp_build.py), then publishes to GitHub Pages |
+
+**Every job frees the runner's disk when it finishes**, pass or fail. The jobs
+run as root inside their containers, and the runner, which doesn't, can't
+delete what root leaves behind, so it used to pile up: about 240 MB a run, and
+one root-owned file in the runner's temp directory also stops the runner's own
+clean-up of everything else in it. The last step of each job removes the
+checkout, everything root created in the temp directory during the job, and
+anything nilpdf left there before. pip keeps no cache on the runners.
+Docker images are kept on purpose: they're shared with other projects on the
+same hosts, and pulling the 2 GB Playwright image every run would be slow.
 
 Pull requests from outside contributors need approval before any of this runs,
 because it runs on our hardware. Jobs that run pull-request code are

@@ -20,12 +20,25 @@ concurrency:
   group: ci-${{ github.event_name == 'pull_request' && github.ref || github.sha }}
   cancel-in-progress: ${{ github.event_name == 'pull_request' }}
 
+# pip keeps no cache. In a container job its cache would go to a home directory
+# the runner shares between all jobs, owned by root, and never be deleted.
+env:
+  PIP_NO_CACHE_DIR: "1"
+
 # Every job runs on our self-hosted runners, inside a container: the hosts are
 # shared with other projects, and a container gives each job a clean, pinned
 # environment instead of whatever is installed on the host. Container jobs ask
 # for the `docker` label so they can only land on runners able to run them.
-# tests/test_ci_config.py enforces all of this, and that actions stay pinned to
-# commit SHAs.
+#
+# Every job ends by freeing the runner's disk, even when it fails. The
+# container runs as root, and the runner doesn't, so the runner can't delete
+# what a job leaves behind: it would pile up from run to run. The last step
+# removes the checkout, everything root created in the runner's temp directory
+# since the job started (the runner writes event.json as the job starts), and
+# anything nilpdf left there in earlier runs.
+#
+# tests/test_ci_config.py enforces all of this, runs that last step against a
+# mock runner, and checks that actions stay pinned to commit SHAs.
 jobs:
   lint:
     name: Lint (ruff, actionlint)
@@ -56,6 +69,13 @@ jobs:
           echo "8aca8db96f1b94770f1b0d72b6dddcb1ebb8123cb3712530b08cc387b349a3d8  /tmp/actionlint.tar.gz" | sha256sum -c -
           tar -xzf /tmp/actionlint.tar.gz -C /usr/local/bin actionlint
           actionlint -color
+
+      - name: Free the runner's disk space
+        if: always()
+        run: |
+          find "${GITHUB_WORKSPACE:?}" -mindepth 1 -delete
+          find "${RUNNER_TEMP:?}" -mindepth 1 -maxdepth 1 -user 0 \
+            \( -name 'nilpdf-*' -o -newer "${GITHUB_EVENT_PATH:?}" \) -exec rm -rf {} +
 
   test:
     name: Tests (Python 3.14, as in the browser)
@@ -91,6 +111,13 @@ jobs:
             exit 1
           fi
 
+      - name: Free the runner's disk space
+        if: always()
+        run: |
+          find "${GITHUB_WORKSPACE:?}" -mindepth 1 -delete
+          find "${RUNNER_TEMP:?}" -mindepth 1 -maxdepth 1 -user 0 \
+            \( -name 'nilpdf-*' -o -newer "${GITHUB_EVENT_PATH:?}" \) -exec rm -rf {} +
+
   compat:
     name: Tests (Python ${{ matrix.python }})
     # The pip package supports Python 3.10 and up, but the browser only ever
@@ -109,6 +136,13 @@ jobs:
         run: pip install -r requirements.txt
       - name: Unit tests
         run: python -m pytest tests/ --ignore=tests/e2e -q --tb=short
+
+      - name: Free the runner's disk space
+        if: always()
+        run: |
+          find "${GITHUB_WORKSPACE:?}" -mindepth 1 -delete
+          find "${RUNNER_TEMP:?}" -mindepth 1 -maxdepth 1 -user 0 \
+            \( -name 'nilpdf-*' -o -newer "${GITHUB_EVENT_PATH:?}" \) -exec rm -rf {} +
 
   e2e:
     name: Browser tests (Chromium, real Pyodide)
@@ -143,6 +177,13 @@ jobs:
           path: e2e-artifacts/
           if-no-files-found: ignore
           retention-days: 4
+
+      - name: Free the runner's disk space
+        if: always()
+        run: |
+          find "${GITHUB_WORKSPACE:?}" -mindepth 1 -delete
+          find "${RUNNER_TEMP:?}" -mindepth 1 -maxdepth 1 -user 0 \
+            \( -name 'nilpdf-*' -o -newer "${GITHUB_EVENT_PATH:?}" \) -exec rm -rf {} +
 
   action:
     name: GitHub Action (Python ${{ matrix.python }})
@@ -212,8 +253,21 @@ jobs:
           with open(leaked["report"], encoding="utf-8") as f:
               report = json.load(f)
           assert [r["path"] for r in report["files"] if r.get("hidden_text_found")] == ["action-fixtures/leaked/filing.pdf"]
-          print("Outcomes and outputs are as documented.")
+          # Each of the three runs removed its virtual environment when it finished.
+          started = os.path.getmtime(os.environ["GITHUB_EVENT_PATH"])
+          temp = os.environ["RUNNER_TEMP"]
+          left = [d for d in os.listdir(temp)
+                  if d.startswith("nilpdf-action.") and os.path.getmtime(os.path.join(temp, d)) > started]
+          assert not left, f"virtual environments left on the runner: {left}"
+          print("Outcomes and outputs are as documented, and nothing was left on the runner.")
           EOF
+
+      - name: Free the runner's disk space
+        if: always()
+        run: |
+          find "${GITHUB_WORKSPACE:?}" -mindepth 1 -delete
+          find "${RUNNER_TEMP:?}" -mindepth 1 -maxdepth 1 -user 0 \
+            \( -name 'nilpdf-*' -o -newer "${GITHUB_EVENT_PATH:?}" \) -exec rm -rf {} +
 
   deploy:
     name: Deploy to GitHub Pages
@@ -261,3 +315,10 @@ jobs:
       - name: Deploy to GitHub Pages
         id: deployment
         uses: actions/deploy-pages@368f82528645a54fb793d4d04e342629a3f51346 # v5.0.1
+
+      - name: Free the runner's disk space
+        if: always()
+        run: |
+          find "${GITHUB_WORKSPACE:?}" -mindepth 1 -delete
+          find "${RUNNER_TEMP:?}" -mindepth 1 -maxdepth 1 -user 0 \
+            \( -name 'nilpdf-*' -o -newer "${GITHUB_EVENT_PATH:?}" \) -exec rm -rf {} +

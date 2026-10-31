@@ -4,7 +4,9 @@
 # Installs nilpdf from the action's own checkout into a private virtual
 # environment, so the code that runs is exactly the tagged version the
 # workflow asked for, and nothing is added to the job's own Python. Prints the
-# environment's Python as the step output `python`.
+# environment's Python as the step output `python`, and its directory as
+# `venv` for action/cleanup.sh. pip keeps no cache: on a self-hosted runner it
+# would land in a home directory shared by every job, and stay there.
 #
 # Every command here runs from inside that new environment's directory, never
 # from the workspace: `python -m` puts the current directory first on the
@@ -28,6 +30,9 @@ if [ -z "$python" ]; then
 fi
 
 venv=$(mktemp -d "${RUNNER_TEMP:-${TMPDIR:-/tmp}}/nilpdf-action.XXXXXX")
+# Recorded straight away, so the action's last step removes the environment
+# even if the install fails part-way.
+echo "venv=$venv" >> "${GITHUB_OUTPUT:-/dev/null}"
 cd "$venv"
 
 if ! "$python" -I -m venv "$venv/env" >venv.log 2>&1; then
@@ -43,7 +48,8 @@ bin="$venv/env/bin"
 # left to resolve to its latest release, which carries the latest fixes.
 grep -E '^(pypdf|hatchling)==' "$action_dir/requirements.txt" > constraints.txt
 pip_install() {
-    "$bin/python" -I -m pip install --quiet --disable-pip-version-check --no-input -c constraints.txt "$@"
+    "$bin/python" -I -m pip install --quiet --disable-pip-version-check --no-input --no-cache-dir \
+        -c constraints.txt "$@"
 }
 pip_install hatchling
 pip_install --no-build-isolation "$action_dir"

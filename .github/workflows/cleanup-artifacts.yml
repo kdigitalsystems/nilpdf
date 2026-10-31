@@ -31,6 +31,9 @@ jobs:
       - name: Delete artifacts older than four days
         env:
           GH_TOKEN: ${{ github.token }}
+          # gh's settings stay inside the container rather than in the home
+          # directory the runner shares between jobs.
+          GH_CONFIG_DIR: /tmp/gh
           REPOSITORY: ${{ github.repository }}
         shell: bash
         run: |
@@ -64,3 +67,10 @@ jobs:
           done < "$ids_file"
 
           echo "Deleted $deleted artifact(s) older than four days."
+
+      - name: Free the runner's disk space
+        if: always()
+        run: |
+          find "${GITHUB_WORKSPACE:?}" -mindepth 1 -delete
+          find "${RUNNER_TEMP:?}" -mindepth 1 -maxdepth 1 -user 0 \
+            \( -name 'nilpdf-*' -o -newer "${GITHUB_EVENT_PATH:?}" \) -exec rm -rf {} +
