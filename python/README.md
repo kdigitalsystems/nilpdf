@@ -57,7 +57,7 @@ On GitHub Actions, use the action. It annotates each file with hidden text on
 the pull request and keeps the hidden text itself out of the logs:
 
 ```yaml
-- uses: kdigitalsystems/nilpdf@v0.2.0
+- uses: kdigitalsystems/nilpdf@v0.2.1
   with:
     paths: published/
 ```
@@ -76,7 +76,7 @@ for its inputs and outputs. Anywhere else, the exit code does the work:
 # .pre-commit-config.yaml
 repos:
   - repo: https://github.com/kdigitalsystems/nilpdf
-    rev: v0.2.0
+    rev: v0.2.1
     hooks:
       - id: check-redaction
 ```

@@ -91,7 +91,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v7
-      - uses: kdigitalsystems/nilpdf@v0.2.0
+      - uses: kdigitalsystems/nilpdf@v0.2.1
         with:
           paths: |
             published/
@@ -138,7 +138,7 @@ or set `show-text: true`.
             git diff --name-only --diff-filter=AM "origin/$BASE_REF...HEAD" -- '*.pdf' '*.PDF'
             echo EOF
           } >> "$GITHUB_OUTPUT"
-      - uses: kdigitalsystems/nilpdf@v0.2.0
+      - uses: kdigitalsystems/nilpdf@v0.2.1
         with:
           paths: ${{ steps.changed.outputs.pdfs }}
 ```
@@ -151,7 +151,7 @@ doesn't touch the job's Python. It deletes that environment when it finishes,
 pass or fail, and keeps no pip cache, so on a self-hosted runner nothing is
 left behind but the small JSON report. It is tested on Linux runners. For the
 strongest supply-chain guarantee, pin the commit instead of the tag:
-`kdigitalsystems/nilpdf@<commit-sha> # v0.2.0`.
+`kdigitalsystems/nilpdf@<commit-sha> # v0.2.1`.
 
 ---
 
@@ -335,7 +335,7 @@ feedback opens a pre-filled GitHub issue instead.
 ### Releasing the pip package and the GitHub Action
 
 The pip package and the GitHub Action share version tags: `uses:
-kdigitalsystems/nilpdf@v0.2.0` installs the package from that same tag.
+kdigitalsystems/nilpdf@v0.2.1` installs the package from that same tag.
 [`release.yml`](.github/workflows/release.yml) publishes `nilpdf` to PyPI when a
 version tag is pushed:
 
