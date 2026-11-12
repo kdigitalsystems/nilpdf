@@ -21,12 +21,15 @@ machine.** The tool makes no network requests and sends nothing anywhere,
 which matters most for exactly the documents you'd want to check.
 
 ```console
-$ pip install nilpdf
+$ pip install git+https://github.com/kdigitalsystems/nilpdf@v0.3.0
 $ nilpdf check-redaction filing.pdf
 HIDDEN  filing.pdf: hidden text in 1 place
   page 1, hidden under a box: Page 1. SSN SECRET-123-45-6789
     Drawn over by a black shape but still in the file: it can be selected, copied and searched.
 ```
+
+To try it once without installing anything:
+`uvx --from git+https://github.com/kdigitalsystems/nilpdf@v0.3.0 nilpdf check-redaction filing.pdf`
 
 Prefer a browser? The same check runs at
 [nilpdf.com/check-pdf-redaction](https://nilpdf.com/check-pdf-redaction/), also
@@ -57,16 +60,17 @@ On GitHub Actions, use the action. It annotates each file with hidden text on
 the pull request and keeps the hidden text itself out of the logs:
 
 ```yaml
-- uses: kdigitalsystems/nilpdf@v0.2.1
+- uses: kdigitalsystems/nilpdf@v0
   with:
     paths: published/
+    changed-only: true    # only the PDFs the pull request changed
 ```
 
 See [the action's documentation](https://github.com/kdigitalsystems/nilpdf#github-action)
 for its inputs and outputs. Anywhere else, the exit code does the work:
 
 ```yaml
-- run: pip install nilpdf
+- run: pip install git+https://github.com/kdigitalsystems/nilpdf@v0.3.0
 - run: nilpdf check-redaction published/
 ```
 
@@ -76,7 +80,7 @@ for its inputs and outputs. Anywhere else, the exit code does the work:
 # .pre-commit-config.yaml
 repos:
   - repo: https://github.com/kdigitalsystems/nilpdf
-    rev: v0.2.1
+    rev: v0.3.0
     hooks:
       - id: check-redaction
 ```
@@ -100,7 +104,8 @@ OCR text layer.
 
 The engine behind the website's other tools (merge, split, compress, redact,
 sign and more) is available as `nilpdf.engine`. Those tools need Pillow and
-reportlab: `pip install "nilpdf[full]"`.
+reportlab, which the `full` extra adds:
+`pip install "nilpdf[full] @ git+https://github.com/kdigitalsystems/nilpdf@v0.3.0"`.
 
 ## How it works, and what it can't see
 

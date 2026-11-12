@@ -29,6 +29,22 @@ inputs:
       An empty value checks nothing and passes.
     required: false
     default: "."
+  exclude:
+    description: >-
+      Files to skip, such as known false positives or an archive: paths,
+      directories or glob patterns, one per line, matched against each
+      file's path from the workspace. Skipped files are counted in the log
+      and the summary and listed in the report.
+    required: false
+    default: ""
+  changed-only:
+    description: >-
+      Check only the PDFs that changed in the pull request or push, so files
+      that were already in the repository don't block it. A PDF is skipped
+      only when git confirms it is unchanged; generated, untracked and edited
+      files are always checked, and so is everything when git can't tell.
+    required: false
+    default: "false"
   password:
     description: Password for encrypted PDFs, used for every file. Pass it from a secret.
     required: false
@@ -61,6 +77,9 @@ outputs:
   files-checked:
     description: Number of PDF files checked.
     value: ${{ steps.check.outputs.files-checked }}
+  files-skipped:
+    description: Number of PDF files left out by exclude or changed-only.
+    value: ${{ steps.check.outputs.files-skipped }}
   files-with-hidden-text:
     description: Number of PDF files with hidden text.
     value: ${{ steps.check.outputs.files-with-hidden-text }}
@@ -87,6 +106,8 @@ runs:
       shell: bash
       env:
         NILPDF_PATHS: ${{ inputs.paths }}
+        NILPDF_EXCLUDE: ${{ inputs.exclude }}
+        NILPDF_CHANGED_ONLY: ${{ inputs.changed-only }}
         NILPDF_PASSWORD: ${{ inputs.password }}
         NILPDF_FAIL_ON_HIDDEN_TEXT: ${{ inputs.fail-on-hidden-text }}
         NILPDF_FAIL_ON_ERROR: ${{ inputs.fail-on-error }}
