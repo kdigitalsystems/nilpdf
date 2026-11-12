@@ -174,6 +174,54 @@ class TestSitemapConsistency(unittest.TestCase):
             self.assertIn(url, sitemap, f"{tool['slug']} has no <loc> entry in sitemap.xml")
 
 
+class TestLandingPageAnswers(unittest.TestCase):
+    """Each question on a landing page must be followed by its own answer.
+
+    The generator swaps in a friendlier answer for the "Are my files safe?"
+    question. It used to do that by position, so on the two redaction pages,
+    whose second question is a different one, visitors read the privacy answer
+    under "Is redacting a PDF really free?" and "Do I need the original,
+    unredacted file?"."""
+
+    @classmethod
+    def setUpClass(cls):
+        cls.gp = load_generate_pages()
+
+    def shown(self, slug):
+        """(question, answer) pairs as the generated page shows them."""
+        page = read(f"{slug}/index.html")
+        return re.findall(r'<div class="faq-item">\s*<h3>(.*?)</h3>\s*<p>(.*?)</p>', page, re.S)
+
+    def test_every_question_shows_its_own_answer(self):
+        for tool in self.gp.TOOLS:
+            shown = dict(self.shown(tool["slug"]))
+            for i, (question, answer) in enumerate(tool["faq"]):
+                with self.subTest(page=tool["slug"], question=question):
+                    self.assertIn(question, shown)
+                    swapped = i == self.gp.SAFE_ANSWER_HTML_INDEX and question.startswith(self.gp.SAFE_QUESTION_PREFIX)
+                    self.assertEqual(shown[question], self.gp.SAFE_ANSWER_HTML if swapped else answer)
+
+    def test_the_privacy_answer_only_follows_the_privacy_question(self):
+        for tool in self.gp.TOOLS:
+            for question, answer in self.shown(tool["slug"]):
+                if answer == self.gp.SAFE_ANSWER_HTML:
+                    with self.subTest(page=tool["slug"], question=question):
+                        self.assertRegex(question, r"^Are my .*safe")
+
+    def test_links_into_the_readme_point_at_sections_that_exist(self):
+        """The redaction checker page sends developers to sections of the
+        README on GitHub. Renaming a heading there would break the link
+        without failing anything else."""
+        headings = {re.sub(r"[^a-z0-9 -]", "", h.lower()).replace(" ", "-")
+                    for h in re.findall(r"^#{1,6} (.+)$", read("README.md"), re.M)}
+        links = re.findall(r'href="https://github\.com/kdigitalsystems/nilpdf#([^"]+)"',
+                           read("check-pdf-redaction/index.html"))
+        self.assertEqual(len(links), 2, "the page should point to the GitHub Action and the command-line tool")
+        for fragment in links:
+            with self.subTest(fragment=fragment):
+                self.assertIn(fragment, headings)
+
+
 class TestBrowserDependencyPins(unittest.TestCase):
     """The versions CI tests must be the versions the browser installs.
 

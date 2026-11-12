@@ -517,6 +517,21 @@ TOOLS = [
             ('remove-pdf-metadata', 'Remove Metadata'),
             ('inspect-pdf', 'Inspect PDF'),
         ],
+        # The people who land here mostly check one file by hand. Some of them
+        # publish PDFs from a repository, and for them the same check can run
+        # on every pull request.
+        'extra_section': (
+            '        <section class="faq">\n'
+            '            <h2>For developers: check every pull request</h2>\n'
+            '            <div class="faq-item">\n'
+            '                <p>If you publish PDFs from a repository, the same check runs in CI as a free, open-source '
+            '<a href="https://github.com/kdigitalsystems/nilpdf#github-action">GitHub Action</a>, and as a '
+            '<a href="https://github.com/kdigitalsystems/nilpdf#command-line-pre-commit-and-python">command-line tool '
+            'and pre-commit hook</a>. It fails a pull request when a PDF in it still has hidden text, and it runs on '
+            'your own runner, so nothing is uploaded there either.</p>\n'
+            '            </div>\n'
+            '        </section>\n'
+        ),
     },
     {
         'slug': 'edit-pdf',
@@ -906,6 +921,7 @@ PAGE_TEMPLATE = '''<!DOCTYPE html>
         .faq-item {{ margin-bottom: 1.25rem; }}
         .faq-item h3 {{ font-size: 0.95rem; font-weight: 600; margin-bottom: 0.3rem; }}
         .faq-item p {{ font-size: 0.9rem; color: var(--muted); line-height: 1.6; }}
+        .faq-item a {{ color: var(--accent); }}
         .related-tools {{ margin-bottom: 2rem; font-size: 0.85rem; }}
         .related-tools p {{ color: var(--muted); margin-bottom: 0.5rem; }}
         .related-tools a {{ color: var(--accent); text-decoration: none; margin-right: 1rem; }}
@@ -931,7 +947,7 @@ PAGE_TEMPLATE = '''<!DOCTYPE html>
             <h2>Frequently Asked Questions</h2>
 {faq_items}
         </section>
-        <nav class="related-tools">
+{extra_section}        <nav class="related-tools">
             <p>Other free PDF tools:</p>
 {related_items}
         </nav>
@@ -944,10 +960,14 @@ PAGE_TEMPLATE = '''<!DOCTYPE html>
 '''
 
 
-# The second FAQ entry on every tool page is always "Are my files safe...?".
-# Its visible answer is worded more conversationally than the terser one used
-# in the FAQPage JSON-LD, so the two need to be tracked separately.
+# The second FAQ entry on most tool pages is "Are my files safe...?". Its
+# visible answer is worded more conversationally than the terser one used in
+# the FAQPage JSON-LD, so the two are tracked separately. Pages whose second
+# question is something else keep their own answer: the swap used to be made
+# by position alone, which put this answer under "Is redacting a PDF really
+# free?" and "Do I need the original, unredacted file?".
 SAFE_ANSWER_HTML_INDEX = 1
+SAFE_QUESTION_PREFIX = 'Are my '
 SAFE_ANSWER_HTML = ('Your files never leave your device. All processing happens in your browser '
                      'using WebAssembly (Pyodide). NilPDF has no server, there is nothing to upload to.')
 
@@ -981,7 +1001,7 @@ def build_faq_json(faq):
 def build_faq_html(faq):
     items = []
     for i, (question, answer) in enumerate(faq):
-        if i == SAFE_ANSWER_HTML_INDEX:
+        if i == SAFE_ANSWER_HTML_INDEX and question.startswith(SAFE_QUESTION_PREFIX):
             answer = SAFE_ANSWER_HTML
         items.append(
             '            <div class="faq-item">\n'
@@ -1028,6 +1048,7 @@ def generate():
             faq_json=build_faq_json(tool['faq']),
             faq_items=build_faq_html(tool['faq']),
             related_items=build_related_html(tool['related']),
+            extra_section=tool.get('extra_section', ''),
             extra_json_ld=tool.get('extra_json_ld', ''),
         )
 

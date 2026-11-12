@@ -149,6 +149,7 @@
         .faq-item { margin-bottom: 1.25rem; }
         .faq-item h3 { font-size: 0.95rem; font-weight: 600; margin-bottom: 0.3rem; }
         .faq-item p { font-size: 0.9rem; color: var(--muted); line-height: 1.6; }
+        .faq-item a { color: var(--accent); }
         .related-tools { margin-bottom: 2rem; font-size: 0.85rem; }
         .related-tools p { color: var(--muted); margin-bottom: 0.5rem; }
         .related-tools a { color: var(--accent); text-decoration: none; margin-right: 1rem; }
@@ -182,7 +183,7 @@
             </div>
             <div class="faq-item">
                 <h3>Do I need the original, unredacted file?</h3>
-                <p>Your files never leave your device. All processing happens in your browser using WebAssembly (Pyodide). NilPDF has no server, there is nothing to upload to.</p>
+                <p>No. The checker works from the redacted file alone. It looks at what is drawn on top of what, so it can tell when text is sitting underneath a box.</p>
             </div>
             <div class="faq-item">
                 <h3>Is it safe to check a sensitive document?</h3>
@@ -195,6 +196,12 @@
             <div class="faq-item">
                 <h3>How do I fix a PDF that fails the check?</h3>
                 <p>Redact it with a tool that removes the content rather than covering it. NilPDF Redact rebuilds each marked page so the covered text is no longer in the file, and you can run this check again afterwards to confirm.</p>
+            </div>
+        </section>
+        <section class="faq">
+            <h2>For developers: check every pull request</h2>
+            <div class="faq-item">
+                <p>If you publish PDFs from a repository, the same check runs in CI as a free, open-source <a href="https://github.com/kdigitalsystems/nilpdf#github-action">GitHub Action</a>, and as a <a href="https://github.com/kdigitalsystems/nilpdf#command-line-pre-commit-and-python">command-line tool and pre-commit hook</a>. It fails a pull request when a PDF in it still has hidden text, and it runs on your own runner, so nothing is uploaded there either.</p>
             </div>
         </section>
         <nav class="related-tools">
