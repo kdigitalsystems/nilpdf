@@ -131,7 +131,7 @@ class TestSupplyChain(unittest.TestCase):
 
 
 class TestPermissions(unittest.TestCase):
-    ELEVATED = {"deploy", "publish"}
+    ELEVATED = {"deploy", "publish", "github-release"}
 
     def test_workflows_default_to_read_only(self):
         for name, (wf, _) in WORKFLOWS.items():
@@ -141,14 +141,17 @@ class TestPermissions(unittest.TestCase):
                 writes = {k: v for k, v in perms.items() if v == "write" and k != "actions"}
                 self.assertFalse(writes, f"workflow-level write permissions: {writes}")
 
-    def test_only_deploy_and_publish_get_id_tokens_or_write_access(self):
+    def test_only_the_deploy_and_release_jobs_get_id_tokens_or_write_access(self):
+        seen = set()
         for name, (wf, _) in WORKFLOWS.items():
             for job_id, job in wf["jobs"].items():
                 writes = {k for k, v in (job.get("permissions") or {}).items() if v == "write"}
                 if job_id in self.ELEVATED:
+                    seen.add(job_id)
                     continue
                 with self.subTest(workflow=name, job=job_id):
                     self.assertFalse(writes, f"{job_id} asks for write access: {writes}")
+        self.assertEqual(seen, self.ELEVATED, "an elevated job was renamed or removed: update ELEVATED")
 
     def test_elevated_jobs_never_run_for_pull_requests(self):
         static = WORKFLOWS["static.yml"][0]["jobs"]["deploy"]
@@ -203,7 +206,9 @@ class TestReleaseWorkflow(unittest.TestCase):
 
     def test_triggers(self):
         on = triggers(self.wf)
-        self.assertEqual(on["push"], {"tags": ["v*"]})
+        # Full version tags only. v0, which the release itself moves, must
+        # never start a release of its own.
+        self.assertEqual(on["push"], {"tags": ["v[0-9]+.[0-9]+.[0-9]+"]})
         self.assertIn("workflow_dispatch", on)
         self.assertEqual(on["workflow_dispatch"]["inputs"]["publish"]["default"], False,
                          "a manual run must be a dry run unless publish is ticked")
@@ -216,6 +221,17 @@ class TestReleaseWorkflow(unittest.TestCase):
         self.assertNotIn("container", publish, "the publish action starts its own container")
         self.assertTrue(any("gh-action-pypi-publish" in u for u in uses_steps(publish)))
         self.assertNotIn("password:", self.text, "use trusted publishing, not a stored token")
+
+    def test_the_github_release_is_gated_like_the_pypi_one(self):
+        job = self.jobs["github-release"]
+        self.assertEqual(job["needs"], "build", "it must not wait for PyPI, and must not run before the checks")
+        self.assertEqual(job["if"], self.jobs["publish"]["if"], "a dry run publishes nothing, here either")
+        self.assertEqual(job["permissions"], {"contents": "write"})
+        run = next(s for s in job["steps"] if "github_release.py" in s.get("run", ""))
+        self.assertEqual(run["env"], {"GITHUB_TOKEN": "${{ github.token }}",
+                                      "RELEASE_COMMIT": "${{ needs.build.outputs.commit }}"})
+        self.assertNotIn("${{", run["run"], "values reach the script through the environment, not the command line")
+        self.assertIn("steps.version.outputs.commit", self.jobs["build"]["outputs"]["commit"])
 
     def test_publish_clears_root_owned_files_before_anything_else(self):
         """The publish job runs on the host, after container jobs that ran as
@@ -300,6 +316,7 @@ class TestReleaseGateBehaviour(unittest.TestCase):
         r, out = self.run_gate("v1.2.3")
         self.assertEqual(r.returncode, 0, r.stdout + r.stderr)
         self.assertIn("version=1.2.3", out)
+        self.assertIn(f"commit={self.main_sha}", out, "the GitHub Release job moves v0 to this commit")
 
 class TestRunnerDiskIsFreed(unittest.TestCase):
     """Container jobs run as root, and the runner doesn't, so the runner can't
