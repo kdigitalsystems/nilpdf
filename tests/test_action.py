@@ -112,6 +112,8 @@ class TestActionMetadata(unittest.TestCase):
         self.assertEqual(inputs["fail-on-hidden-text"]["default"], "true")
         self.assertEqual(inputs["fail-on-error"]["default"], "true")
         self.assertEqual(inputs["show-text"]["default"], "false", "the hidden text is the leak; keep it out of logs")
+        self.assertEqual(inputs["changed-only"]["default"], "false", "check everything unless asked not to")
+        self.assertEqual(inputs["exclude"]["default"], "")
 
     def test_install_never_runs_python_from_the_workspace(self):
         """`python -m` puts the current directory first on the module path. The
@@ -147,16 +149,34 @@ class TestDocumentation(unittest.TestCase):
 
     def examples(self, doc):
         for block in re.findall(r"```yaml\n(.*?)```", read(doc), re.S):
-            if "kdigitalsystems/nilpdf@" in block:
+            if "uses: kdigitalsystems/nilpdf@" in block:
                 yield block
 
-    def test_examples_pin_the_current_release(self):
+    def test_examples_name_the_current_release(self):
+        """Every version the docs mention is either this release or the
+        major-version tag that follows it, and each document pins the exact
+        release somewhere, so a version bump can't leave the docs behind."""
+        current = f"v{source_version()}"
+        major = current.split(".")[0]
         for doc in self.DOCS:
             with self.subTest(doc=doc):
                 tags = re.findall(r"kdigitalsystems/nilpdf@([\w.<>-]+)", read(doc))
-                self.assertTrue(tags)
+                self.assertIn(current, tags)
                 for tag in tags:
-                    self.assertIn(tag, (f"v{source_version()}", "<commit-sha>"))
+                    self.assertIn(tag, (current, major, "<commit-sha>"))
+
+    def test_install_commands_work_without_pypi(self):
+        """`pip install nilpdf` only works once the package is on PyPI, and for
+        a while the READMEs said it when it wasn't. Until the first publish
+        succeeds, every copy-and-paste block installs from GitHub, which
+        always works. (When PyPI is live, change the commands and this test.)"""
+        from_github = f"pip install git+https://github.com/kdigitalsystems/nilpdf@v{source_version()}"
+        for doc in self.DOCS:
+            with self.subTest(doc=doc):
+                text = read(doc)
+                self.assertIn(from_github, text)
+                for block in re.findall(r"```[a-z]*\n(.*?)```", text, re.S):
+                    self.assertNotRegex(block, r"pip install (?:-\S+ +)*[\"']?nilpdf\b(?! @)")
 
     def test_examples_are_valid_and_use_real_inputs(self):
         for doc in self.DOCS:
@@ -172,7 +192,7 @@ class TestDocumentation(unittest.TestCase):
 
     def test_every_input_and_output_is_documented(self):
         readme = read("README.md")
-        for name in list(ACTION["inputs"]) + ["hidden-text-found", "files-checked", "report"]:
+        for name in list(ACTION["inputs"]) + list(ACTION["outputs"]):
             with self.subTest(name=name):
                 self.assertIn(f"`{name}`", readme)
 
@@ -236,7 +256,10 @@ class ActionTestCase(PackageTestCase):
         self.gh = tempfile.mkdtemp(prefix="nilpdf-gh-")
         self.addCleanup(shutil.rmtree, self.gh, ignore_errors=True)
 
-    def run_check(self, paths, **inputs):
+    def run_check(self, paths, cwd=None, event=None, env=None, **inputs):
+        """Run the check step. `event` is the payload of the event that
+        started the run, as GitHub writes it to GITHUB_EVENT_PATH."""
+        cwd = cwd or self.fx
         output = os.path.join(self.gh, "output")
         summary = os.path.join(self.gh, "summary")
         for path in (output, summary):
@@ -244,14 +267,24 @@ class ActionTestCase(PackageTestCase):
         env = {
             **self.env,
             "GITHUB_OUTPUT": output, "GITHUB_STEP_SUMMARY": summary,
-            "GITHUB_WORKSPACE": self.fx, "RUNNER_TEMP": self.gh,
+            "GITHUB_WORKSPACE": cwd, "RUNNER_TEMP": self.gh,
             "NILPDF_PATHS": paths,
+            "NILPDF_EXCLUDE": inputs.get("exclude", ""),
+            "NILPDF_CHANGED_ONLY": inputs.get("changed_only", "false"),
             "NILPDF_PASSWORD": inputs.get("password", ""),
             "NILPDF_FAIL_ON_HIDDEN_TEXT": inputs.get("fail_on_hidden_text", "true"),
             "NILPDF_FAIL_ON_ERROR": inputs.get("fail_on_error", "true"),
             "NILPDF_SHOW_TEXT": inputs.get("show_text", "false"),
+            **(env or {}),
         }
-        r = subprocess.run([sys.executable, CHECK], cwd=self.fx, env=env, capture_output=True, timeout=120)
+        # These tests run inside a GitHub Actions job themselves, so the real
+        # job's event must never leak into the check under test.
+        env.pop("GITHUB_EVENT_PATH", None)
+        if event is not None:
+            env["GITHUB_EVENT_PATH"] = os.path.join(self.gh, "event.json")
+            with open(env["GITHUB_EVENT_PATH"], "w", encoding="utf-8") as f:
+                json.dump(event, f)
+        r = subprocess.run([sys.executable, CHECK], cwd=cwd, env=env, capture_output=True, timeout=120)
         with open(output, encoding="utf-8") as f:
             outputs = dict(line.split("=", 1) for line in f.read().splitlines())
         with open(summary, encoding="utf-8") as f:
@@ -265,12 +298,23 @@ class ActionTestCase(PackageTestCase):
                 r.report = json.load(f)
         return r
 
+    def in_check_module(self, code, *args):
+        """Run a snippet with action/check.py imported as `check`, and return
+        the JSON it prints."""
+        setup = ("import importlib.util, json, sys\n"
+                 f"spec = importlib.util.spec_from_file_location('check', {CHECK!r})\n"
+                 "check = importlib.util.module_from_spec(spec)\nspec.loader.exec_module(check)\n")
+        done = subprocess.run([sys.executable, "-c", setup + code, *args], env=self.env, cwd=self.fx,
+                              capture_output=True, text=True, timeout=60)
+        self.assertEqual(done.returncode, 0, done.stderr)
+        return json.loads(done.stdout)
+
 
 class TestCheckStep(ActionTestCase):
     def test_a_clean_file_passes(self):
         r = self.run_check("clean.pdf")
         self.assertEqual(r.returncode, 0, r.log)
-        self.assertEqual(r.outputs, {"hidden-text-found": "false", "files-checked": "1",
+        self.assertEqual(r.outputs, {"hidden-text-found": "false", "files-checked": "1", "files-skipped": "0",
                                      "files-with-hidden-text": "0", "files-with-errors": "0",
                                      "report": r.outputs["report"]})
         self.assertEqual(r.commands, [])
@@ -399,6 +443,409 @@ class TestUntrustedContent(ActionTestCase):
         self.assertIn("&lt;img src=x onerror=alert(1)&gt;", r.summary)
         table = r.summary[r.summary.index("<table>"):r.summary.index("</table>")]
         self.assertNotIn("\n\n", table, "a blank line would end the HTML block and turn the rest into Markdown")
+
+
+
+class TestExclude(ActionTestCase):
+    """exclude is how a repository accepts a known false positive or leaves an
+    archive alone. What it skips must stay visible."""
+
+    def test_patterns(self):
+        """Patterns are matched against the whole path from the workspace, the
+        same way the paths input reads globs."""
+        cases = [
+            # pattern, path, excluded?
+            ("hidden.pdf", "hidden.pdf", True),
+            ("./hidden.pdf", "hidden.pdf", True),
+            ("hidden.pdf", "tree/hidden.pdf", False),       # not at any depth unless asked
+            ("**/hidden.pdf", "tree/sub/hidden.pdf", True),
+            ("**/hidden.pdf", "hidden.pdf", True),
+            ("tree", "tree/sub/b.pdf", True),                # a directory covers what is in it
+            ("tree/", "tree/a.pdf", True),
+            ("tree", "tree2/a.pdf", False),
+            ("tree", "a/tree/b.pdf", False),
+            ("*.pdf", "a.pdf", True),
+            ("*.pdf", "tree/a.pdf", False),                  # * stays within one directory
+            ("tree/**", "tree/sub/b.pdf", True),
+            ("tree/*/b.pdf", "tree/sub/b.pdf", True),
+            ("tree/*/b.pdf", "tree/sub/deeper/b.pdf", False),
+            ("archive/**/*.pdf", "archive/2019/q1/a.pdf", True),
+            ("archive/**/*.pdf", "archive/a.pdf", True),
+            ("scan-?.pdf", "scan-1.pdf", True),
+            ("scan-?.pdf", "scan-10.pdf", False),
+            ("scan-[0-9].pdf", "scan-7.pdf", True),
+            ("scan-[!0-9].pdf", "scan-7.pdf", False),
+            ("scan-[!0-9].pdf", "scan-x.pdf", True),
+            # Regular-expression characters in a file name mean themselves.
+            ("a+b (1).pdf", "a+b (1).pdf", True),
+            ("a+b (1).pdf", "aab (1).pdf", False),
+            ("a.pdf", "axpdf", False),
+            ("[draft].pdf", "[draft].pdf", False),           # a character class, as in a glob
+            ("[[]draft].pdf", "[draft].pdf", True),
+            # An absolute path, as ${{ github.workspace }}/tree would give.
+            (os.path.join(self.fx, "tree"), "tree/sub/b.pdf", True),
+            (os.path.join(self.fx, "tree", "*.pdf"), "tree/a.pdf", True),
+            (os.path.join(self.fx, "tree"), "clean.pdf", False),
+        ]
+        got = self.in_check_module(
+            "print(json.dumps([bool(check.exclude_regex(p).fullmatch(path)) for p, path, _ in json.loads(sys.argv[1])]))",
+            json.dumps(cases))
+        for (pattern, path, expected), actual in zip(cases, got):
+            with self.subTest(pattern=pattern, path=path):
+                self.assertEqual(actual, expected)
+
+    def test_an_excluded_file_is_skipped_and_reported(self):
+        r = self.run_check(".", exclude="hidden.pdf\ntree/sub")
+        self.assertEqual(r.returncode, 0, r.log)
+        self.assertEqual(r.outputs["files-checked"], "2")
+        self.assertEqual(r.outputs["files-skipped"], "2")
+        self.assertEqual(r.outputs["hidden-text-found"], "false")
+        note = "2 PDFs matching exclude were not checked."
+        self.assertIn(note, r.log)
+        self.assertIn(note, r.summary)
+        self.assertEqual(sorted(r.report["skipped"]["excluded"]), ["hidden.pdf", "tree/sub/b_whiteout.PDF"])
+        self.assertEqual([f["path"] for f in r.report["files"]], ["clean.pdf", "tree/a_clean.pdf"])
+
+    def test_a_pattern_has_to_match_the_whole_path(self):
+        """`b_whiteout.PDF` names a file at the top of the workspace. It must
+        not also skip tree/sub/b_whiteout.PDF, or one careless pattern could
+        hide files all over a repository."""
+        r = self.run_check(".", exclude="b_whiteout.PDF\nhidden.pdf")
+        self.assertEqual(r.returncode, 1, r.log)
+        self.assertEqual(r.report["skipped"]["excluded"], ["hidden.pdf"])
+        self.assertEqual([c[1]["file"] for c in r.commands], ["tree/sub/b_whiteout.PDF"])
+
+    def test_without_exclude_the_same_run_fails(self):
+        r = self.run_check(".")
+        self.assertEqual(r.returncode, 1)
+        self.assertEqual(r.outputs["files-skipped"], "0")
+        self.assertNotIn("not checked", r.summary)
+
+    def test_exclude_wins_over_a_path_named_explicitly(self):
+        r = self.run_check("hidden.pdf\nclean.pdf", exclude="hidden.pdf")
+        self.assertEqual(r.returncode, 0, r.log)
+        self.assertEqual((r.outputs["files-checked"], r.outputs["files-skipped"]), ("1", "1"))
+
+    def test_excluding_everything_passes_and_says_so(self):
+        r = self.run_check("hidden.pdf", exclude="*.pdf")
+        self.assertEqual(r.returncode, 0, r.log)
+        self.assertEqual(r.outputs["files-checked"], "0")
+        self.assertIn("**No PDFs needed checking.**", r.summary)
+        self.assertIn("1 PDF matching exclude was not checked.", r.summary)
+
+    def test_a_missing_path_is_still_an_error(self):
+        """exclude skips files that exist. It can't hide a typo in paths."""
+        r = self.run_check("nope.pdf", exclude="nope.pdf")
+        self.assertEqual(r.returncode, 1, r.log)
+        self.assertEqual(r.outputs["files-with-errors"], "1")
+
+
+def git(cwd, *args):
+    """Run git with no user or system configuration, so a developer's own
+    settings (signing, hooks, templates) can't change what these tests see."""
+    env = {**os.environ, "GIT_CONFIG_GLOBAL": os.devnull, "GIT_CONFIG_SYSTEM": os.devnull,
+           "GIT_AUTHOR_DATE": "2026-01-01T00:00:00Z", "GIT_COMMITTER_DATE": "2026-01-01T00:00:00Z"}
+    done = subprocess.run(["git", "-c", "user.name=Test", "-c", "user.email=test@example.com",
+                           "-c", "init.defaultBranch=main", *args],
+                          cwd=cwd, env=env, capture_output=True, text=True, timeout=60)
+    if done.returncode != 0:
+        raise AssertionError(f"git {' '.join(args)} failed: {done.stderr}")
+    return done.stdout.strip()
+
+
+@unittest.skipUnless(shutil.which("git"), "git is needed to build the repositories these tests check")
+class TestChangedOnly(ActionTestCase):
+    """changed-only may skip a PDF only when git confirms it hasn't changed.
+    Whenever that is in doubt, the file is checked."""
+
+    LEAK = staticmethod(lambda: make_line_pdf(draw=box(0, 0, 0)))
+    CLEAN = staticmethod(lambda text="A clean page": make_line_pdf(text=text))
+
+    def setUp(self):
+        super().setUp()
+        # "origin" has the base commit: a legacy PDF with hidden text that
+        # was there before the check existed, and a clean one.
+        self.origin = os.path.join(self.gh, "origin")
+        os.makedirs(os.path.join(self.origin, "docs"))
+        git(self.origin, "init", "-q")
+        # Lets a shallow clone fetch one commit by its ID, as github.com does.
+        git(self.origin, "config", "uploadpack.allowAnySHA1InWant", "true")
+        self.commit(self.origin, "base", {"legacy.pdf": self.LEAK(), "docs/clean.pdf": self.CLEAN()})
+        self.base = git(self.origin, "rev-parse", "HEAD")
+
+    def commit(self, repo, message, files=(), remove=()):
+        for rel, data in dict(files).items():
+            path = os.path.join(repo, rel)
+            os.makedirs(os.path.dirname(path), exist_ok=True)
+            with open(path, "wb") as f:
+                f.write(data)
+        for rel in remove:
+            os.remove(os.path.join(repo, rel))
+        git(repo, "add", "-A")
+        git(repo, "commit", "-q", "-m", message)
+        return git(repo, "rev-parse", "HEAD")
+
+    def clone(self, *args):
+        """A checkout of origin's current commit, as actions/checkout leaves it."""
+        repo = os.path.join(self.gh, f"checkout-{len(os.listdir(self.gh))}")
+        git(self.gh, "clone", "-q", *args, "file://" + self.origin, repo)
+        return repo
+
+    def pull_request(self, base=None):
+        return {"pull_request": {"base": {"sha": base or self.base}}}
+
+    def assert_everything_checked(self, r, level, because):
+        self.assertEqual(r.outputs["files-skipped"], "0", r.log)
+        self.assertEqual(r.outputs["files-with-hidden-text"], "1", "legacy.pdf should have been checked")
+        self.assertEqual(r.returncode, 1)
+        [(name, props, message)] = [c for c in r.commands if c[1].get("title", "").startswith("changed-only")]
+        self.assertEqual((name, props["title"]), (level, "changed-only: every PDF was checked"))
+        self.assertIn(because, message)
+        self.assertTrue(message.endswith("Every PDF in paths was checked."), message)
+        self.assertIsNone(r.report["skipped"]["compared_with"])
+
+    # ── It narrows the check ────────────────────────────────────────────────
+
+    def test_only_what_the_pull_request_changed_is_checked(self):
+        self.commit(self.origin, "pr", {"docs/new.pdf": self.CLEAN(), "docs/clean.pdf": self.CLEAN("Edited")})
+        repo = self.clone()
+        r = self.run_check(".", changed_only="true", cwd=repo, event=self.pull_request())
+        self.assertEqual(r.returncode, 0, r.log)
+        self.assertEqual((r.outputs["files-checked"], r.outputs["files-skipped"]), ("2", "1"))
+        self.assertEqual(sorted(f["path"] for f in r.report["files"]), ["docs/clean.pdf", "docs/new.pdf"])
+        self.assertEqual(r.report["skipped"], {"excluded": [], "unchanged": ["legacy.pdf"], "compared_with": self.base})
+        note = f"1 PDF unchanged since commit {self.base[:7]} was not checked (changed-only)."
+        self.assertIn(note, r.log)
+        self.assertIn(note, r.summary)
+        self.assertEqual(r.commands, [])
+        # The same checkout without changed-only fails on the legacy file.
+        self.assertEqual(self.run_check(".", cwd=repo, event=self.pull_request()).returncode, 1)
+
+    def test_a_leak_the_pull_request_adds_fails(self):
+        self.commit(self.origin, "pr", {"docs/filing.pdf": self.LEAK()})
+        r = self.run_check(".", changed_only="true", cwd=self.clone(), event=self.pull_request())
+        self.assertEqual(r.returncode, 1, r.log)
+        self.assertEqual([c[1]["file"] for c in r.commands], ["docs/filing.pdf"])
+        self.assertEqual(r.outputs["files-skipped"], "2")
+
+    def test_a_pull_request_that_touches_no_pdf_passes(self):
+        self.commit(self.origin, "pr", {"README.md": b"hello"})
+        r = self.run_check(".", changed_only="true", cwd=self.clone(), event=self.pull_request())
+        self.assertEqual(r.returncode, 0, r.log)
+        self.assertEqual((r.outputs["files-checked"], r.outputs["files-skipped"]), ("0", "2"))
+        self.assertIn("**No PDFs needed checking.**", r.summary)
+
+    def test_a_push_is_compared_with_the_commit_it_replaced(self):
+        head = self.commit(self.origin, "push", {"docs/filing.pdf": self.LEAK()})
+        r = self.run_check(".", changed_only="true", cwd=self.clone(), event={"before": self.base, "after": head})
+        self.assertEqual((r.returncode, r.outputs["files-checked"], r.outputs["files-skipped"]), (1, "1", "2"))
+
+    def test_a_merge_queue_is_compared_with_its_base(self):
+        self.commit(self.origin, "queued", {"docs/new.pdf": self.CLEAN()})
+        r = self.run_check(".", changed_only="true", cwd=self.clone(), event={"merge_group": {"base_sha": self.base}})
+        self.assertEqual((r.returncode, r.outputs["files-checked"]), (0, "1"))
+
+    def test_a_shallow_checkout_fetches_the_one_commit_it_needs(self):
+        """actions/checkout fetches a single commit by default, so the base
+        isn't there until it is fetched. Only that commit is fetched, not the
+        history behind it, which in a large repository could be gigabytes."""
+        older = self.base
+        base = self.commit(self.origin, "the base, with history behind it", {"notes.txt": b"x"})
+        self.commit(self.origin, "pr", {"docs/new.pdf": self.CLEAN()})
+        repo = self.clone("--depth=1")
+
+        def has(commit):
+            return subprocess.run(["git", "cat-file", "-e", commit], cwd=repo, capture_output=True).returncode == 0
+
+        self.assertFalse(has(base))
+        r = self.run_check(".", changed_only="true", cwd=repo, event=self.pull_request(base))
+        self.assertEqual(r.returncode, 0, r.log)
+        self.assertEqual((r.outputs["files-checked"], r.outputs["files-skipped"]), ("1", "2"))
+        self.assertTrue(has(base))
+        self.assertFalse(has(older), "the history behind the base was fetched too")
+        self.assertEqual(git(repo, "rev-parse", "--is-shallow-repository"), "true")
+
+    def test_fetching_the_base_does_not_make_a_complete_checkout_shallow(self):
+        """A complete clone that happens to lack the base (it lives on a
+        branch that was never fetched) must stay complete: later steps in the
+        same job may rely on the history."""
+        git(self.origin, "checkout", "-q", "-b", "side")
+        side = self.commit(self.origin, "on a side branch", {"side.txt": b"x"})
+        git(self.origin, "checkout", "-q", "main")
+        self.commit(self.origin, "pr", {"docs/new.pdf": self.CLEAN()})
+        repo = self.clone("--single-branch", "--branch", "main")
+        self.assertNotEqual(subprocess.run(["git", "cat-file", "-e", side], cwd=repo, capture_output=True).returncode, 0)
+        r = self.run_check(".", changed_only="true", cwd=repo, event=self.pull_request(side))
+        self.assertEqual(r.outputs["files-skipped"], "2", r.log)
+        self.assertEqual(git(repo, "rev-parse", "--is-shallow-repository"), "false")
+
+    def test_run_from_a_subdirectory(self):
+        self.commit(self.origin, "pr", {"docs/new.pdf": self.CLEAN(), "other.pdf": self.LEAK()})
+        repo = self.clone()
+        r = self.run_check(".", changed_only="true", cwd=os.path.join(repo, "docs"), event=self.pull_request())
+        self.assertEqual(r.returncode, 0, r.log)
+        self.assertEqual(sorted(f["path"] for f in r.report["files"]), ["new.pdf"])
+        self.assertEqual(r.report["skipped"]["unchanged"], ["clean.pdf"])
+
+    def test_unusual_file_names(self):
+        names = ["with space.pdf", "naïve ünïcode.pdf", EVIL_NAME]
+        self.commit(self.origin, "names", {n: self.LEAK() for n in names})
+        base = git(self.origin, "rev-parse", "HEAD")
+        self.commit(self.origin, "pr", {names[0]: self.CLEAN()})
+        r = self.run_check(".", changed_only="true", cwd=self.clone(), event=self.pull_request(base))
+        self.assertEqual(r.returncode, 0, r.log)
+        self.assertEqual([f["path"] for f in r.report["files"]], ["with space.pdf"])
+        self.assertEqual(r.outputs["files-skipped"], "4")
+
+    def test_it_works_together_with_exclude(self):
+        self.commit(self.origin, "pr", {"docs/new.pdf": self.CLEAN(), "docs/known.pdf": self.LEAK()})
+        r = self.run_check(".", changed_only="true", exclude="docs/known.pdf", cwd=self.clone(),
+                           event=self.pull_request())
+        self.assertEqual(r.returncode, 0, r.log)
+        self.assertEqual(r.report["skipped"]["excluded"], ["docs/known.pdf"])
+        self.assertEqual(sorted(r.report["skipped"]["unchanged"]), ["docs/clean.pdf", "legacy.pdf"])
+        self.assertEqual((r.outputs["files-checked"], r.outputs["files-skipped"]), ("1", "3"))
+
+    def test_the_users_git_configuration_still_applies(self):
+        """The check gives git its own global config so it can trust the
+        checkout. That config includes the user's, which a self-hosted runner
+        may need to reach the remote at all: here, a URL rewrite."""
+        self.commit(self.origin, "pr", {"docs/new.pdf": self.CLEAN()})
+        repo = self.clone("--depth=1")
+        git(repo, "remote", "set-url", "origin", "file:///mirror/that/does/not/exist")
+        config = os.path.join(self.gh, "user.gitconfig")
+        with open(config, "w") as f:
+            f.write(f'[url "file://{self.origin}"]\n\tinsteadOf = file:///mirror/that/does/not/exist\n')
+        r = self.run_check(".", changed_only="true", cwd=repo, event=self.pull_request(),
+                           env={"GIT_CONFIG_GLOBAL": config})
+        self.assertEqual((r.returncode, r.outputs["files-checked"], r.outputs["files-skipped"]), (0, "1", "2"), r.log)
+
+    def test_it_leaves_nothing_in_the_runners_temp_directory(self):
+        self.commit(self.origin, "pr", {"docs/new.pdf": self.CLEAN()})
+        self.run_check(".", changed_only="true", cwd=self.clone(), event=self.pull_request())
+        self.assertEqual([n for n in os.listdir(self.gh) if n.startswith("nilpdf-git-")], [])
+
+    @unittest.skipUnless(hasattr(os, "geteuid") and os.geteuid() == 0,
+                         "needs root, as in a container job: the checkout must belong to another user")
+    def test_a_checkout_owned_by_another_user(self):
+        """In a container job, git refuses to read the runner's checkout
+        ("dubious ownership") unless told it is safe."""
+        self.commit(self.origin, "pr", {"docs/new.pdf": self.CLEAN()})
+        repo = self.clone()
+        for root, dirs, files in os.walk(repo):
+            for name in dirs + files:
+                os.chown(os.path.join(root, name), 1000, 1000, follow_symlinks=False)
+        os.chown(repo, 1000, 1000)
+        r = self.run_check(".", changed_only="true", cwd=repo, event=self.pull_request())
+        self.assertEqual(r.returncode, 0, r.log)
+        self.assertEqual((r.outputs["files-checked"], r.outputs["files-skipped"]), ("1", "2"))
+
+    # ── It never skips what git can't vouch for ─────────────────────────────
+
+    def test_generated_untracked_and_edited_files_are_always_checked(self):
+        """A workflow that builds PDFs and then checks them has files git has
+        never seen. Skipping those would skip the whole point."""
+        self.commit(self.origin, "pr", {".gitignore": b"build/\n"})
+        repo = self.clone()
+        os.makedirs(os.path.join(repo, "build"))
+        for rel, data in (("build/generated.pdf", self.LEAK()),        # ignored by git
+                          ("untracked.pdf", self.LEAK()),               # never added
+                          ("docs/clean.pdf", self.LEAK())):             # tracked, edited after checkout
+            with open(os.path.join(repo, rel), "wb") as f:
+                f.write(data)
+        r = self.run_check(".", changed_only="true", cwd=repo, event=self.pull_request())
+        self.assertEqual(r.returncode, 1, r.log)
+        self.assertEqual(sorted(c[1]["file"] for c in r.commands),
+                         ["build/generated.pdf", "docs/clean.pdf", "untracked.pdf"])
+        self.assertEqual(r.report["skipped"]["unchanged"], ["legacy.pdf"])
+
+    def test_a_staged_edit_is_checked_too(self):
+        self.commit(self.origin, "pr", {"README.md": b"hello"})
+        repo = self.clone()
+        with open(os.path.join(repo, "docs", "clean.pdf"), "wb") as f:
+            f.write(self.LEAK())
+        git(repo, "add", "docs/clean.pdf")
+        r = self.run_check("docs", changed_only="true", cwd=repo, event=self.pull_request())
+        self.assertEqual((r.returncode, r.outputs["files-with-hidden-text"]), (1, "1"), r.log)
+
+    def test_changes_on_the_base_branch_only_add_to_what_is_checked(self):
+        """If the workflow checks out the pull request's own head rather than
+        the merge, files the base branch changed since look changed too. They
+        get checked: more than needed, never less."""
+        repo = self.clone()
+        git(repo, "checkout", "-q", "-b", "feature")
+        self.commit(repo, "pr", {"docs/new.pdf": self.CLEAN()})
+        newer_base = self.commit(self.origin, "base moves on", {"legacy.pdf": self.CLEAN("Fixed on main")})
+        git(repo, "fetch", "-q", "origin")
+        r = self.run_check(".", changed_only="true", cwd=repo, event=self.pull_request(newer_base))
+        self.assertEqual(sorted(f["path"] for f in r.report["files"]), ["docs/new.pdf", "legacy.pdf"])
+        self.assertEqual(r.returncode, 1, "the checkout still has the old legacy.pdf, and it is checked")
+
+    # ── When the comparison can't be made, everything is checked ────────────
+
+    def test_no_base_commit_checks_everything_with_a_notice(self):
+        self.commit(self.origin, "more", {"docs/new.pdf": self.CLEAN()})
+        repo = self.clone()
+        events = {
+            "a manual or scheduled run": {"inputs": {}},
+            "the first push of a branch": {"before": "0" * 40, "after": self.base},
+            "an event with no payload": None,
+        }
+        for label, event in events.items():
+            with self.subTest(event=label):
+                r = self.run_check(".", changed_only="true", cwd=repo, event=event)
+                self.assert_everything_checked(r, "notice", "this run has no earlier commit to compare with")
+
+    def test_a_base_that_is_not_a_commit_id_is_ignored(self):
+        """The base comes from the event payload and goes onto a git command
+        line. Only a full hexadecimal ID is accepted."""
+        self.commit(self.origin, "more", {"docs/new.pdf": self.CLEAN()})
+        repo = self.clone()
+        planted = os.path.join(self.gh, "planted")
+        for bad in ("HEAD", "main", self.base[:12], self.base.upper(), f"--output={planted}",
+                    f"{self.base}\n--output={planted}", f"{self.base} --output={planted}", 12345, ["x"], None):
+            with self.subTest(base=bad):
+                r = self.run_check(".", changed_only="true", cwd=repo,
+                                   event={"pull_request": {"base": {"sha": bad}}})
+                self.assert_everything_checked(r, "notice", "no earlier commit")
+        self.assertFalse(os.path.exists(planted))
+
+    def test_the_checked_out_commit_being_the_base_checks_everything(self):
+        r = self.run_check(".", changed_only="true", cwd=self.clone(), event=self.pull_request())
+        self.assert_everything_checked(r, "warning", "pull_request_target")
+
+    def test_not_a_git_checkout_checks_everything(self):
+        plain = os.path.join(self.gh, "plain")
+        os.makedirs(plain)
+        with open(os.path.join(plain, "legacy.pdf"), "wb") as f:
+            f.write(self.LEAK())
+        r = self.run_check(".", changed_only="true", cwd=plain, event=self.pull_request())
+        self.assert_everything_checked(r, "warning", "not a git checkout")
+
+    def test_git_not_installed_checks_everything(self):
+        self.commit(self.origin, "pr", {"docs/new.pdf": self.CLEAN()})
+        empty = os.path.join(self.gh, "empty-path")
+        os.makedirs(empty)
+        r = self.run_check(".", changed_only="true", cwd=self.clone(), event=self.pull_request(), env={"PATH": empty})
+        self.assert_everything_checked(r, "warning", "git is not installed")
+
+    def test_a_base_that_cannot_be_fetched_checks_everything(self):
+        self.commit(self.origin, "pr", {"docs/new.pdf": self.CLEAN()})
+        repo = self.clone("--depth=1")
+        git(repo, "remote", "set-url", "origin", "file://" + os.path.join(self.gh, "gone"))
+        r = self.run_check(".", changed_only="true", cwd=repo, event=self.pull_request())
+        self.assert_everything_checked(r, "warning", f"({self.base[:7]}) is not in the checkout and could not be fetched")
+
+    def test_a_base_from_another_repository_checks_everything(self):
+        self.commit(self.origin, "pr", {"docs/new.pdf": self.CLEAN()})
+        r = self.run_check(".", changed_only="true", cwd=self.clone(), event=self.pull_request("ab" * 20))
+        self.assert_everything_checked(r, "warning", "could not be fetched")
+
+    def test_off_by_default(self):
+        self.commit(self.origin, "pr", {"docs/new.pdf": self.CLEAN()})
+        r = self.run_check(".", cwd=self.clone(), event=self.pull_request())
+        self.assertEqual((r.returncode, r.outputs["files-checked"], r.outputs["files-skipped"]), (1, "3", "0"))
+        self.assertEqual(r.report["skipped"], {"excluded": [], "unchanged": [], "compared_with": None})
 
 
 if __name__ == "__main__":

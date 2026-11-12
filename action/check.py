@@ -18,6 +18,14 @@ months and readable by anyone with access to the repository. It is left out
 of the log, annotations and summary unless show-text is true. The JSON report
 written to the runner always has it.
 
+Two inputs narrow what is checked, so a repository that already has PDFs can
+adopt the check. Both are visible in the log, the summary and the report:
+
+- exclude names files to skip: known false positives, or an archive.
+- changed-only skips the PDFs git confirms are unchanged since the commit the
+  run is compared with. Anything git can't vouch for is checked, and if the
+  comparison can't be made at all, every file is.
+
 Exit codes: 0 passed, 1 failed (hidden text or unreadable files, as the
 fail-on-* inputs decide), 2 invalid inputs.
 """
@@ -25,7 +33,9 @@ import glob
 import html
 import json
 import os
+import re
 import secrets
+import subprocess
 import sys
 import tempfile
 
@@ -49,6 +59,11 @@ def flag(name):
     raise InputError(f"{name} must be true or false, not {raw!r}")
 
 
+def lines_of(variable):
+    """A multi-line input, one entry per line."""
+    return [line.strip() for line in os.environ.get(variable, "").splitlines() if line.strip()]
+
+
 def expand(patterns):
     """Glob patterns become the PDFs and directories they match. A pattern
     that matches nothing is kept as typed, so it is reported as a missing
@@ -62,6 +77,176 @@ def expand(patterns):
         else:
             out.append(pattern)
     return list(dict.fromkeys(_collect(out)))
+
+
+# ── exclude ──────────────────────────────────────────────────────────────────
+
+def exclude_regex(pattern):
+    """A glob pattern as a regular expression over a file's path relative to
+    the working directory. * and ? stay within one path segment and ** spans
+    them, as in the paths input. A pattern that matches a directory covers
+    everything inside it, so `archive` and `archive/` exclude the whole tree."""
+    pattern = pattern.strip()
+    if os.path.isabs(pattern):   # such as ${{ github.workspace }}/archive
+        pattern = os.path.relpath(pattern)
+    while pattern.startswith("./"):
+        pattern = pattern[2:]
+    pattern = pattern.rstrip("/")
+    out, i = [], 0
+    while i < len(pattern):
+        ch = pattern[i]
+        if pattern.startswith("**/", i):
+            out.append("(?:.*/)?")
+            i += 3
+        elif pattern.startswith("**", i):
+            out.append(".*")
+            i += 2
+        elif ch == "*":
+            out.append("[^/]*")
+            i += 1
+        elif ch == "?":
+            out.append("[^/]")
+            i += 1
+        elif ch == "[" and "]" in pattern[i + 2:]:
+            end = pattern.index("]", i + 2)
+            body = pattern[i + 1:end]
+            negate = body[0] in "!^"
+            out.append("[" + ("^/" if negate else "") + re.escape(body[negate:]).replace("\\-", "-") + "]")
+            i = end + 1
+        else:
+            out.append(re.escape(ch))
+            i += 1
+    return re.compile("".join(out) + "(?:/.*)?")
+
+
+def relative_path(path):
+    """A file's path as exclude patterns see it: relative to the working
+    directory, with forward slashes."""
+    return os.path.relpath(os.path.abspath(path)).replace(os.sep, "/")
+
+
+# ── changed-only ─────────────────────────────────────────────────────────────
+
+class ChangedOnlyUnavailable(Exception):
+    """git can't say what changed, so every file gets checked. `level` is how
+    loudly to say so: a notice when there is simply nothing to compare with,
+    a warning when the comparison was expected to work."""
+
+    def __init__(self, reason, level="warning"):
+        super().__init__(reason)
+        self.level = level
+
+
+def base_commit():
+    """The commit this run is compared with, from the event that started it:
+    a pull request's base, a merge queue's base, or the commit a push
+    replaced. None when there isn't one, such as a manual or scheduled run or
+    the first push of a branch. It ends up on a git command line, so anything
+    but a full hexadecimal commit ID is refused."""
+    try:
+        with open(os.environ["GITHUB_EVENT_PATH"], encoding="utf-8") as f:
+            event = json.load(f)
+    except (KeyError, OSError, ValueError):
+        return None
+    for keys in (("pull_request", "base", "sha"), ("merge_group", "base_sha"), ("before",)):
+        node = event
+        for key in keys:
+            node = node.get(key) if isinstance(node, dict) else None
+        if isinstance(node, str) and re.fullmatch(r"[0-9a-f]{40}(?:[0-9a-f]{24})?", node) and set(node) != {"0"}:
+            return node
+    return None
+
+
+class Git:
+    """Runs git in the checkout the working directory is in.
+
+    In a container job the checkout belongs to a different user than the one
+    running the job, and git then refuses to read it ("dubious ownership").
+    actions/checkout only lifts that for its own commands. So these commands
+    get their own global config: it includes the user's, and adds a line that
+    trusts the checkout. Nothing outside this process is changed, and git is
+    told not to take locks, since it only reads here."""
+
+    def __init__(self, scratch):
+        config = os.path.join(scratch, "gitconfig")
+        home = os.path.expanduser("~")
+        if os.environ.get("GIT_CONFIG_GLOBAL"):
+            originals = [os.environ["GIT_CONFIG_GLOBAL"]]
+        else:
+            xdg = os.environ.get("XDG_CONFIG_HOME") or os.path.join(home, ".config")
+            originals = [os.path.join(xdg, "git", "config"), os.path.join(home, ".gitconfig")]
+        with open(config, "w", encoding="utf-8", errors="surrogateescape") as out:
+            for original in originals:   # git skips an include that doesn't exist
+                quoted = original.replace("\\", "\\\\").replace('"', '\\"')
+                out.write(f'[include]\n\tpath = "{quoted}"\n')
+            out.write("[safe]\n\tdirectory = *\n")
+        self.env = {**os.environ, "GIT_CONFIG_GLOBAL": config, "GIT_TERMINAL_PROMPT": "0", "GIT_OPTIONAL_LOCKS": "0"}
+        self.top = None
+
+    def run(self, *args):
+        try:
+            done = subprocess.run(["git", *args], cwd=self.top, env=self.env, capture_output=True, timeout=300)
+        except FileNotFoundError:
+            raise ChangedOnlyUnavailable("git is not installed on this runner") from None
+        except subprocess.TimeoutExpired:
+            raise ChangedOnlyUnavailable(f"git {args[0]} did not finish in five minutes") from None
+        return done.returncode, done.stdout.decode("utf-8", "surrogateescape")
+
+    def paths(self, *args):
+        """The NUL-separated paths a command prints, relative to the top of
+        the checkout."""
+        code, out = self.run(*args)
+        if code != 0:
+            raise ChangedOnlyUnavailable(f"git {args[0]} failed")
+        return {p for p in out.split("\0") if p}
+
+
+def unchanged_since_base(files, scratch):
+    """Which of `files` git confirms are unchanged since the base commit.
+
+    A file is only skipped if all three hold: it is tracked in the
+    checked-out commit, no commit since the base touched it, and the copy in
+    the workspace hasn't been modified. So files a build step generated,
+    untracked files and edited files are all still checked. Comparing the two
+    commits directly, rather than from where the branches forked, can only
+    add files to the changed set, never drop one the pull request touched.
+
+    Returns (unchanged files, base commit). Raises ChangedOnlyUnavailable
+    when the comparison can't be made."""
+    base = base_commit()
+    if not base:
+        raise ChangedOnlyUnavailable("this run has no earlier commit to compare with", level="notice")
+    git = Git(scratch)
+    code, top = git.run("rev-parse", "--show-toplevel")
+    if code != 0:
+        raise ChangedOnlyUnavailable("the working directory is not a git checkout that git can read")
+    git.top = top.rstrip("\n")
+    code, head = git.run("rev-parse", "--verify", "HEAD^{commit}")
+    if code != 0:
+        raise ChangedOnlyUnavailable("the checkout has no commit checked out")
+    if head.strip() == base:
+        raise ChangedOnlyUnavailable(
+            "the checked-out commit is the one to compare with, so there are no changes to find. "
+            "On pull_request_target, the default checkout is the base branch, not the pull request")
+    if git.run("cat-file", "-e", base + "^{commit}")[0] != 0:
+        # actions/checkout fetches a single commit by default, so the base is
+        # usually missing. One more commit is enough. --depth is only used in
+        # a checkout that is already shallow: in a complete one it would mark
+        # the repository shallow, which later steps might not expect.
+        shallow = git.run("rev-parse", "--is-shallow-repository")[1].strip() == "true"
+        git.run("fetch", "--quiet", "--no-tags", *(["--depth=1"] if shallow else []), "origin", base)
+        if git.run("cat-file", "-e", base + "^{commit}")[0] != 0:
+            raise ChangedOnlyUnavailable(
+                f"the commit to compare with ({base[:7]}) is not in the checkout and could not be fetched. "
+                "Give actions/checkout fetch-depth: 0, or let it keep its credentials")
+    tracked = git.paths("ls-tree", "-r", "-z", "--name-only", "--full-tree", "HEAD")
+    touched = git.paths("diff", "--name-only", "--no-renames", "--no-ext-diff", "-z", base, "HEAD")
+    touched |= git.paths("diff", "--name-only", "--no-renames", "--no-ext-diff", "-z", "HEAD")
+    vouched = tracked - touched
+    top = os.path.realpath(git.top)
+    unchanged = [f for f in files
+                 if os.path.relpath(os.path.realpath(f), top).replace(os.sep, "/") in vouched]
+    return unchanged, base
 
 
 # ── GitHub's formats ─────────────────────────────────────────────────────────
@@ -142,7 +327,21 @@ def print_log(results, show_text):
         print(f"::{token}::")
 
 
-def summary_html(results, show_text, counts):
+def skipped_notes(skipped):
+    """One sentence for each reason files were left out, so a narrowed check
+    never looks like a full one."""
+    notes = []
+    if skipped["unchanged"]:
+        n = len(skipped["unchanged"])
+        notes.append(f"{plural(n, 'PDF')} unchanged since commit {skipped['base'][:7]} "
+                     f"{'was' if n == 1 else 'were'} not checked (changed-only).")
+    if skipped["excluded"]:
+        n = len(skipped["excluded"])
+        notes.append(f"{plural(n, 'PDF')} matching exclude {'was' if n == 1 else 'were'} not checked.")
+    return notes
+
+
+def summary_html(results, show_text, counts, skipped):
     checked, hidden, errors = counts
 
     def esc(text):
@@ -152,9 +351,14 @@ def summary_html(results, show_text, counts):
         verdict = f"**Hidden text found in {plural(hidden, 'file')}** of {checked} checked."
     elif errors:
         verdict = f"**No hidden text found, but {plural(errors, 'file')} could not be checked** ({checked} in total)."
+    elif not checked:
+        verdict = "**No PDFs needed checking.**"
     else:
         verdict = f"**No hidden text in {plural(checked, 'file')}.**"
     lines = ["### NilPDF redaction check", "", verdict, ""]
+    notes = skipped_notes(skipped)
+    if notes:
+        lines += [" ".join(notes) + " The JSON report lists them.", ""]
 
     problems = [r for r in results if "error" in r or r.get("hidden_text_found")]
     if problems:
@@ -187,11 +391,13 @@ def write_summary(text):
             f.write(text)
 
 
-def write_report(results, hidden):
+def write_report(results, hidden, skipped):
     directory = os.environ.get("RUNNER_TEMP") or tempfile.gettempdir()
     fd, path = tempfile.mkstemp(prefix="nilpdf-report-", suffix=".json", dir=directory)
-    with os.fdopen(fd, "w", encoding="utf-8") as f:
-        json.dump({"nilpdf_version": __version__, "hidden_text_found": bool(hidden), "files": results},
+    with os.fdopen(fd, "w", encoding="utf-8", errors="backslashreplace") as f:
+        json.dump({"nilpdf_version": __version__, "hidden_text_found": bool(hidden), "files": results,
+                   "skipped": {"excluded": skipped["excluded"], "unchanged": skipped["unchanged"],
+                               "compared_with": skipped["base"]}},
                   f, indent=2, ensure_ascii=False)
     return path
 
@@ -203,21 +409,45 @@ def main():
         fail_on_hidden = flag("fail-on-hidden-text")
         fail_on_error = flag("fail-on-error")
         show_text = flag("show-text")
+        changed_only = flag("changed-only")
     except InputError as exc:
         annotate("error", "NilPDF: invalid input", str(exc))
         return 2
 
-    patterns = [line.strip() for line in os.environ.get("NILPDF_PATHS", "").splitlines() if line.strip()]
+    patterns = lines_of("NILPDF_PATHS")
     if not patterns:
         print("No paths given, so there is nothing to check.")
-        write_outputs(**{"hidden-text-found": "false", "files-checked": 0,
+        write_outputs(**{"hidden-text-found": "false", "files-checked": 0, "files-skipped": 0,
                          "files-with-hidden-text": 0, "files-with-errors": 0, "report": ""})
         return 0
 
-    files = expand(patterns)
+    found = expand(patterns)
+    # Only files that exist can be skipped. A path that doesn't exist stays
+    # in, so it is still reported as an error.
+    skippable = [f for f in found if os.path.isfile(f)]
+    skipped = {"excluded": [], "unchanged": [], "base": None}
+
+    excludes = [exclude_regex(pattern) for pattern in lines_of("NILPDF_EXCLUDE")]
+    if excludes:
+        skipped["excluded"] = [f for f in skippable if any(rx.fullmatch(relative_path(f)) for rx in excludes)]
+        excluded = set(skipped["excluded"])
+        skippable = [f for f in skippable if f not in excluded]
+
+    if changed_only and skippable:
+        with tempfile.TemporaryDirectory(prefix="nilpdf-git-", dir=os.environ.get("RUNNER_TEMP") or None) as scratch:
+            try:
+                skipped["unchanged"], skipped["base"] = unchanged_since_base(skippable, scratch)
+            except ChangedOnlyUnavailable as exc:
+                annotate(exc.level, "changed-only: every PDF was checked",
+                         f"changed-only could not narrow the check, because {exc}. Every PDF in paths was checked.")
+
+    left_out = set(skipped["excluded"]) | set(skipped["unchanged"])
+    files = [f for f in found if f not in left_out]
     if files:
         password = os.environ.get("NILPDF_PASSWORD", "")
         results = [_check_one(f, password) for f in files]
+    elif found:
+        results = []
     else:
         results = [{"path": ", ".join(patterns), "error": "no PDF files found"}]
     hidden = sum(1 for r in results if r.get("hidden_text_found"))
@@ -225,6 +455,8 @@ def main():
     checked = len(files)
 
     print_log(results, show_text)
+    for note in skipped_notes(skipped):
+        print(note)
     for r in results:
         if "error" in r:
             annotate("error" if fail_on_error else "warning", "PDF could not be checked",
@@ -234,10 +466,11 @@ def main():
             annotate("error" if fail_on_hidden else "warning", "Hidden text in PDF",
                      f"Hidden text in {plural(len(found), 'place')}: " + "; ".join(found), file=r["path"])
 
-    report = write_report(results, hidden)
-    write_summary(summary_html(results, show_text, (checked, hidden, errors)))
+    report = write_report(results, hidden, skipped)
+    write_summary(summary_html(results, show_text, (checked, hidden, errors), skipped))
     write_outputs(**{"hidden-text-found": "true" if hidden else "false", "files-checked": checked,
-                     "files-with-hidden-text": hidden, "files-with-errors": errors, "report": report})
+                     "files-skipped": len(left_out), "files-with-hidden-text": hidden,
+                     "files-with-errors": errors, "report": report})
 
     failed = (hidden and fail_on_hidden) or (errors and fail_on_error)
     return 1 if failed else 0
